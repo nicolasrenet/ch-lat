@@ -1,1 +1,4 @@
-# hw_gt_alignment
+# GT Alignment toolchain
+
++ annotating for line segmentation
++ GT alignment experiments
