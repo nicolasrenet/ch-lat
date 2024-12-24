@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- Load the Paper.js library -->
+	<script type="text/javascript" src="static/paper.js"></script>
+<!-- Define inlined JavaScript -->
+
+	<script type="text/javascript" src="static/line_annotation.js"> </script>
+</head>
+<body>
+	<div id="cnv">0
+	<canvas id="myCanvas" width="800px" height="600px">
+	</canvas>
+	</div>
+
+
+       <script type="text/javascript">
+
+        var img_file = "static/096ee892464c3efb69d622953d1033ad.img.jpg";
+	var changed_img = null;
+
+       	const cnv = document.getElementById("myCanvas");
+
+        </script>
+
+	<div id="charters">
+	<ul>
+		{% for ch in charters %}
+		<li onclick="cnv.update_img('static/{{ch.filename}}')">{{ch.filename}}</li>
+		{% endfor %}
+	</ul>
+	</div>
+</body>
+
+
+
+</html>
