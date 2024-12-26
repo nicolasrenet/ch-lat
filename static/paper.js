@@ -1,1 +1,1 @@
-../js/paper.js
+../node_modules/paper/dist/paper-core.js

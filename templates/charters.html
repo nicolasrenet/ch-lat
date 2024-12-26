@@ -13,25 +13,21 @@
 	</canvas>
 	</div>
 
-
        <script type="text/javascript">
 
-        var img_file = "static/096ee892464c3efb69d622953d1033ad.img.jpg";
-	var changed_img = null;
+	       var img_file = "static/{{charters[current].filename}}"; 
 
-       	const cnv = document.getElementById("myCanvas");
+       		const cnv = document.getElementById("myCanvas");
 
         </script>
 
 	<div id="charters">
 	<ul>
-		{% for ch in charters %}
-		<li onclick="cnv.update_img('static/{{ch.filename}}')">{{ch.filename}}</li>
+		{% for id, ch in charters.items() %}
+		<li><a href="/{{id}}">{{loop.index}}. {{ch.filename}}</a></li>
 		{% endfor %}
 	</ul>
 	</div>
 </body>
-
-
 
 </html>

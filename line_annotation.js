@@ -1,5 +1,15 @@
 paper.install(window);
 
+/*
+ * Desirable features:
+ * + remove entire path 
+ * + edit mode for one path: 
+ *   + delete end-segment
+ *   + add internal node
+ *   + end edit mode
+ *   + move segment end
+ */
+
 window.onload = function(){
 	var canvas = document.getElementById("myCanvas");
 	console.log("Before setup:");
@@ -12,7 +22,6 @@ window.onload = function(){
 
 	
 	console.log(img_file);
-	//img = '096ee892464c3efb69d622953d1033ad.img.jpg';
 	charter = null;
 
 	canvas.update_img = function update_image( img ){
@@ -44,7 +53,7 @@ window.onload = function(){
 		console.log(ev.point);
 		if (pathDrawingMode){
 			pathDrawingMode = false;
-			paths[paths.length-1].isSelected=false;
+			selectPath(paths[paths.length-1], false);
 			return;
 		} else {
 			pathDrawingMode = true;
@@ -53,7 +62,7 @@ window.onload = function(){
 			path.strokeWidth = 4;
 			path.strokeCap = 'round';
 			path.strokeJoin = 'round';
-			path.isSelected = false;
+			selectPath(path, false);
 			paths.push( path );
 			console.log(path);
 			paths[paths.length-1].add( ev.point ) ;
@@ -65,13 +74,15 @@ window.onload = function(){
 		paths.forEach( (p) => {
 			if (p.hitTest( ev.point ) !== null){
 				console.log("Path is selected!");
-				p.isSelected = true;
+				selectPath( p, true );
+			} else {
+				selectPath( p, false );
 			}
 		})
 		if (Key.isDown('a')){
 			paths.forEach( (p) => {
 				console.log("Path is selected!");
-				p.isSelected = true;
+				selectPath( p, true );
 			})
 		}
 	}
@@ -86,6 +97,11 @@ window.onload = function(){
 			paths.forEach( (p) => { 
 				p.strokeWidth -= (1*p.isSelected);
 			})
+		} else if (Key.isDown('escape')){
+			pathDrawingMode = false;
+			paths.forEach( (p) => {
+				selectPath(p, false);
+			});
 		}
 	}
 	
@@ -95,6 +111,17 @@ window.onload = function(){
 		}
 	}
 
+	function selectPath( p, value ){
+		if (value){
+			p.selected = true;
+			p.isSelected = true;
+			p.strokeColor = 'blue';
+		} else {
+			p.selected = false;
+			p.isSelected = false;
+			p.strokeColor = 'red';
+		}
+	}
 
 }
 

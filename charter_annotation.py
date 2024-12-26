@@ -5,15 +5,20 @@ import re
 
 app = Flask(__name__)
 
+def lemmatize( p:Path):
+    return re.sub(r'\..+', '',  p.name)
 
 @app.route('/')
-def charter_annotate():
+def charters_choice():
+    charters = { lemmatize(p):{'filename': str(p)} for p in Path('.').glob('*.img.jpg') }
+    return render_template('charters.html', charters=charters, current=list(charters.keys())[0])
 
-    charters = [ {'filename': str(p), 'href': 'charter/{}'.format( re.sub(r'\..+', '', p.name))} for p in Path('.').glob('*.img.jpg')]
+@app.route('/<charter_id>')
+def charter_pick( charter_id:str):
+    charters = { lemmatize(p):{'filename': str(p)} for p in Path('.').glob('*.img.jpg') }
+    return render_template('charters.html', charters=charters, current=charter_id)
 
-    return render_template('charters.html', charters=charters)
 
- 
 
 
 # GET: 
