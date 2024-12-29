@@ -38,9 +38,9 @@ window.onload = function(){
 	
 	console.log( canvas );
 	
-	paths = [];
-	currentPath = null;
-	var currentSegment = -1;
+	var paths = [];
+	var currentPath = null;
+	var currentSegment = 0;
 
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
@@ -49,10 +49,11 @@ window.onload = function(){
 		
 		console.log(ev.point);
 		if (pathDrawingMode){
+			console.log("DoubleClick: pathDrawingMode -> false");
 			pathDrawingMode = false;
 			selectPath(paths[paths.length-1], false);
-			return;
 		} else {
+			console.log("DoubleClick: pathDrawingMode -> true");
 			pathDrawingMode = true;
 			var path = new Path() ;
 			path.strokeColor = 'red';
@@ -68,17 +69,19 @@ window.onload = function(){
 	}
 
 	view.onClick = (ev) => {
-		console.log("Clik:")
+		console.log("Clik: segmentEditMode = " + segmentEditMode + ", pathDrawingMode = " + pathDrawingMode)
 		if (pathDrawingMode && paths.length > 0){
 			paths[paths.length-1].add(ev.point);
 			return;
 		}
-		/*if (segmentEditMode){
-			console.log("Click: End SegmentEditMode")
+		if (segmentEditMode){
+			console.log("Click: segmentEditMode -> false")
+			//this.requestUpdate()
 			segmentEditMode = false;
 			currentPath = null;
-			currentSegment = null;
-		}*/
+			currentSegment = -1;
+			//return
+		}
 		pathHitResult = getHitPath( ev.point );
 		if (pathHitResult !== null){
 			console.log(pathHitResult)
@@ -88,6 +91,10 @@ window.onload = function(){
 			paths.forEach( (op) => {
 				if (op === p){ return }
 				selectPath( op, false );
+			});
+		} else {
+			paths.forEach( (p) => {
+				selectPath( p, false );
 			});
 		}
 		if (Key.isDown('a')){
@@ -121,28 +128,35 @@ window.onload = function(){
 		console.log("MouseDown:");
 		var pathHitResult = getHitPath( ev.point );
 		console.log(pathHitResult);
-		if (! pathDrawingMode && pathHitResult !== null && pathHitResult.type === 'segment' && ! segmentEditMode ){
+		if (! pathDrawingMode && pathHitResult !== null && (pathHitResult.type === 'segment' || pathHitResult.type==='stroke')){
 			currentPath = pathHitResult.item;
 			console.log("OnMouseDown: parent path = " + currentPath );
-			currentSegment = pathHitResult.segment.index;
-			console.log("OnMouseDown: segment object = " + currentSegment );
+			if (pathHitResult.type === 'segment'){
+				currentSegment = pathHitResult.segment.index;
+				console.log("OnMouseDown: segment object = " + currentSegment );
+			} else if ( pathHitResult.type === 'stroke' ){
+				currentSegment = pathHitResult.location.curve.segment2.index;
+			}
 			//console.log("OnMouseDown: segment object " + p.segments[hitResult.segment.index]);
 			segmentEditMode = true;
-			console.log("segmentEditMode=true");
+			console.log("segmentEditMode -> true");
+			if (pathHitResult.type === 'stroke'){
+				console.log("current path length = " + currentPath.length)
+				currentPath.insert( currentSegment, ev.point );
+				console.log("current path length = " + currentPath.length)
+				console.log(currentPath);
+			}
 		}
 	}	
 
 	view.onMouseDrag = (ev) => { 
+		segt = currentPath.segments[currentSegment]
+		console.log("Current segment before: " + segt )
 		if (segmentEditMode){
-			var segt = currentPath.segments[currentSegment]
-			console.log("Current segment before: " + segt )
+			currentPath.removeSegment( currentSegment )
 			console.log('delta='+ev.delta)
-			var newPoint = new Segment({ 'x': (segt.point.x+ev.delta.x), 
-						       'y': (segt.point.y+ev.delta.y)});
-			console.log("newPoint = " + newPoint);
-			currentPath.segments[currentSegment]=newPoint;
+			currentPath.insert( currentSegment, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
 			console.log("Current segment after: "+currentPath.segments[currentSegment]);
-			//currentPath.insert( currentSegment.index, currentSegment += ev.delta;
 		}
 	}
 
