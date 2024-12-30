@@ -59,13 +59,10 @@ window.onload = function(){
 
 	view.onDoubleClick = (ev) => {
 		
-		console.log(ev.point);
 		if (pathDrawingMode){
-			console.log("DoubleClick: pathDrawingMode -> false");
 			pathDrawingMode = false;
 			selectPath(paths[paths.length-1], false);
 		} else {
-			console.log("DoubleClick: pathDrawingMode -> true");
 			pathDrawingMode = true;
 			var path = new Path() ;
 			path.strokeColor = 'red';
@@ -74,9 +71,7 @@ window.onload = function(){
 			path.strokeJoin = 'round';
 			selectPath(path, false);
 			paths.push( path );
-			console.log("DoubleClick:" + path);
 			paths[paths.length-1].add( ev.point ) ;
-			console.log("DoubleClick:"+ paths );
 		};
 	}
 
@@ -166,10 +161,9 @@ window.onload = function(){
 
 	view.onMouseDrag = (ev) => { 
 		// move the path node
-		//if (segmentEditMode && currentSegmentIndex >= 0){
 		segmentEditMode = true;
 		if (currentSegmentIndex >= 0){
-			segt = currentPath.segments[currentSegmentIndex]
+			var segt = currentPath.segments[currentSegmentIndex]
 			currentSegmentHandle.remove();
 			currentPath.removeSegment( currentSegmentIndex )
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
