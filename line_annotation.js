@@ -1,30 +1,43 @@
-paper.install(window);
-
-/*
- * Desirable features:
- * + remove entire path 
- * + edit mode for one path:  (Ctrl-E)
- *   + delete end-segment (?)
- *   + add internal node (middle-click)
- *   + move existing node (click/select point + drag)
+/* nprenet@gmail.com, 12/2024
+ *
+ * Drawing tool for annotating charters.
+ *
+ * Interface:
+ *
+ * Selection mode
+ * 	- click to select a path		✓
+ * 	- Alt-click anywhere selects all paths  ✓
+ *	- In both cases, get out of other modes ✓
+ * 
+ * PathDrawingMode
+ * 	- double-click
+ * 		+ enters/exits the mode ✓
+ * 		+ start/end the path    ✓
+ * 	- click to add a segment	✓
+ *
+ * SegmentEditMode
+ * 	- click to select a segment
+ * 		+ color selection	  ✓
+ * 		+ drag to move it         ✓
+ * 		+ 'd' to delete it        ✓ 
+ * 	- Ctrl-click to select a stroke and add a segment on it ✓
+ * 	 
+ * History:
+ * 	- cancel last action (use JSON export)
+ *
+ * TODO:
+ * 	- modes should be exclusive of each other, with a single mode variable
  */
+
+paper.install(window);
 
 window.onload = function(){
 	var canvas = document.getElementById("myCanvas");
-	console.log("Before setup:");
-	console.log( canvas);
-
 	paper.setup(canvas);
-	console.log("After setup:");
-	console.log(canvas);
-
-
 	
-	console.log(img_file);
-	charter = null;
+	var charter = null;
 
 	canvas.update_img = function update_image( img ){
-		console.log("line_annotation.js: update_image()")
 		charter = new Raster( img );
 		//scaling_factor = canvas.width/charter.width;
 		//charter.scale( scaling_factor) ;
@@ -36,11 +49,10 @@ window.onload = function(){
 
 	canvas.update_img( this.img_file );
 	
-	console.log( canvas );
-	
 	var paths = [];
 	var currentPath = null;
-	var currentSegment = 0;
+	var currentSegmentIndex = -1;
+	var currentSegmentHandle = null;
 
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
@@ -69,38 +81,37 @@ window.onload = function(){
 	}
 
 	view.onClick = (ev) => {
-		console.log("Clik: segmentEditMode = " + segmentEditMode + ", pathDrawingMode = " + pathDrawingMode)
+		// append a segment to a path
 		if (pathDrawingMode && paths.length > 0){
 			paths[paths.length-1].add(ev.point);
 			return;
 		}
+		// after dragging/moving a node 
 		if (segmentEditMode){
-			console.log("Click: segmentEditMode -> false")
-			//this.requestUpdate()
 			segmentEditMode = false;
 			currentPath = null;
-			currentSegment = -1;
-			//return
+			currentSegmentIndex = -1;
 		}
+		// select all paths
+		if (ev.modifiers.alt){
+			paths.forEach( (p) => {
+				selectPath( p, true );
+			});
+			return
+		}
+		// select one path
 		pathHitResult = getHitPath( ev.point );
 		if (pathHitResult !== null){
-			console.log(pathHitResult)
 			var p = pathHitResult.item;
-			console.log("OnClick:" + p);
 			selectPath( p, true );
 			paths.forEach( (op) => {
 				if (op === p){ return }
 				selectPath( op, false );
 			});
+		// or nothing
 		} else {
 			paths.forEach( (p) => {
 				selectPath( p, false );
-			});
-		}
-		if (Key.isDown('a')){
-			paths.forEach( (p) => {
-				console.log("Path is selected!");
-				selectPath( p, true );
 			});
 		}
 	}
@@ -121,42 +132,47 @@ window.onload = function(){
 			paths.forEach( (p) => {
 				selectPath(p, false);
 			});
+		} else if (Key.isDown('d')){
+			if (currentPath !== null && currentSegmentIndex > -1){
+				currentPath.removeSegment( currentSegmentIndex );
+				currentPath = null;
+				currentSegmentIndex = -1;
+				if (currentSegmentHandle !== null){
+					currentSegmentHandle.remove();
+				}
+			}
 		}
 	}
 	
 	view.onMouseDown = (ev) => {
 		console.log("MouseDown:");
 		var pathHitResult = getHitPath( ev.point );
-		console.log(pathHitResult);
+		// Edit a segment
 		if (! pathDrawingMode && pathHitResult !== null && (pathHitResult.type === 'segment' || pathHitResult.type==='stroke')){
 			currentPath = pathHitResult.item;
-			console.log("OnMouseDown: parent path = " + currentPath );
+			// clicking on a path node (="Segment") makes this node editable (drag)
 			if (pathHitResult.type === 'segment'){
-				currentSegment = pathHitResult.segment.index;
-				console.log("OnMouseDown: segment object = " + currentSegment );
-			} else if ( pathHitResult.type === 'stroke' ){
-				currentSegment = pathHitResult.location.curve.segment2.index;
-			}
-			//console.log("OnMouseDown: segment object " + p.segments[hitResult.segment.index]);
-			segmentEditMode = true;
-			console.log("segmentEditMode -> true");
-			if (pathHitResult.type === 'stroke'){
-				console.log("current path length = " + currentPath.length)
-				currentPath.insert( currentSegment, ev.point );
-				console.log("current path length = " + currentPath.length)
-				console.log(currentPath);
+				console.log( pathHitResult.segment);
+				currentSegmentIndex = pathHitResult.segment.index;
+				// visual feedback after hitting the node
+				currentSegmentHandle = new Path.Circle({ radius: 4, center: pathHitResult.segment.point, fillColor: 'red'});
+			// ctrl-clicking on a path stroke adds a node in the given position
+			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control ){
+				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
+				currentPath.insert( currentSegmentIndex, ev.point );
 			}
 		}
 	}	
 
 	view.onMouseDrag = (ev) => { 
-		segt = currentPath.segments[currentSegment]
-		console.log("Current segment before: " + segt )
-		if (segmentEditMode){
-			currentPath.removeSegment( currentSegment )
-			console.log('delta='+ev.delta)
-			currentPath.insert( currentSegment, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
-			console.log("Current segment after: "+currentPath.segments[currentSegment]);
+		// move the path node
+		//if (segmentEditMode && currentSegmentIndex >= 0){
+		segmentEditMode = true;
+		if (currentSegmentIndex >= 0){
+			segt = currentPath.segments[currentSegmentIndex]
+			currentSegmentHandle.remove();
+			currentPath.removeSegment( currentSegmentIndex )
+			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
 		}
 	}
 
@@ -173,8 +189,6 @@ window.onload = function(){
 	}
 
 	function getHitPath( pt ){
-		console.log("getHitPath(" + pt + ")");
-		console.log(paths);
 		var hitResult = null;
 		for (var p=0; p<paths.length; p++){
 			hitResult = paths[p].hitTest( pt );
