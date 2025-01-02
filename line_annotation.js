@@ -23,7 +23,14 @@
  * 	- Ctrl-click to select a stroke and add a segment on it ✓
  * 	 
  * History:
- * 	- cancel last action (use JSON export)
+ * 	- save history after:
+ * 		+ segment or path addition
+ * 		+ segment move
+ * 	- cancel last N actions (use JSON export) x (buggy)
+ *
+ * Masks:
+ * 	- export baseline mask
+ * 	- export polygon mask
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
@@ -31,25 +38,37 @@
 
 paper.install(window);
 
+
 window.onload = function(){
+
 	var canvas = document.getElementById("myCanvas");
+
 	paper.setup(canvas);
 	
 	var charter = null;
+	var charterLayer = new Layer();
+	var annotationLayer = new Layer();
+	var exportLayer = new Layer();
+
 
 	canvas.update_img = function update_image( img ){
+		charterLayer.activate();
 		charter = new Raster( img );
 		//scaling_factor = canvas.width/charter.width;
 		//charter.scale( scaling_factor) ;
+		console.log( "scaling_factor = " + canvas.width/charter.width);
 		charter.position = view.center;
 		charter.fitBounds( view.bounds );
 		view.draw();
-		this.changed_img = false;
+		//this.changed_img = false;
+		annotationLayer.activate();
 	}
 
+	console.log( this.img_file )
 	canvas.update_img( this.img_file );
 	
 	var paths = [];
+	var rasterPaths = [];
 	var currentPath = null;
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
@@ -57,11 +76,136 @@ window.onload = function(){
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
 
+	var history = [null,null,null,null,null];
+	var HISTLENGTH = 5;
+	var historyCount = 0;
+
+	// Initial state
+	historySave();
+
+	annotationLayer.activate()
+
+	function historySave( op ){
+		//console.log("historySave()");
+		history[historyCount++]=op;
+	}
+
+	function historyRestore(){
+		console.log("historyRestore(): history.length = " + history.filter( (h) => h !== null ).length )
+		thisOpIndex = (historyCount-1) % HISTLENGTH
+		previousOpIndex = (thisOpIndex - 1 + HISTLENGTH) % HISTLENGTH
+		console.log("historyRestore(): thisOpIndex = " + thisOpIndex + ", previousOpIndex = " + previousOpIndex );
+		previousOp = history[previousOpIndex];
+		if (previousOp !== null){
+			//paper.project.importSVG( previousOp.svg );
+			history[thisOpIndex]=null;
+			historyCount--;
+			console.log("Restored " + paths.length + " paths.");
+		}
+		segmentEditMode = false;
+		pathDrawingMode = false;
+	}
+
+
+	function exportMask(){
+
+		var Marker = function (pt) {
+			this.p = Path.Circle( pt, 2 );
+			this.p.fillColor='red';
+		};
+
+		var toIntXY = function ( pt ){
+		    	return [ Math.round(pt.x), Math.round(pt.y)]
+		}
+
+		var contour = function (p){
+
+		    	var pointsNorth = []
+		    	var pointsSouth = []
+		    	var contourPath = new Path();
+		    	//contourPath.strokeColor='#000000'
+		    	//contourPath.strokeWidth=2;
+
+		    	var pt1 = p.segments[0].point
+		    	var pt2 = p.segments[1].point        
+		    	var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2)
+		    	var endPt1 = pt1.subtract(vect);
+		    	var normalVect = vect.rotate(90)
+		    	contourPath.add( pt1.add(normalVect))
+		    	contourPath.insert(0, pt1.subtract(normalVect))
+
+		    	var pt3 = p.segments.at(-2).point
+		    	var pt4 = p.segments.at(-1).point        
+		    	var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2)
+		    	var endPt2 = pt4.add(vectEnd);
+		    	var normalVectEnd = vectEnd.rotate(90)
+
+		    	if (p.segments.length > 2){
+
+				for (var i=1; i<p.segments.length-1; i++){
+			    	var pt = p.segments[i].point
+			    	var ptL = p.segments[i-1].point        
+			    	var ptR = p.segments[i+1].point        
+			    	var vectL = (ptL.subtract(pt)).normalize( p.strokeWidth/2)
+			    	var vectR = (ptR.subtract(pt)).normalize( p.strokeWidth/2)
+			    	var normalVect = vectL.subtract(vectR).divide(2).rotate(90)
+			    	contourPath.insert(0, pt.add(normalVect))
+			    	contourPath.add(pt.subtract(normalVect))
+				}
+		    	}
+		    	contourPath.add( pt4.add(normalVectEnd))
+		    	contourPath.insert(0, pt4.subtract(normalVectEnd))
+		    	contourPath.insert( contourPath.segments.length/2, endPt1)
+		    	contourPath.add( endPt2 )
+		    	contourPath.closed = true;
+		    	contourPath.smooth({type: 'geometric'})
+		    
+		    	contourPath.selected = true;
+		    
+		    	// adding points along curves
+		    	//console.log(contourPath.curves)
+		    	var path = []
+		    	for (const s of p.segments){
+				path.push( toIntXY(s.point))
+		    	}
+		    	var polygon = [];
+		    	for (const c of contourPath.curves){
+				polygon.push( toIntXY(c.point1));
+				var midPoint1 = c.getPointAt( c.length/3 );
+				var midPoint2 = c.getPointAt( c.length*2/3 );
+				polygon.push( toIntXY(midPoint1))
+				polygon.push( toIntXY(midPoint2))
+				polygon.push( toIntXY(c.point2));
+
+				var intermMark1 = new Marker(midPoint1)
+				var intermMark2 = new Marker(midPoint2)
+		    	}
+			contourPath.selected=true;
+
+		    	return {
+				'path': path,
+				'polygon': polygon
+		    	}
+		}
+
+
+		var toExport = []
+		for (const p of paths){
+			toExport.push( contour( p ));
+		}
+		console.log(toExport);
+		return toExport
+
+	}
+
 	view.onDoubleClick = (ev) => {
 		
 		if (pathDrawingMode){
 			pathDrawingMode = false;
+			//paths[paths.length-1].smooth({type: 'geometric'});
 			selectPath(paths[paths.length-1], false);
+			historySave();
+			console.log(history[historyCount%HISTLENGTH-1]);
 		} else {
 			pathDrawingMode = true;
 			var path = new Path() ;
@@ -76,6 +220,7 @@ window.onload = function(){
 	}
 
 	view.onClick = (ev) => {
+		console.log("segmentEditMode=" + segmentEditMode);
 		// append a segment to a path
 		if (pathDrawingMode && paths.length > 0){
 			paths[paths.length-1].add(ev.point);
@@ -86,6 +231,7 @@ window.onload = function(){
 			segmentEditMode = false;
 			currentPath = null;
 			currentSegmentIndex = -1;
+			historySave();
 		}
 		// select all paths
 		if (ev.modifiers.alt){
@@ -117,10 +263,12 @@ window.onload = function(){
 				console.log(p.isSelected)
 				p.strokeWidth += (1*p.isSelected);
 			})
+			historySave();
 		} else if (Key.isDown('<')){
 			paths.forEach( (p) => { 
 				p.strokeWidth -= (1*p.isSelected);
 			})
+			historySave();
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;
@@ -135,12 +283,19 @@ window.onload = function(){
 				if (currentSegmentHandle !== null){
 					currentSegmentHandle.remove();
 				}
+				historySave();
 			}
+		} else if (ev.modifiers.control && Key.isDown('z')){ // buggy
+			console.log('Ctrl-z');
+			historyRestore();
+		} else if (ev.modifiers.control && Key.isDown('s')){
+			console.log('Ctrl-s');
+			exportMask();
 		}
 	}
 	
 	view.onMouseDown = (ev) => {
-		console.log("MouseDown:");
+		//console.log("MouseDown:");
 		var pathHitResult = getHitPath( ev.point );
 		// Edit a segment
 		if (! pathDrawingMode && pathHitResult !== null && (pathHitResult.type === 'segment' || pathHitResult.type==='stroke')){
@@ -155,14 +310,15 @@ window.onload = function(){
 			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control ){
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
+				historySave();
 			}
 		}
 	}	
 
 	view.onMouseDrag = (ev) => { 
 		// move the path node
-		segmentEditMode = true;
 		if (currentSegmentIndex >= 0){
+			segmentEditMode = true;
 			var segt = currentPath.segments[currentSegmentIndex]
 			currentSegmentHandle.remove();
 			currentPath.removeSegment( currentSegmentIndex )
