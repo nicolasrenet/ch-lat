@@ -29,8 +29,8 @@
  * 	- cancel last N actions (use JSON export) x (buggy)
  *
  * Masks:
- * 	- export baseline mask
- * 	- export polygon mask
+ * 	- export baseline mask ✓
+ * 	- export polygon mask  ✓
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
@@ -68,7 +68,6 @@ window.onload = function(){
 	canvas.update_img( this.img_file );
 	
 	var paths = [];
-	var rasterPaths = [];
 	var currentPath = null;
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
@@ -202,8 +201,9 @@ window.onload = function(){
 		
 		if (pathDrawingMode){
 			pathDrawingMode = false;
-			//paths[paths.length-1].smooth({type: 'geometric'});
-			selectPath(paths[paths.length-1], false);
+			var p = paths[paths.length-1];
+			p.smooth({type: 'geometric'});
+			selectPath(p, false);
 			historySave();
 			console.log(history[historyCount%HISTLENGTH-1]);
 		} else {
@@ -223,7 +223,9 @@ window.onload = function(){
 		console.log("segmentEditMode=" + segmentEditMode);
 		// append a segment to a path
 		if (pathDrawingMode && paths.length > 0){
-			paths[paths.length-1].add(ev.point);
+			var p = paths[paths.length-1];
+			p.add(ev.point);
+			p.smooth();
 			return;
 		}
 		// after dragging/moving a node 
@@ -276,7 +278,10 @@ window.onload = function(){
 				selectPath(p, false);
 			});
 		} else if (Key.isDown('d')){
-			if (currentPath !== null && currentSegmentIndex > -1){
+			if (ev.modifiers.shift && currentPath !== null){
+				currentPath.remove();
+			}
+			else if (currentPath !== null && currentSegmentIndex > -1){
 				currentPath.removeSegment( currentSegmentIndex );
 				currentPath = null;
 				currentSegmentIndex = -1;
@@ -305,6 +310,9 @@ window.onload = function(){
 				console.log( pathHitResult.segment);
 				currentSegmentIndex = pathHitResult.segment.index;
 				// visual feedback after hitting the node
+				if (currentSegmentHandle !== null){
+					currentSegmentHandle.remove();
+				}
 				currentSegmentHandle = new Path.Circle({ radius: 4, center: pathHitResult.segment.point, fillColor: 'red'});
 			// ctrl-clicking on a path stroke adds a node in the given position
 			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control ){
@@ -323,6 +331,7 @@ window.onload = function(){
 			currentSegmentHandle.remove();
 			currentPath.removeSegment( currentSegmentIndex )
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
+			currentPath.smooth({type: 'geometric'})
 		}
 	}
 
