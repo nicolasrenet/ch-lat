@@ -3,6 +3,7 @@ from flask import render_template, request, jsonify, make_response
 from pathlib import Path
 import re
 import json
+from PIL import Image
 
 # TODO:
 #
@@ -38,7 +39,7 @@ def write_segmentation_file( page_data: dict, charter_id: str):
     finally:
         return returnValue
 
-
+SCALING_FACTOR = .5
 
 @app.route('/')
 def charters_choice():
@@ -48,7 +49,13 @@ def charters_choice():
 @app.route('/<charter_id>')
 def charter_pick( charter_id:str):
     charters = { lemmatize(p):{'filename': str(p)} for p in Path('.').glob('*.img.jpg') }
-    return render_template('charters.html', charters=charters, charter_id=charter_id)
+    with Image.open( charters[charter_id]['filename']) as img:
+        #print([d*scaling_factor for d in img.size])
+        return render_template(
+                'charters.html', 
+                charters=charters, 
+                charter_id=charter_id, 
+                charter_size=[d*SCALING_FACTOR for d in img.size])
 
 
 @app.route('/export/<charter_id>', methods=["POST", "GET"])

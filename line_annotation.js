@@ -33,13 +33,11 @@
  * Masks:
  * 	- export baseline mask ✓
  * 	- export polygon mask  ✓
+ * 	- vertically sorted lines before export ✓
+ * 	- import masks
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- export points with correct scaling factor
- * 	- sort lines according to vertical position before export   	✓
- * 	- line id in export data 					✓	
- * 	- import segmentation data as paths
  */
 
 paper.install(window);
@@ -55,17 +53,15 @@ window.onload = function(){
 	var charterLayer = new Layer();
 	var annotationLayer = new Layer();
 	var exportLayer = new Layer();
+	var scalingFactor = 1;
 
 	canvas.update_img = function update_image( img ){
 		charterLayer.activate();
 		charter = new Raster( img );
-		//scaling_factor = canvas.width/charter.width;
-		//charter.scale( scaling_factor) ;
-		console.log( "scaling_factor = " + canvas.width/charter.width);
+		scalingFactor = canvas.height/charter.height;
 		charter.position = view.center;
 		charter.fitBounds( view.bounds );
 		view.draw();
-		//this.changed_img = false;
 		annotationLayer.activate();
 	}
 
@@ -167,19 +163,18 @@ window.onload = function(){
 		    	contourPath.selected = true;
 		    
 		    	// adding points along curves
-		    	//console.log(contourPath.curves)
 		    	var path = []
 		    	for (const s of p.segments){
-				path.push( toIntXY(s.point))
+				path.push( toIntXY(s.point.divide(scalingFactor)))
 		    	}
 		    	var polygon = [];
 		    	for (const c of contourPath.curves){
-				polygon.push( toIntXY(c.point1));
+				polygon.push( toIntXY(c.point1.divide(scalingFactor)));
 				var midPoint1 = c.getPointAt( c.length/3 );
 				var midPoint2 = c.getPointAt( c.length*2/3 );
-				polygon.push( toIntXY(midPoint1))
-				polygon.push( toIntXY(midPoint2))
-				polygon.push( toIntXY(c.point2));
+				polygon.push( toIntXY(midPoint1.divide(scalingFactor)))
+				polygon.push( toIntXY(midPoint2.divide(scalingFactor)))
+				polygon.push( toIntXY(c.point2.divide(scalingFactor)));
 
 				//var intermMark1 = new Marker(midPoint1)
 				//var intermMark2 = new Marker(midPoint2)
@@ -199,7 +194,6 @@ window.onload = function(){
 			lineData.push( contour(p, sortedPaths[p] ));
 		}
 		pageData['lines']=lineData
-		//console.log(toExport);
 		console.log(pageData)
 		return pageData
 
@@ -228,7 +222,6 @@ window.onload = function(){
 	}
 
 	view.onClick = (ev) => {
-		console.log("segmentEditMode=" + segmentEditMode);
 		// append a segment to a path
 		if (pathDrawingMode && paths.children.length > 0){
 			var p = paths.children.at(-1);
@@ -293,10 +286,7 @@ window.onload = function(){
 		} else if (ev.modifiers.control && Key.isDown('z')){ // buggy
 			console.log('Ctrl-z');
 			historyRestore();
-		} else if (ev.modifiers.control && Key.isDown('s')){
-			console.log('Ctrl-s');
-			this.line_data = exportMask();
-		}
+		} 
 	}
 	
 	view.onMouseDown = (ev) => {
