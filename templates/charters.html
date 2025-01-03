@@ -18,11 +18,11 @@
 	<!-- read from line_annotation.js -->
 
 		const cnv = document.getElementById("myCanvas");
-		var img_file = "static/{{charters[current].filename}}"; 
+		var img_file = "static/{{charters[charter_id].filename}}"; 
 
 	     	function exportData(){
 			var data =  cnv.exportMask();
-			fetch("/export", {
+			fetch("/export/{{charter_id}}", {
 			method: "POST",
 			headers: {"Content-Type":"application/json"},
 			body: JSON.stringify( data )

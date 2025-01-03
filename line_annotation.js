@@ -37,6 +37,9 @@
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
  * 	- export points with correct scaling factor
+ * 	- sort lines according to vertical position before export   	✓
+ * 	- line id in export data 					✓	
+ * 	- import segmentation data as paths
  */
 
 paper.install(window);
@@ -53,7 +56,6 @@ window.onload = function(){
 	var annotationLayer = new Layer();
 	var exportLayer = new Layer();
 
-
 	canvas.update_img = function update_image( img ){
 		charterLayer.activate();
 		charter = new Raster( img );
@@ -67,8 +69,7 @@ window.onload = function(){
 		annotationLayer.activate();
 	}
 
-	console.log( this.img_file )
-	canvas.update_img( this.img_file );
+	canvas.update_img( img_file );
 	canvas.exportMask = exportMask;
 	
 	var paths = new Group();
@@ -121,7 +122,7 @@ window.onload = function(){
 		    	return [ Math.round(pt.x), Math.round(pt.y)]
 		}
 
-		var contour = function (p){
+		var contour = function (id, p){
 
 		    	var pointsNorth = []
 		    	var pointsSouth = []
@@ -186,19 +187,21 @@ window.onload = function(){
 			contourPath.selected=true;
 			contourPath.remove();
 
-		    	return {
-				'path': path,
-				'polygon': polygon
-		    	}
+		    	return { 'id': id, 'path': path, 'boundary': polygon }
 		}
 
 
-		var toExport = []
-		for (const p of paths.children){
-			toExport.push( contour( p ));
+		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} 
+		var lineData = []
+		// sorting paths according to their vertical position
+		sortedPaths = paths.children.toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y )
+		for (var p=0; p<sortedPaths.length; p++){
+			lineData.push( contour(p, sortedPaths[p] ));
 		}
+		pageData['lines']=lineData
 		//console.log(toExport);
-		return toExport
+		console.log(pageData)
+		return pageData
 
 	}
 
