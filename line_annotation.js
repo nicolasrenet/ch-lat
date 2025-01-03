@@ -4,7 +4,7 @@
  *
  * Interface:
  *
- * Selection mode
+ * Selection 
  * 	- click to select a path		✓
  * 	- Alt-click anywhere selects all paths  ✓
  *	- In both cases, get out of other modes ✓
@@ -16,6 +16,8 @@
  * 	- click to add a segment	✓
  *
  * SegmentEditMode
+ * 	- click to select path
+ * 		+ 'Shift-d' to delete entire path  ✓
  * 	- click to select a segment
  * 		+ color selection	  ✓
  * 		+ drag to move it         ✓
@@ -34,6 +36,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
+ * 	- export points with correct scaling factor
  */
 
 paper.install(window);
@@ -66,8 +69,9 @@ window.onload = function(){
 
 	console.log( this.img_file )
 	canvas.update_img( this.img_file );
+	canvas.exportMask = exportMask;
 	
-	var paths = [];
+	var paths = new Group();
 	var currentPath = null;
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
@@ -176,10 +180,11 @@ window.onload = function(){
 				polygon.push( toIntXY(midPoint2))
 				polygon.push( toIntXY(c.point2));
 
-				var intermMark1 = new Marker(midPoint1)
-				var intermMark2 = new Marker(midPoint2)
+				//var intermMark1 = new Marker(midPoint1)
+				//var intermMark2 = new Marker(midPoint2)
 		    	}
 			contourPath.selected=true;
+			contourPath.remove();
 
 		    	return {
 				'path': path,
@@ -189,10 +194,10 @@ window.onload = function(){
 
 
 		var toExport = []
-		for (const p of paths){
+		for (const p of paths.children){
 			toExport.push( contour( p ));
 		}
-		console.log(toExport);
+		//console.log(toExport);
 		return toExport
 
 	}
@@ -201,7 +206,7 @@ window.onload = function(){
 		
 		if (pathDrawingMode){
 			pathDrawingMode = false;
-			var p = paths[paths.length-1];
+			var p = paths.children[paths.children.length-1];
 			p.smooth({type: 'geometric'});
 			selectPath(p, false);
 			historySave();
@@ -214,16 +219,16 @@ window.onload = function(){
 			path.strokeCap = 'round';
 			path.strokeJoin = 'round';
 			selectPath(path, false);
-			paths.push( path );
-			paths[paths.length-1].add( ev.point ) ;
+			paths.addChild( path );
+			paths.children[paths.children.length-1].add( ev.point ) ;
 		};
 	}
 
 	view.onClick = (ev) => {
 		console.log("segmentEditMode=" + segmentEditMode);
 		// append a segment to a path
-		if (pathDrawingMode && paths.length > 0){
-			var p = paths[paths.length-1];
+		if (pathDrawingMode && paths.children.length > 0){
+			var p = paths.children[paths.children.length-1];
 			p.add(ev.point);
 			p.smooth();
 			return;
@@ -237,9 +242,7 @@ window.onload = function(){
 		}
 		// select all paths
 		if (ev.modifiers.alt){
-			paths.forEach( (p) => {
-				selectPath( p, true );
-			});
+			for (const p of paths.children){ selectPath( p, true ); }
 			return
 		}
 		// select one path
@@ -247,39 +250,34 @@ window.onload = function(){
 		if (pathHitResult !== null){
 			var p = pathHitResult.item;
 			selectPath( p, true );
-			paths.forEach( (op) => {
+			for (const op of paths.children){
 				if (op === p){ return }
 				selectPath( op, false );
-			});
+			}
 		// or nothing
 		} else {
-			paths.forEach( (p) => {
-				selectPath( p, false );
-			});
+			for (const p of paths.children){ selectPath( p, false ); }
 		}
 	}
 
 	view.onKeyDown = (ev) => {
 		if (Key.isDown('>')) {
-			paths.forEach( (p) => { 
+			for (const p of paths.children){
 				console.log(p.isSelected)
 				p.strokeWidth += (1*p.isSelected);
-			})
+			}
 			historySave();
 		} else if (Key.isDown('<')){
-			paths.forEach( (p) => { 
-				p.strokeWidth -= (1*p.isSelected);
-			})
+			for (const p of paths.children){ p.strokeWidth -= (1*p.isSelected); }
 			historySave();
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;
-			paths.forEach( (p) => {
-				selectPath(p, false);
-			});
+			for (const p of paths.children){ selectPath(p, false) }
 		} else if (Key.isDown('d')){
 			if (ev.modifiers.shift && currentPath !== null){
-				currentPath.remove();
+				deletePath( currentPath );
+				currentPath = null;
 			}
 			else if (currentPath !== null && currentSegmentIndex > -1){
 				currentPath.removeSegment( currentSegmentIndex );
@@ -295,7 +293,7 @@ window.onload = function(){
 			historyRestore();
 		} else if (ev.modifiers.control && Key.isDown('s')){
 			console.log('Ctrl-s');
-			exportMask();
+			this.line_data = exportMask();
 		}
 	}
 	
@@ -349,11 +347,21 @@ window.onload = function(){
 
 	function getHitPath( pt ){
 		var hitResult = null;
-		for (var p=0; p<paths.length; p++){
-			hitResult = paths[p].hitTest( pt );
+		for (var p=0; p<paths.children.length; p++){
+			hitResult = paths.children[p].hitTest( pt );
 			if (hitResult !== null){ break }
 		}
 		return hitResult;
+	}
+
+	function deletePath( path ){
+		// 1. remove from group
+		for (var p=0; p< paths.children.length; p++){
+			if (paths.children[p]===path){ paths.removeChildren( p, p+1 ) }
+			break
+		}
+		// 2. delete
+		path.remove();
 	}
 
 }

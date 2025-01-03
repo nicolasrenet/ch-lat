@@ -13,11 +13,21 @@
 	</canvas>
 	</div>
 
-       <script type="text/javascript">
+      	<script type="text/javascript">
 
-	       var img_file = "static/{{charters[current].filename}}"; 
+	<!-- read from line_annotation.js -->
 
-       		const cnv = document.getElementById("myCanvas");
+		const cnv = document.getElementById("myCanvas");
+		var img_file = "static/{{charters[current].filename}}"; 
+
+	     	function exportData(){
+			var data =  cnv.exportMask();
+			fetch("/export", {
+			method: "POST",
+			headers: {"Content-Type":"application/json"},
+			body: JSON.stringify( data )
+			}).then( resp => { console.log(resp.json()) } )
+		}
 
         </script>
 
@@ -27,6 +37,10 @@
 		<li><a href="/{{id}}">{{loop.index}}. {{ch.filename}}</a></li>
 		{% endfor %}
 	</ul>
+	</div>
+	<div>
+		<button onClick="exportData()"> Export</button>
+
 	</div>
 </body>
 

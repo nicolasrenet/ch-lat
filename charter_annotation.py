@@ -1,5 +1,5 @@
 from flask import Flask
-from flask import render_template
+from flask import render_template, request, jsonify, make_response
 from pathlib import Path
 import re
 
@@ -19,7 +19,12 @@ def charter_pick( charter_id:str):
     return render_template('charters.html', charters=charters, current=charter_id)
 
 
-
+@app.route('/export', methods=["POST", "GET"])
+def acknowledge_data():
+    if request.method == 'POST':
+        received = request.get_json()
+        resp = make_response( received )
+        return resp
 
 # GET: 
     # collection: display list of charters (from disk)
