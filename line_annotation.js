@@ -206,7 +206,7 @@ window.onload = function(){
 		
 		if (pathDrawingMode){
 			pathDrawingMode = false;
-			var p = paths.children[paths.children.length-1];
+			var p = paths.children.at(-1);
 			p.smooth({type: 'geometric'});
 			selectPath(p, false);
 			historySave();
@@ -220,7 +220,7 @@ window.onload = function(){
 			path.strokeJoin = 'round';
 			selectPath(path, false);
 			paths.addChild( path );
-			paths.children[paths.children.length-1].add( ev.point ) ;
+			paths.children.at(-1).add( ev.point ) ;
 		};
 	}
 
@@ -228,7 +228,7 @@ window.onload = function(){
 		console.log("segmentEditMode=" + segmentEditMode);
 		// append a segment to a path
 		if (pathDrawingMode && paths.children.length > 0){
-			var p = paths.children[paths.children.length-1];
+			var p = paths.children.at(-1);
 			p.add(ev.point);
 			p.smooth();
 			return;
@@ -251,8 +251,7 @@ window.onload = function(){
 			var p = pathHitResult.item;
 			selectPath( p, true );
 			for (const op of paths.children){
-				if (op === p){ return }
-				selectPath( op, false );
+				if (op !== p){ selectPath( op, false ) }
 			}
 		// or nothing
 		} else {
