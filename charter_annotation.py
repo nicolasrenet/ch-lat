@@ -1,5 +1,5 @@
 from flask import Flask
-from flask import render_template, request, jsonify, make_response
+from flask import render_template, request, jsonify, make_response, redirect, url_for
 from pathlib import Path
 import re
 import json
@@ -40,15 +40,16 @@ def write_segmentation_file( page_data: dict, charter_id: str):
         return returnValue
 
 SCALING_FACTOR = .5
+charters = { lemmatize(p):{'filename': str(p)} for p in Path('.').glob('*.img.jpg') }
 
 @app.route('/')
 def charters_choice():
-    charters = { lemmatize(p):{'filename': str(p)} for p in Path('.').glob('*.img.jpg') }
-    return render_template('charters.html', charters=charters, current=list(charters.keys())[0])
+    current = list(charters.keys())[0]
+    return redirect(f'/{current}')
 
 @app.route('/<charter_id>')
 def charter_pick( charter_id:str):
-    charters = { lemmatize(p):{'filename': str(p)} for p in Path('.').glob('*.img.jpg') }
+#    charters = { lemmatize(p):{'filename': str(p)} for p in Path('.').glob('*.img.jpg') }
     with Image.open( charters[charter_id]['filename']) as img:
         #print([d*scaling_factor for d in img.size])
         return render_template(
@@ -58,13 +59,17 @@ def charter_pick( charter_id:str):
                 charter_size=[d*SCALING_FACTOR for d in img.size])
 
 
-@app.route('/export/<charter_id>', methods=["POST", "GET"])
-def acknowledge_data( charter_id:str ):
-    if request.method == 'POST':
-        segmentation_data = request.get_json()
-        ok = write_segmentation_file( segmentation_data, charter_id )
-        resp = make_response( ok )
-        return resp
+@app.post('/export/<charter_id>')
+def record_segmentation_data( charter_id:str ):
+    segmentation_data = request.get_json()
+    ok = write_segmentation_file( segmentation_data, charter_id )
+    resp = make_response( ok )
+    return resp
+
+@app.get('/import/<charter_id>')
+def apply_segmentation_data( charter_id:str ):
+    segmentation_data = read_segmentation_file( '{}.lines.pred.json'.format( charter_id ))
+
 
 # GET: 
     # collection: display list of charters (from disk)

@@ -61,7 +61,10 @@ window.onload = function(){
 		scalingFactor = canvas.height/charter.height;
 		charter.position = view.center;
 		charter.fitBounds( view.bounds );
-		view.draw();
+
+		charter.onload = () => {
+			view.draw();
+		}
 		annotationLayer.activate();
 	}
 
@@ -106,13 +109,32 @@ window.onload = function(){
 		pathDrawingMode = false;
 	}
 
+	function importMask( pageData ){
+		paths.removeChildren()
+		for (line of pageData['lines']){
+			paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))) 
+			currentPath = paths.children.at(-1)
+			currentPath.strokeColor='red'
+			currentPath.strokeWidth=line['strokeWidth']
+			currentPath.smooth({type: 'geometric'})
+		}
+	}
+
+
+	var Marker = (pt, diam, col) => {
+		console.log("Marker()")
+		var p = Path.Circle( pt, diam );
+		p.fillColor=col;
+	};
+
+	function markPath( p ){
+		for (s of p.segments){
+			Marker( s.point, 6, 'red' )
+		}
+	}
 
 	function exportMask(){
 
-		var Marker = function (pt) {
-			this.p = Path.Circle( pt, 2 );
-			this.p.fillColor='red';
-		};
 
 		var toIntXY = function ( pt ){
 		    	return [ Math.round(pt.x), Math.round(pt.y)]
@@ -123,6 +145,7 @@ window.onload = function(){
 		    	var pointsNorth = []
 		    	var pointsSouth = []
 		    	var contourPath = new Path();
+			var baselinePath = new Path();
 		    	//contourPath.strokeColor='#000000'
 		    	//contourPath.strokeWidth=2;
 
@@ -131,8 +154,15 @@ window.onload = function(){
 		    	var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2)
 		    	var endPt1 = pt1.subtract(vect);
 		    	var normalVect = vect.rotate(90)
-		    	contourPath.add( pt1.add(normalVect))
-		    	contourPath.insert(0, pt1.subtract(normalVect))
+			
+			var vertebraLS = pt1.add(normalVect)
+			//Marker( vertebraLS, 6, 'red' )
+			var vertebraLN = pt1.subtract(normalVect)
+			//Marker( vertebraLN, 6, 'green' )
+		    	contourPath.add( vertebraLN )
+		    	contourPath.insert(0, vertebraLS)
+
+			baselinePath.add( vertebraLS )
 
 		    	var pt3 = p.segments.at(-2).point
 		    	var pt4 = p.segments.at(-1).point        
@@ -143,18 +173,29 @@ window.onload = function(){
 		    	if (p.segments.length > 2){
 
 				for (var i=1; i<p.segments.length-1; i++){
-			    	var pt = p.segments[i].point
-			    	var ptL = p.segments[i-1].point        
-			    	var ptR = p.segments[i+1].point        
-			    	var vectL = (ptL.subtract(pt)).normalize( p.strokeWidth/2)
-			    	var vectR = (ptR.subtract(pt)).normalize( p.strokeWidth/2)
-			    	var normalVect = vectL.subtract(vectR).divide(2).rotate(90)
-			    	contourPath.insert(0, pt.add(normalVect))
-			    	contourPath.add(pt.subtract(normalVect))
+					var pt = p.segments[i].point
+					var ptL = p.segments[i-1].point        
+					var ptR = p.segments[i+1].point        
+					var vectL = (ptL.subtract(pt)).normalize( p.strokeWidth/2)
+					var vectR = (ptR.subtract(pt)).normalize( p.strokeWidth/2)
+					var normalVect = vectL.subtract(vectR).divide(2).rotate(90)
+					var vertebraN = pt.add(normalVect)
+					//Marker( vertebraN, 6, 'green' )
+					var vertebraS = pt.subtract(normalVect)
+					//Marker( vertebraS, 6, 'red' )
+					contourPath.add( vertebraN )
+					contourPath.insert(0, vertebraS )
+
+					baselinePath.add( vertebraS )
 				}
 		    	}
-		    	contourPath.add( pt4.add(normalVectEnd))
-		    	contourPath.insert(0, pt4.subtract(normalVectEnd))
+			var vertebraRS = pt4.add(normalVectEnd)
+			var vertebraRN = pt4.subtract(normalVectEnd)
+			//Marker( vertebraRS, 6, 'red' )
+			//Marker( vertebraRN, 6, 'green' )
+		    	contourPath.add( vertebraRN )
+		    	contourPath.insert(0, vertebraRS )
+			baselinePath.add( vertebraRS )
 		    	contourPath.insert( contourPath.segments.length/2, endPt1)
 		    	contourPath.add( endPt2 )
 		    	contourPath.closed = true;
@@ -163,10 +204,8 @@ window.onload = function(){
 		    	contourPath.selected = true;
 		    
 		    	// adding points along curves
-		    	var path = []
-		    	for (const s of p.segments){
-				path.push( toIntXY(s.point.divide(scalingFactor)))
-		    	}
+		    	var centerline = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)))
+			var baseline = baselinePath.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)))
 		    	var polygon = [];
 		    	for (const c of contourPath.curves){
 				polygon.push( toIntXY(c.point1.divide(scalingFactor)));
@@ -175,14 +214,13 @@ window.onload = function(){
 				polygon.push( toIntXY(midPoint1.divide(scalingFactor)))
 				polygon.push( toIntXY(midPoint2.divide(scalingFactor)))
 				polygon.push( toIntXY(c.point2.divide(scalingFactor)));
-
-				//var intermMark1 = new Marker(midPoint1)
-				//var intermMark2 = new Marker(midPoint2)
 		    	}
-			contourPath.selected=true;
-			contourPath.remove();
 
-		    	return { 'id': id, 'path': path, 'boundary': polygon }
+			markPath( baselinePath )
+			//contourPath.selected=true;
+			//contourPath.remove();
+
+		    	return { 'id': id, 'centerline': centerline, 'baseline': baseline, 'boundary': polygon, 'strokeWidth': p.strokeWidth }
 		}
 
 
@@ -286,7 +324,11 @@ window.onload = function(){
 		} else if (ev.modifiers.control && Key.isDown('z')){ // buggy
 			console.log('Ctrl-z');
 			historyRestore();
-		} 
+		} else if (ev.modifiers.control && Key.isDown('i')){
+			console.log('Ctrl-i');
+			importMask( segdata );
+		}
+
 	}
 	
 	view.onMouseDown = (ev) => {
@@ -352,8 +394,6 @@ window.onload = function(){
 			if (paths.children[p]===path){ paths.removeChildren( p, p+1 ) }
 			break
 		}
-		// 2. delete
-		path.remove();
 	}
 
 }

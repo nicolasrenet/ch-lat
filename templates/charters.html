@@ -19,13 +19,14 @@
 
 		const cnv = document.getElementById("myCanvas");
 		var img_file = "static/{{charters[charter_id].filename}}"; 
+		var segdata = null;
 
 	     	function exportData(){
-			var data =  cnv.exportMask();
+			segdata =  cnv.exportMask();
 			fetch("/export/{{charter_id}}", {
 			method: "POST",
 			headers: {"Content-Type":"application/json"},
-			body: JSON.stringify( data )
+			body: JSON.stringify( segdata )
 			}).then( resp => { console.log(resp.json()) } )
 		}
 
