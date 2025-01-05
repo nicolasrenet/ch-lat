@@ -19,30 +19,132 @@
 
 		const cnv = document.getElementById("myCanvas");
 		var img_file = "static/{{charters[charter_id].filename}}"; 
-		var segdata = null;
 
 	     	function exportData(){
 			segdata =  cnv.exportMask();
 			fetch("/export/{{charter_id}}", {
-			method: "POST",
-			headers: {"Content-Type":"application/json"},
-			body: JSON.stringify( segdata )
+				method: "POST",
+				headers: {"Content-Type":"application/json"},
+				body: JSON.stringify( segdata )
 			}).then( resp => { console.log(resp.json()) } )
 		}
 
+		function importData(){
+			console.log("Importing seg data");
+			fetch("/import/{{charter_id}}", { method: "GET" }
+			).then( resp => { return resp.json() ; }
+			).then( data => { cnv.importMask( data ); })
+		}
+
+		function eraseData(){
+			cnv.eraseMask();
+		}
+
+
         </script>
 
-	<div id="charters">
-	<ul>
-		{% for id, ch in charters.items() %}
-		<li><a href="/{{id}}">{{loop.index}}. {{ch.filename}}</a></li>
-		{% endfor %}
-	</ul>
+	<div>
+
+	</div>
+	<style>
+		#charter-table {
+			display: table;
+			width: 50%;
+		}
+
+		.table-header {
+			display: table-header-group;
+			font-weight: bold;
+		}
+		.table-header-cell{
+			display: table-cell;
+			text-align: center;
+			border-bottom: 1px solid black;
+			border-left: 1px solid;
+			border-right: 1px solid;
+		}
+		.table-body {
+			display: table-row-group;
+		}
+		.table-row {
+			display: table-row;
+		}
+		.table-cell {
+			display: table-cell;
+			text-align: center;
+			border-left: 1px solid;
+			border-right: 1px solid;
+		}
+		.filename-cell {
+			.table-cell;
+			text-align: left;
+		}
+	</style>
+
+	<script type='text/javascript'>
+		<!--document.getElementById("check_gtdata_{{id}}").onclick=() => { document.getElementById("gt_data_{{id}}").submit();}-->
+	</script>
+
+	<div id="charter-table">
+		<div class="table-header">
+			<div class="table-header-cell">Charter</div> 
+			<div class="table-header-cell">GT Segt.</div> 
+			<div class="table-header-cell">Pred Segt.</div> 
+		</div>
+		<div class="table-body">
+			{% for id, ch in charters.items() %}
+				
+			<div class="table-row">
+				<div class="filename-cell">
+					{% if id != charter_id %}
+					<a href="/{{id}}">{{loop.index}}. {{ch.filename}}</a>
+					{% else %}
+					{{loop.index}}. {{ch.filename}}
+					{% endif %}
+				</div>
+				<div class="table-cell">
+					{% if ch.hasGTData %} 
+						<input type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false"></input> 
+					{% endif %}
+				</div>
+				<div class="table-cell">
+					{% if ch.hasPredData %} 
+						<input type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false"></input> 
+					{% endif %}
+				</div>
+			</div>
+			{% endfor %}
+
+		</div>
 	</div>
 	<div>
 		<button onClick="exportData()"> Export</button>
 
 	</div>
+
+	<script type="text/javascript">
+		var gt_data_checks = document.getElementsByName("check_gtdata")
+		var gt_data_status = false;
+		for (elt of gt_data_checks){
+			if (elt.id === "check_gtdata_{{charter_id}}"){
+				console.log("Event handler attached!")
+
+				elt.onclick = () => { 
+					if (! gt_data_status){
+						importData() ;
+						gt_data_status = true;
+					} else {
+						eraseData() ;
+						gt_data_status = false;
+					}
+				}
+			} else {
+				elt.disabled = true;
+			}
+		}
+		
+	</script>
+
 </body>
 
 </html>

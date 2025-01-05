@@ -35,9 +35,14 @@
  * 	- export polygon mask  ✓
  * 	- vertically sorted lines before export ✓
  * 	- import masks
+  		+ centerline 		✓
+ * 		+ stroke width		✓
+ * 		+ (polygon)
+ * 
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
+ * 	- 
  */
 
 paper.install(window);
@@ -70,6 +75,8 @@ window.onload = function(){
 
 	canvas.update_img( img_file );
 	canvas.exportMask = exportMask;
+	canvas.importMask = importMask;
+	canvas.eraseMask = eraseMask;
 	
 	var paths = new Group();
 	var currentPath = null;
@@ -118,6 +125,10 @@ window.onload = function(){
 			currentPath.strokeWidth=line['strokeWidth']
 			currentPath.smooth({type: 'geometric'})
 		}
+	}
+
+	function eraseMask(){
+		paths.removeChildren();
 	}
 
 
@@ -204,23 +215,47 @@ window.onload = function(){
 		    	contourPath.selected = true;
 		    
 		    	// adding points along curves
-		    	var centerline = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)))
-			var baseline = baselinePath.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)))
-		    	var polygon = [];
-		    	for (const c of contourPath.curves){
-				polygon.push( toIntXY(c.point1.divide(scalingFactor)));
+		    	var centerline = new Path( p.segments )
+			centerline.smooth({type: 'geometric'})
+			var centerlineArray = []
+			for (const c of centerline.curves ){
+				centerlineArray.push( c.point1 )
 				var midPoint1 = c.getPointAt( c.length/3 );
 				var midPoint2 = c.getPointAt( c.length*2/3 );
-				polygon.push( toIntXY(midPoint1.divide(scalingFactor)))
-				polygon.push( toIntXY(midPoint2.divide(scalingFactor)))
-				polygon.push( toIntXY(c.point2.divide(scalingFactor)));
-		    	}
+				centerlineArray.push( midPoint1 )
+				centerlineArray.push( midPoint2 )
+				centerlineArray.push( c.point2 )
+			}
+			centerlineArray = centerlineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)))
 
-			markPath( baselinePath )
-			//contourPath.selected=true;
+			baselinePath.smooth({type: 'geometric'})
+			var baselineArray = []
+			for (const c of baselinePath.curves ){
+				baselineArray.push( c.point1 )
+				var midPoint1 = c.getPointAt( c.length/3 );
+				var midPoint2 = c.getPointAt( c.length*2/3 );
+				baselineArray.push( midPoint1 )
+				baselineArray.push( midPoint2 )
+				baselineArray.push( c.point2 )
+			}
+			baselineArray = baselineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)))
+
+		    	var boundaryArray = [];
+		    	for (const c of contourPath.curves){
+				boundaryArray.push( c.point1 )
+				var midPoint1 = c.getPointAt( c.length/3 );
+				var midPoint2 = c.getPointAt( c.length*2/3 );
+				boundaryArray.push( midPoint1 )
+				boundaryArray.push( midPoint2 )
+				boundaryArray.push( c.point2 )
+		    	}
+			boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)))
+
+			//markPath( baselinePath )
+			contourPath.selected=false;
 			//contourPath.remove();
 
-		    	return { 'id': id, 'centerline': centerline, 'baseline': baseline, 'boundary': polygon, 'strokeWidth': p.strokeWidth }
+		    	return { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth }
 		}
 
 
