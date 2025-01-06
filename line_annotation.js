@@ -37,12 +37,11 @@
  * 	- import masks
   		+ centerline 		✓
  * 		+ stroke width		✓
- * 		+ (polygon)
+ * 		+ polygon               ✓
  * 
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- 
  */
 
 paper.install(window);
@@ -54,16 +53,27 @@ window.onload = function(){
 
 	paper.setup(canvas);
 	
+	paper.settings.handleSize = 8;
+	var defaultStrokeWidth = 6;
+
 	var charter = null;
 	var charterLayer = new Layer();
 	var annotationLayer = new Layer();
 	var exportLayer = new Layer();
 	var scalingFactor = 1;
 
-	canvas.update_img = function update_image( img ){
+	var paths = new Group();
+	var currentPath = null;
+	var currentSegmentIndex = -1;
+	var currentSegmentHandle = null;
+
+	var pathDrawingMode = false;
+	var segmentEditMode = false;
+
+	canvas.update_img = function ( img ){
 		charterLayer.activate();
 		charter = new Raster( img );
-		scalingFactor = canvas.height/charter.height;
+		scalingFactor = this.height/this.height;
 		charter.position = view.center;
 		charter.fitBounds( view.bounds );
 
@@ -73,183 +83,139 @@ window.onload = function(){
 		annotationLayer.activate();
 	}
 
-	canvas.update_img( img_file );
-	canvas.exportMask = exportMask;
-	canvas.importMask = importMask;
-	canvas.eraseMask = eraseMask;
 	
-	var paths = new Group();
-	var currentPath = null;
-	var currentSegmentIndex = -1;
-	var currentSegmentHandle = null;
+	canvas.update_img( img_file );
+	annotationLayer.activate();
 
-	var pathDrawingMode = false;
-	var segmentEditMode = false;
-
-	var history = [null,null,null,null,null];
-	var HISTLENGTH = 5;
-	var historyCount = 0;
-
-	// Initial state
-	historySave();
-
-	annotationLayer.activate()
-
-	function historySave( op ){
-		//console.log("historySave()");
-		history[historyCount++]=op;
-	}
-
-	function historyRestore(){
-		console.log("historyRestore(): history.length = " + history.filter( (h) => h !== null ).length )
-		thisOpIndex = (historyCount-1) % HISTLENGTH
-		previousOpIndex = (thisOpIndex - 1 + HISTLENGTH) % HISTLENGTH
-		console.log("historyRestore(): thisOpIndex = " + thisOpIndex + ", previousOpIndex = " + previousOpIndex );
-		previousOp = history[previousOpIndex];
-		if (previousOp !== null){
-			//paper.project.importSVG( previousOp.svg );
-			history[thisOpIndex]=null;
-			historyCount--;
-			console.log("Restored " + paths.length + " paths.");
-		}
-		segmentEditMode = false;
-		pathDrawingMode = false;
-	}
-
-	function importMask( pageData ){
-		paths.removeChildren()
-		for (line of pageData['lines']){
-			paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))) 
-			currentPath = paths.children.at(-1)
-			currentPath.strokeColor='red'
-			currentPath.strokeWidth=line['strokeWidth']
-			currentPath.smooth({type: 'geometric'})
-		}
-	}
-
-	function eraseMask(){
+	/*
+	 * Import segmentation data into the canvas, as paths.
+	 *
+	 * @param {object} pageData - line descriptions.
+	 */
+	canvas.importMask = function ( pageData ){
 		paths.removeChildren();
-	}
-
-
-	var Marker = (pt, diam, col) => {
-		console.log("Marker()")
-		var p = Path.Circle( pt, diam );
-		p.fillColor=col;
-	};
-
-	function markPath( p ){
-		for (s of p.segments){
-			Marker( s.point, 6, 'red' )
+		for (line of pageData['lines']){
+			paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
+			currentPath = paths.children.at(-1);
+			currentPath.strokeColor='red';
+			currentPath.strokeWidth=line['strokeWidth'];
+			currentPath.smooth({type: 'geometric'});
 		}
 	}
 
-	function exportMask(){
-
+	/*
+	 * Export current paths as a dictionary that describes:
+	 *
+	 * + centerlines
+	 * + baselines
+	 * + polygons (= contour of strokes)
+	 *
+	 */
+	canvas.exportMask = function (){
 
 		var toIntXY = function ( pt ){
-		    	return [ Math.round(pt.x), Math.round(pt.y)]
+		    	return [ Math.round(pt.x), Math.round(pt.y)] ;
 		}
 
 		var contour = function (id, p){
 
-		    	var pointsNorth = []
-		    	var pointsSouth = []
+		    	var pointsNorth = [];
+		    	var pointsSouth = [];
 		    	var contourPath = new Path();
 			var baselinePath = new Path();
 		    	//contourPath.strokeColor='#000000'
 		    	//contourPath.strokeWidth=2;
 
-		    	var pt1 = p.segments[0].point
-		    	var pt2 = p.segments[1].point        
-		    	var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2)
+		    	var pt1 = p.segments[0].point;
+		    	var pt2 = p.segments[1].point;       
+		    	var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2);
 		    	var endPt1 = pt1.subtract(vect);
-		    	var normalVect = vect.rotate(90)
+		    	var normalVect = vect.rotate(90);
 			
-			var vertebraLS = pt1.add(normalVect)
+			var vertebraLS = pt1.add(normalVect);
 			//Marker( vertebraLS, 6, 'red' )
-			var vertebraLN = pt1.subtract(normalVect)
+			var vertebraLN = pt1.subtract(normalVect);
 			//Marker( vertebraLN, 6, 'green' )
-		    	contourPath.add( vertebraLN )
-		    	contourPath.insert(0, vertebraLS)
+		    	contourPath.add( vertebraLN );
+		    	contourPath.insert(0, vertebraLS);
 
-			baselinePath.add( vertebraLS )
+			baselinePath.add( vertebraLS );
 
-		    	var pt3 = p.segments.at(-2).point
-		    	var pt4 = p.segments.at(-1).point        
-		    	var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2)
+		    	var pt3 = p.segments.at(-2).point;
+		    	var pt4 = p.segments.at(-1).point;       
+		    	var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2);
 		    	var endPt2 = pt4.add(vectEnd);
-		    	var normalVectEnd = vectEnd.rotate(90)
+		    	var normalVectEnd = vectEnd.rotate(90);
 
 		    	if (p.segments.length > 2){
 
 				for (var i=1; i<p.segments.length-1; i++){
-					var pt = p.segments[i].point
-					var ptL = p.segments[i-1].point        
-					var ptR = p.segments[i+1].point        
-					var vectL = (ptL.subtract(pt)).normalize( p.strokeWidth/2)
-					var vectR = (ptR.subtract(pt)).normalize( p.strokeWidth/2)
-					var normalVect = vectL.subtract(vectR).divide(2).rotate(90)
-					var vertebraN = pt.add(normalVect)
-					//Marker( vertebraN, 6, 'green' )
-					var vertebraS = pt.subtract(normalVect)
-					//Marker( vertebraS, 6, 'red' )
-					contourPath.add( vertebraN )
-					contourPath.insert(0, vertebraS )
+					var pt = p.segments[i].point;
+					var ptL = p.segments[i-1].point;
+					var ptR = p.segments[i+1].point;
+					var vectL = (ptL.subtract(pt)).normalize( p.strokeWidth/2);
+					var vectR = (ptR.subtract(pt)).normalize( p.strokeWidth/2);
+					var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
+					var vertebraN = pt.add(normalVect);
+					//Marker( vertebraN, 6, 'green' );
+					var vertebraS = pt.subtract(normalVect);
+					//Marker( vertebraS, 6, 'red' );
+					contourPath.add( vertebraN );
+					contourPath.insert(0, vertebraS );
 
-					baselinePath.add( vertebraS )
+					baselinePath.add( vertebraS );
 				}
 		    	}
-			var vertebraRS = pt4.add(normalVectEnd)
-			var vertebraRN = pt4.subtract(normalVectEnd)
-			//Marker( vertebraRS, 6, 'red' )
-			//Marker( vertebraRN, 6, 'green' )
-		    	contourPath.add( vertebraRN )
-		    	contourPath.insert(0, vertebraRS )
-			baselinePath.add( vertebraRS )
-		    	contourPath.insert( contourPath.segments.length/2, endPt1)
-		    	contourPath.add( endPt2 )
+			var vertebraRS = pt4.add(normalVectEnd);
+			var vertebraRN = pt4.subtract(normalVectEnd);
+			//Marker( vertebraRS, 6, 'red' );
+			//Marker( vertebraRN, 6, 'green' );
+		    	contourPath.add( vertebraRN );
+		    	contourPath.insert(0, vertebraRS );
+			baselinePath.add( vertebraRS );
+		    	contourPath.insert( contourPath.segments.length/2, endPt1);
+		    	contourPath.add( endPt2 );
 		    	contourPath.closed = true;
-		    	contourPath.smooth({type: 'geometric'})
+		    	contourPath.smooth({type: 'geometric'});
 		    
 		    	contourPath.selected = true;
 		    
 		    	// adding points along curves
-		    	var centerline = new Path( p.segments )
-			centerline.smooth({type: 'geometric'})
-			var centerlineArray = []
+		    	var centerline = new Path( p.segments );
+			centerline.smooth({type: 'geometric'});
+			var centerlineArray = [];
 			for (const c of centerline.curves ){
-				centerlineArray.push( c.point1 )
+				centerlineArray.push( c.point1 );
 				var midPoint1 = c.getPointAt( c.length/3 );
 				var midPoint2 = c.getPointAt( c.length*2/3 );
-				centerlineArray.push( midPoint1 )
-				centerlineArray.push( midPoint2 )
-				centerlineArray.push( c.point2 )
+				centerlineArray.push( midPoint1 );
+				centerlineArray.push( midPoint2 );
+				centerlineArray.push( c.point2 );
 			}
-			centerlineArray = centerlineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)))
+			centerlineArray = centerlineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
 
-			baselinePath.smooth({type: 'geometric'})
-			var baselineArray = []
+			baselinePath.smooth({type: 'geometric'});
+			var baselineArray = [];
 			for (const c of baselinePath.curves ){
-				baselineArray.push( c.point1 )
+				baselineArray.push( c.point1 );
 				var midPoint1 = c.getPointAt( c.length/3 );
 				var midPoint2 = c.getPointAt( c.length*2/3 );
-				baselineArray.push( midPoint1 )
-				baselineArray.push( midPoint2 )
-				baselineArray.push( c.point2 )
+				baselineArray.push( midPoint1 );
+				baselineArray.push( midPoint2 );
+				baselineArray.push( c.point2 );
 			}
-			baselineArray = baselineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)))
+			baselineArray = baselineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
 
 		    	var boundaryArray = [];
 		    	for (const c of contourPath.curves){
-				boundaryArray.push( c.point1 )
+				boundaryArray.push( c.point1 );
 				var midPoint1 = c.getPointAt( c.length/3 );
 				var midPoint2 = c.getPointAt( c.length*2/3 );
-				boundaryArray.push( midPoint1 )
-				boundaryArray.push( midPoint2 )
-				boundaryArray.push( c.point2 )
+				boundaryArray.push( midPoint1 );
+				boundaryArray.push( midPoint2 );
+				boundaryArray.push( c.point2 );
 		    	}
-			boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)))
+			boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
 
 			//markPath( baselinePath )
 			contourPath.selected=false;
@@ -258,20 +224,26 @@ window.onload = function(){
 		    	return { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth }
 		}
 
-
-		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} 
-		var lineData = []
+		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
+		var lineData = [];
 		// sorting paths according to their vertical position
-		sortedPaths = paths.children.toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y )
-		for (var p=0; p<sortedPaths.length; p++){
-			lineData.push( contour(p, sortedPaths[p] ));
-		}
-		pageData['lines']=lineData
-		console.log(pageData)
-		return pageData
+		sortedPaths = paths.children.toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+		for (var p=0; p<sortedPaths.length; p++){ lineData.push( contour(p, sortedPaths[p] )); }
+		pageData['lines']=lineData;
+		//console.log(pageData)
+		return pageData;
 
 	}
 
+	/*
+	 * Removes all existing paths from the canvas.
+	 */
+	canvas.eraseMask = function (){
+		paths.removeChildren();
+	}
+
+
+	/* User interface */
 	view.onDoubleClick = (ev) => {
 		
 		if (pathDrawingMode){
@@ -279,13 +251,12 @@ window.onload = function(){
 			var p = paths.children.at(-1);
 			p.smooth({type: 'geometric'});
 			selectPath(p, false);
-			historySave();
-			console.log(history[historyCount%HISTLENGTH-1]);
+			//historySave();
 		} else {
 			pathDrawingMode = true;
 			var path = new Path() ;
 			path.strokeColor = 'red';
-			path.strokeWidth = 4;
+			path.strokeWidth = defaultStrokeWidth;
 			path.strokeCap = 'round';
 			path.strokeJoin = 'round';
 			selectPath(path, false);
@@ -307,7 +278,7 @@ window.onload = function(){
 			segmentEditMode = false;
 			currentPath = null;
 			currentSegmentIndex = -1;
-			historySave();
+			//historySave();
 		}
 		// select all paths
 		if (ev.modifiers.alt){
@@ -331,39 +302,39 @@ window.onload = function(){
 	view.onKeyDown = (ev) => {
 		if (Key.isDown('>')) {
 			for (const p of paths.children){
-				console.log(p.isSelected)
+				console.log(p.isSelected);
 				p.strokeWidth += (1*p.isSelected);
 			}
-			historySave();
+			//historySave();
 		} else if (Key.isDown('<')){
 			for (const p of paths.children){ p.strokeWidth -= (1*p.isSelected); }
-			historySave();
+			//historySave();
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;
 			for (const p of paths.children){ selectPath(p, false) }
 		} else if (Key.isDown('d')){
-			if (ev.modifiers.shift && currentPath !== null){
-				deletePath( currentPath );
-				currentPath = null;
-			}
-			else if (currentPath !== null && currentSegmentIndex > -1){
-				currentPath.removeSegment( currentSegmentIndex );
-				currentPath = null;
-				currentSegmentIndex = -1;
-				if (currentSegmentHandle !== null){
-					currentSegmentHandle.remove();
+			if (currentPath !== null){
+				if (currentSegmentIndex > -1){
+					currentPath.removeSegment( currentSegmentIndex );
+					currentPath = null;
+					currentSegmentIndex = -1;
+					if (currentSegmentHandle !== null){
+						currentSegmentHandle.remove();
+					}
+				} else {
+					deletePath( currentPath );
+					currentPath = null;
 				}
-				historySave();
+				//historySave();
 			}
 		} else if (ev.modifiers.control && Key.isDown('z')){ // buggy
 			console.log('Ctrl-z');
-			historyRestore();
+			//historyRestore();
 		} else if (ev.modifiers.control && Key.isDown('i')){
 			console.log('Ctrl-i');
 			importMask( segdata );
 		}
-
 	}
 	
 	view.onMouseDown = (ev) => {
@@ -385,7 +356,7 @@ window.onload = function(){
 			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control ){
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
-				historySave();
+				//historySave();
 			}
 		}
 	}	
@@ -394,11 +365,11 @@ window.onload = function(){
 		// move the path node
 		if (currentSegmentIndex >= 0){
 			segmentEditMode = true;
-			var segt = currentPath.segments[currentSegmentIndex]
+			var segt = currentPath.segments[currentSegmentIndex];
 			currentSegmentHandle.remove();
-			currentPath.removeSegment( currentSegmentIndex )
+			currentPath.removeSegment( currentSegmentIndex );
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
-			currentPath.smooth({type: 'geometric'})
+			currentPath.smooth({type: 'geometric'});
 		}
 	}
 
@@ -418,7 +389,7 @@ window.onload = function(){
 		var hitResult = null;
 		for (var p=0; p<paths.children.length; p++){
 			hitResult = paths.children[p].hitTest( pt );
-			if (hitResult !== null){ break }
+			if (hitResult !== null){ break; }
 		}
 		return hitResult;
 	}
@@ -426,10 +397,38 @@ window.onload = function(){
 	function deletePath( path ){
 		// 1. remove from group
 		for (var p=0; p< paths.children.length; p++){
-			if (paths.children[p]===path){ paths.removeChildren( p, p+1 ) }
-			break
+			if (paths.children[p]===path){ paths.removeChildren( p, p+1 ); }
+			break;
 		}
 	}
 
+	var Marker = (pt, diam, col) => {
+		console.log("Marker()")
+		var p = Path.Circle( pt, diam );
+		p.fillColor=col;
+	};
+
+	function markPath( p ){
+		for (s of p.segments){ Marker( s.point, 6, 'red' ); }
+	}
+
+	function historySave( op ){
+		//console.log("historySave()");
+		//history[historyCount++]=op;
+	}
+
+	function historyRestore(){
+		console.log("historyRestore(): history.length = " + history.filter( (h) => h !== null ).length );
+		thisOpIndex = (historyCount-1) % HISTLENGTH;
+		previousOpIndex = (thisOpIndex - 1 + HISTLENGTH) % HISTLENGTH;
+		previousOp = history[previousOpIndex];
+		if (previousOp !== null){
+			//paper.project.importSVG( previousOp.svg );
+			history[thisOpIndex]=null;
+			historyCount--;
+		}
+		segmentEditMode = false;
+		pathDrawingMode = false;
+	}
 }
 
