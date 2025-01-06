@@ -229,9 +229,13 @@ window.onload = function(){
 		// sorting paths according to their vertical position
 		sortedPaths = paths.children.toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		for (var p=0; p<sortedPaths.length; p++){ lineData.push( contour(p, sortedPaths[p] )); }
-		pageData['lines']=lineData;
-		//console.log(pageData)
-		return pageData;
+		
+		if (lineData.length > 0){
+			pageData['lines']=lineData;
+			//console.log(pageData)
+			return pageData;
+		}
+		return {}
 
 	}
 

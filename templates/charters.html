@@ -8,7 +8,7 @@
 	<script type="text/javascript" src="static/line_annotation.js"> </script>
 </head>
 <body>
-	<div id="cnv">
+	<div id="cnv" class="box">
 		<canvas id="myCanvas" width="{{charter_size[0]}}px" height="{{charter_size[1]}}px">
 	</canvas>
 	</div>
@@ -22,6 +22,10 @@
 
 	     	function exportData(){
 			segdata =  cnv.exportMask();
+			if (Object.keys(segdata).length === 0){
+				console.log("exportData() - abort: empty segmentation data!")
+				return
+			}
 			fetch("/export/{{charter_id}}", {
 				method: "POST",
 				headers: {"Content-Type":"application/json"},
@@ -43,13 +47,18 @@
 
         </script>
 
-	<div>
-
-	</div>
 	<style>
+		.box {
+			display: flex;
+			align-items:center;
+		}
+		.box > * {
+			padding: 10px;
+		}
 		#charter-table {
+			table-layout: fixed;
 			display: table;
-			width: 50%;
+			flex: 2 1;
 		}
 
 		.table-header {
@@ -59,25 +68,36 @@
 		.table-header-cell{
 			display: table-cell;
 			text-align: center;
-			border-bottom: 1px solid black;
-			border-left: 1px solid;
-			border-right: 1px solid;
+			border-bottom: 1px solid;
 		}
 		.table-body {
 			display: table-row-group;
+		}
+		.table-row > * {
+			border-bottom: 1px solid;
 		}
 		.table-row {
 			display: table-row;
 		}
 		.table-cell {
+			height: 25px;
 			display: table-cell;
+			padding-left: 20px;
+			padding-right: 20px;
 			text-align: center;
-			border-left: 1px solid;
-			border-right: 1px solid;
 		}
 		.filename-cell {
-			.table-cell;
+			height: 25px;
 			text-align: left;
+		}
+		.filename-header-cell {
+			width: 80%
+		}
+		#export-button {
+			flex: 1; 
+			height: 70px;
+			font-size: 1.5rem;
+			background-color: #a7c7e7;
 		}
 	</style>
 
@@ -85,41 +105,40 @@
 		<!--document.getElementById("check_gtdata_{{id}}").onclick=() => { document.getElementById("gt_data_{{id}}").submit();}-->
 	</script>
 
-	<div id="charter-table">
-		<div class="table-header">
-			<div class="table-header-cell">Charter</div> 
-			<div class="table-header-cell">GT Segt.</div> 
-			<div class="table-header-cell">Pred Segt.</div> 
-		</div>
-		<div class="table-body">
-			{% for id, ch in charters.items() %}
-				
-			<div class="table-row">
-				<div class="filename-cell">
-					{% if id != charter_id %}
-					<a href="/{{id}}">{{loop.index}}. {{ch.filename}}</a>
-					{% else %}
-					{{loop.index}}. {{ch.filename}}
-					{% endif %}
-				</div>
-				<div class="table-cell">
-					{% if ch.hasGTData %} 
-						<input type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false"></input> 
-					{% endif %}
-				</div>
-				<div class="table-cell">
-					{% if ch.hasPredData %} 
-						<input type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false"></input> 
-					{% endif %}
-				</div>
+	<div id="control-box" class="box">
+		<div id="charter-table">
+			<div class="table-header">
+				<div class="table-header-cell filename-header-cell">Charter</div> 
+				<div class="table-header-cell">GT Segt.</div> 
+				<div class="table-header-cell">Pred Segt.</div> 
 			</div>
-			{% endfor %}
+			<div class="table-body">
+				{% for id, ch in charters.items() %}
+					
+				<div class="table-row">
+					<div class="filename-cell">
+						{% if id != charter_id %}
+						<a href="/{{id}}">{{loop.index}}. {{ch.filename}}</a>
+						{% else %}
+						{{loop.index}}. {{ch.filename}}
+						{% endif %}
+					</div>
+					<div class="table-cell">
+						{% if ch.hasGTData %} 
+							<input class="tablechck" type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false"></input> 
+						{% endif %}
+					</div>
+					<div class="table-cell">
+						{% if ch.hasPredData %} 
+							<input class="tablechck" type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false"></input> 
+						{% endif %}
+					</div>
+				</div>
+				{% endfor %}
 
+			</div>
 		</div>
-	</div>
-	<div>
-		<button onClick="exportData()"> Export</button>
-
+		<button id="export-button" onClick="exportData()"> Export</button>
 	</div>
 
 	<script type="text/javascript">
