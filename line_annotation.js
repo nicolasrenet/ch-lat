@@ -26,7 +26,7 @@
  * 	- Move a segment or group of segments
  * 		+ vertically                   ✓
  * 		+ horizontally                 needed?
- * 	- Copy a segment or group of segments  
+ * 	- Copy a segment or group of segments    
  * 	 
  * History:
  * 	- save history after:
@@ -77,7 +77,7 @@ window.onload = function(){
 	canvas.update_img = function ( img ){
 		charterLayer.activate();
 		charter = new Raster( img );
-		scalingFactor = this.height/this.height;
+		scalingFactor = this.height/charter.height;
 		charter.position = view.center;
 		charter.fitBounds( view.bounds );
 
@@ -89,33 +89,47 @@ window.onload = function(){
 
 	
 	function logState(){
-			console.log("caller="+this+
+			console.log(
+			"caller="+this+
+			"\ncharter.size="+[charter.width, charter.height]+
+			"\nscalingFactor="+scalingFactor+
 			"\nannotationLayer.active="+annotationLayer.active+
 			"\npaths.children.length="+paths.children.length+
+			"\npaths.children" + paths.children+
 			"\npathDrawingMode="+pathDrawingMode+
 			"\nsegmentEditMode="+segmentEditMode+
 			"\ncurrentSegmentIndex="+currentSegmentIndex+
 			"\ncurrentSegmentHandle="+currentSegmentHandle+
 			"\ncurrentPath="+currentPath);
+		console.log( paths.children )
 	}
 
 
 	canvas.update_img( img_file );
+	logState()
 
 	/*
 	 * Import segmentation data into the canvas, as paths.
 	 *
 	 * @param {object} pageData - line descriptions.
 	 */
-	canvas.importMask = function ( pageData ){
+	canvas.importMask = function ( pageData, type ){
 		paths.removeChildren();
 		for (line of pageData['lines']){
-			paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
-			currentPath = paths.children.at(-1);
-			currentPath.strokeColor='red';
-			currentPath.strokeWidth=line['strokeWidth'];
-			currentPath.smooth({type: 'geometric'});
-		}
+			if (type === 'gt'){
+				paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
+				currentPath = paths.children.at(-1);
+				currentPath.strokeColor='red';
+				currentPath.strokeWidth=line['strokeWidth'];
+				currentPath.smooth({type: 'geometric'});
+			} else if (type==='pred'){
+				paths.addChild( new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
+				currentPath = paths.children.at(-1);
+				currentPath.strokeColor='red';
+				currentPath.strokeWidth=defaultStrokeWidth;
+				currentPath.smooth({type: 'geometric'});
+			}
+		} 
 	}
 
 	/*
@@ -133,6 +147,8 @@ window.onload = function(){
 		}
 
 		var contour = function (id, p){
+
+			if (p.segments.length < 2){ return null }
 
 		    	var pointsNorth = [];
 		    	var pointsSouth = [];
@@ -243,7 +259,10 @@ window.onload = function(){
 		var lineData = [];
 		// sorting paths according to their vertical position
 		sortedPaths = paths.children.toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
-		for (var p=0; p<sortedPaths.length; p++){ lineData.push( contour(p, sortedPaths[p] )); }
+		for (var p=0; p<sortedPaths.length; p++){ 
+			var data = contour(p, sortedPaths[p] ); 
+			if (data !== null){ lineData.push( data ) }
+		}
 		
 		if (lineData.length > 0){
 			pageData['lines']=lineData;
@@ -251,7 +270,6 @@ window.onload = function(){
 			return pageData;
 		}
 		return {}
-
 	}
 
 	/*
@@ -267,8 +285,12 @@ window.onload = function(){
 		if (pathDrawingMode){
 			pathDrawingMode = false;
 			var p = paths.children.at(-1);
-			p.smooth({type: 'geometric'});
-			selectPath(p, false);
+			var pIdx = paths.children.length-1;
+			if (p.segments.length===1){ paths.removeChildren( pIdx, pIdx+1 );}
+			else {
+				p.smooth({type: 'geometric'});
+				selectPath(p, false);
+			}
 			//historySave();
 		} else {
 			pathDrawingMode = true;
@@ -284,6 +306,9 @@ window.onload = function(){
 	}
 
 	view.onClick = (ev) => {
+
+		console.log(ev.point, ev.point.divide(scalingFactor))
+
 		// append a segment to a path
 		if (pathDrawingMode && paths.children.length > 0){
 			var p = paths.children.at(-1);
@@ -335,8 +360,8 @@ window.onload = function(){
 			segmentEditMode = false;
 			for (const p of paths.children){ selectPath(p, false) }
 		} else if (Key.isDown('d')){
+			logState()
 			if (currentPath !== null){
-				logState();
 				if (currentSegmentIndex > -1){
 					currentPath.removeSegment( currentSegmentIndex );
 					currentPath = null;
@@ -382,7 +407,7 @@ window.onload = function(){
 		if (currentSegmentIndex >= 0){
 			segmentEditMode = true;
 			var segt = currentPath.segments[currentSegmentIndex];
-			currentSegmentHandle.remove();
+			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			currentPath.removeSegment( currentSegmentIndex );
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
 			currentPath.smooth({type: 'geometric'});

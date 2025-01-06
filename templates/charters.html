@@ -32,11 +32,12 @@
 			}).then( resp => { console.log(resp.json()) } )
 		}
 
-		function importData(){
-			console.log("Importing seg data");
-			fetch("/import/{{charter_id}}", { method: "GET" }
+		function importData( dataType ){
+			url = "/import/{{charter_id}}?" + new URLSearchParams({segtype: dataType}).toString()
+			console.log("Importing seg data - " + url);
+			fetch(url, { method: "GET" }
 			).then( resp => { return resp.json() ; }
-			).then( data => { cnv.importMask( data ); })
+			).then( data => { cnv.importMask( data, dataType ); })
 		}
 
 		function eraseData(){
@@ -147,19 +148,41 @@
 	<script type="text/javascript">
 		var gt_data_checks = document.getElementsByName("check_gtdata")
 		var gt_data_status = false;
+		var pred_data_checks = document.getElementsByName("check_preddata")
+		var pred_data_status = false;
+
 		for (elt of gt_data_checks){
 			if (elt.id === "check_gtdata_{{charter_id}}"){
-				console.log("Event handler attached!")
-
 				elt.onclick = () => { 
 					if (! gt_data_status){
-						importData() ;
+						importData( 'gt' ) ;
 						gt_data_status = true;
+						document.getElementById('check_preddata_{{charter_id}}').value=false;
+						pred_data_status = false;
 					} else {
 						eraseData() ;
 						gt_data_status = false;
 					}
 				}
+				elt.value=false;
+			} else {
+				elt.disabled = true;
+			}
+		}
+		for (elt of pred_data_checks){
+			if (elt.id === "check_preddata_{{charter_id}}"){
+				elt.onclick = () => { 
+					if (! pred_data_status){
+						importData( 'pred' ) ;
+						pred_data_status = true;
+						document.getElementById('check_gtdata_{{charter_id}}').value=false;
+						gt_data_status = false;
+					} else {
+						eraseData() ;
+						pred_data_status = false;
+					}
+				}
+				elt.value=false
 			} else {
 				elt.disabled = true;
 			}
