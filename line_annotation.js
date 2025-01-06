@@ -26,7 +26,9 @@
  * 	- Move a segment or group of segments
  * 		+ vertically                   ✓
  * 		+ horizontally                 needed?
- * 	- Copy a segment or group of segments    
+ * 	- Copy 
+ * 		+ a segment		✓
+ * 		+ group of segments    
  * 	 
  * History:
  * 	- save history after:
@@ -114,6 +116,8 @@ window.onload = function(){
 	 * @param {object} pageData - line descriptions.
 	 */
 	canvas.importMask = function ( pageData, type ){
+
+		if (!('lines' in pageData)){ console.log("Segmentation data empty: abort."); return }
 		paths.removeChildren();
 		for (line of pageData['lines']){
 			if (type === 'gt'){
@@ -325,7 +329,10 @@ window.onload = function(){
 		}
 		// select all paths
 		if (ev.modifiers.alt){
-			for (const p of paths.children){ selectPath( p, true ); }
+			currentPath = null;
+			for (const p of paths.children){ 
+				selectPath( p, true ); 
+			}
 			return
 		}
 		// select one path
@@ -398,6 +405,9 @@ window.onload = function(){
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
 				//historySave();
+			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.shift ){
+				currentPath = currentPath.clone();
+				paths.addChild( currentPath );
 			}
 		}
 	}	
@@ -411,6 +421,10 @@ window.onload = function(){
 			currentPath.removeSegment( currentSegmentIndex );
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
 			currentPath.smooth({type: 'geometric'});
+		} else if ( ev.modifiers.shift ){
+			if (currentPath !== null){
+				currentPath.translate( ev.delta );
+			}
 		}
 	}
 
@@ -430,7 +444,10 @@ window.onload = function(){
 		var hitResult = null;
 		for (var p=0; p<paths.children.length; p++){
 			hitResult = paths.children[p].hitTest( pt );
-			if (hitResult !== null){ break; }
+			if (hitResult !== null){
+				paths.children[p].selected = true;
+				break;
+			}
 		}
 		return hitResult;
 	}

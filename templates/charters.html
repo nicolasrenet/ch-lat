@@ -157,7 +157,8 @@
 					if (! gt_data_status){
 						importData( 'gt' ) ;
 						gt_data_status = true;
-						document.getElementById('check_preddata_{{charter_id}}').value=false;
+						check_preddata_elt = document.getElementById('check_preddata_{{charter_id}}');
+						if (check_preddata_elt !== null){ check_preddata_elt.value=false;}
 						pred_data_status = false;
 					} else {
 						eraseData() ;
@@ -175,7 +176,8 @@
 					if (! pred_data_status){
 						importData( 'pred' ) ;
 						pred_data_status = true;
-						document.getElementById('check_gtdata_{{charter_id}}').value=false;
+						check_gtdata_elt = document.getElementById('check_gtdata_{{charter_id}}');
+						if (check_gtdata_elt !== null){ check_gtdata_elt.value=false; }
 						gt_data_status = false;
 					} else {
 						eraseData() ;
