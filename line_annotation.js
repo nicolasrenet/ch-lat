@@ -335,6 +335,7 @@ window.onload = function(){
 			for (const p of paths.children){ selectPath(p, false) }
 		} else if (Key.isDown('d')){
 			if (currentPath !== null){
+				logState();
 				if (currentSegmentIndex > -1){
 					currentPath.removeSegment( currentSegmentIndex );
 					currentPath = null;
@@ -415,11 +416,8 @@ window.onload = function(){
 	}
 
 	function deletePath( path ){
-		// 1. remove from group
-		for (var p=0; p< paths.children.length; p++){
-			if (paths.children[p]===path){ paths.removeChildren( p, p+1 ); }
-			break;
-		}
+		for (var p=0; p< paths.children.length; p++){ if (paths.children[p]===path){ break; } }
+		paths.removeChildren(p, p+1)
 	}
 
 	var Marker = (pt, diam, col) => {
