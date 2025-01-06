@@ -8,9 +8,8 @@
 	<script type="text/javascript" src="static/line_annotation.js"> </script>
 </head>
 <body>
-	<div id="cnv" class="box">
-		<canvas id="myCanvas" width="{{charter_size[0]}}px" height="{{charter_size[1]}}px">
-	</canvas>
+	<div id="cnv" class="cnvbox">
+		<canvas id="myCanvas" width="{{charter_size[0]}}px" height="{{charter_size[1]}}px"> </canvas>
 	</div>
 
       	<script type="text/javascript">
@@ -48,6 +47,10 @@
         </script>
 
 	<style>
+		/* Prevents bug in hit event */
+		.cnvbox {
+			padding: 0px;
+		}
 		.box {
 			display: flex;
 			align-items:center;

@@ -23,6 +23,9 @@
  * 		+ drag to move it         ✓
  * 		+ 'd' to delete it        ✓ 
  * 	- Ctrl-click to select a stroke and add a segment on it ✓
+ * 	- Move a segment or group of segments
+ * 		+ vertically              ✓
+ * 		+ horizontally            ?
  * 	 
  * History:
  * 	- save history after:
@@ -53,13 +56,13 @@ window.onload = function(){
 
 	paper.setup(canvas);
 	
-	paper.settings.handleSize = 8;
+	paper.settings.handleSize = 6;
+	paper.settings.hitTolerance = 6;
 	var defaultStrokeWidth = 6;
 
 	var charter = null;
 	var charterLayer = new Layer();
 	var annotationLayer = new Layer();
-	var exportLayer = new Layer();
 	var scalingFactor = 1;
 
 	var paths = new Group();
@@ -84,8 +87,19 @@ window.onload = function(){
 	}
 
 	
+	function logState(){
+			console.log("caller="+this+
+			"\nannotationLayer.active="+annotationLayer.active+
+			"\npaths.children.length="+paths.children.length+
+			"\npathDrawingMode="+pathDrawingMode+
+			"\nsegmentEditMode="+segmentEditMode+
+			"\ncurrentSegmentIndex="+currentSegmentIndex+
+			"\ncurrentSegmentHandle="+currentSegmentHandle+
+			"\ncurrentPath="+currentPath);
+	}
+
+
 	canvas.update_img( img_file );
-	annotationLayer.activate();
 
 	/*
 	 * Import segmentation data into the canvas, as paths.
@@ -246,7 +260,6 @@ window.onload = function(){
 		paths.removeChildren();
 	}
 
-
 	/* User interface */
 	view.onDoubleClick = (ev) => {
 		
@@ -305,14 +318,17 @@ window.onload = function(){
 
 	view.onKeyDown = (ev) => {
 		if (Key.isDown('>')) {
-			for (const p of paths.children){
-				console.log(p.isSelected);
-				p.strokeWidth += (1*p.isSelected);
-			}
+			for (const p of paths.children){ p.strokeWidth += (1*p.isSelected); }
 			//historySave();
 		} else if (Key.isDown('<')){
 			for (const p of paths.children){ p.strokeWidth -= (1*p.isSelected); }
 			//historySave();
+		} else if (Key.isDown('up')){
+			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
+			for (const p of paths.children){ p.translate( new Point(0, -2*p.isSelected)) } 
+		} else if (Key.isDown('down')){
+			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
+			for (const p of paths.children){ p.translate( new Point(0, 2*p.isSelected)) } 
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;
@@ -323,9 +339,7 @@ window.onload = function(){
 					currentPath.removeSegment( currentSegmentIndex );
 					currentPath = null;
 					currentSegmentIndex = -1;
-					if (currentSegmentHandle !== null){
-						currentSegmentHandle.remove();
-					}
+					if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 				} else {
 					deletePath( currentPath );
 					currentPath = null;
@@ -349,15 +363,17 @@ window.onload = function(){
 			currentPath = pathHitResult.item;
 			// clicking on a path node (="Segment") makes this node editable (drag)
 			if (pathHitResult.type === 'segment'){
+				logState();
 				console.log( pathHitResult.segment);
 				currentSegmentIndex = pathHitResult.segment.index;
 				// visual feedback after hitting the node
 				if (currentSegmentHandle !== null){
 					currentSegmentHandle.remove();
 				}
-				currentSegmentHandle = new Path.Circle({ radius: 4, center: pathHitResult.segment.point, fillColor: 'red'});
+				currentSegmentHandle = new Path.Circle({ radius: paper.settings.handleSize, center: pathHitResult.segment.point, fillColor: 'red'});
 			// ctrl-clicking on a path stroke adds a node in the given position
 			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control ){
+				logState();
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
 				//historySave();
