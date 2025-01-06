@@ -24,8 +24,9 @@
  * 		+ 'd' to delete it        ✓ 
  * 	- Ctrl-click to select a stroke and add a segment on it ✓
  * 	- Move a segment or group of segments
- * 		+ vertically              ✓
- * 		+ horizontally            ?
+ * 		+ vertically                   ✓
+ * 		+ horizontally                 needed?
+ * 	- Copy a segment or group of segments  
  * 	 
  * History:
  * 	- save history after:
@@ -347,13 +348,10 @@ window.onload = function(){
 				}
 				//historySave();
 			}
-		} else if (ev.modifiers.control && Key.isDown('z')){ // buggy
+		} /*else if (ev.modifiers.control && Key.isDown('z')){ // buggy
 			console.log('Ctrl-z');
 			//historyRestore();
-		} else if (ev.modifiers.control && Key.isDown('i')){
-			console.log('Ctrl-i');
-			importMask( segdata );
-		}
+		}*/
 	}
 	
 	view.onMouseDown = (ev) => {
@@ -364,8 +362,6 @@ window.onload = function(){
 			currentPath = pathHitResult.item;
 			// clicking on a path node (="Segment") makes this node editable (drag)
 			if (pathHitResult.type === 'segment'){
-				logState();
-				console.log( pathHitResult.segment);
 				currentSegmentIndex = pathHitResult.segment.index;
 				// visual feedback after hitting the node
 				if (currentSegmentHandle !== null){
@@ -374,7 +370,6 @@ window.onload = function(){
 				currentSegmentHandle = new Path.Circle({ radius: paper.settings.handleSize, center: pathHitResult.segment.point, fillColor: 'red'});
 			// ctrl-clicking on a path stroke adds a node in the given position
 			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control ){
-				logState();
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
 				//historySave();
@@ -421,7 +416,6 @@ window.onload = function(){
 	}
 
 	var Marker = (pt, diam, col) => {
-		console.log("Marker()")
 		var p = Path.Circle( pt, diam );
 		p.fillColor=col;
 	};
