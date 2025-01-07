@@ -8,16 +8,15 @@
 	<script type="text/javascript" src="static/line_annotation.js"> </script>
 </head>
 <body>
-	<div id="cnv" class="cnvbox">
-		<canvas id="myCanvas" width="{{charter_size[0]}}px" height="{{charter_size[1]}}px"> </canvas>
-	</div>
+	<canvas id="myCanvas" width="{{display_size[0]}}px" height="{{display_size[1]}}px"> </canvas>
 
       	<script type="text/javascript">
 
 	<!-- read from line_annotation.js -->
 
 		const cnv = document.getElementById("myCanvas");
-		var img_file = "static/{{charters[charter_id].filename}}"; 
+		var img_file = "/static/{{charters[charter_id].filename}}"; 
+		cnv.display_size = {{display_size}};
 
 	     	function exportData(){
 			segdata =  cnv.exportMask();

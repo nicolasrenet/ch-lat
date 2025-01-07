@@ -106,11 +106,13 @@ def charter_pick( charter_id:str):
     charters = get_charters()
     with Image.open( charters[charter_id]['filename']) as img:
         print(charters[charter_id]['filename'])
+        display_size = [int(d*settings['scaling_factor']) for d in img.size]
+        print("display_size=",display_size)
         return render_template(
                 'charters.html', 
                 charters=charters, 
                 charter_id=charter_id, 
-                charter_size=[d*settings['scaling_factor'] for d in img.size],
+                display_size=display_size
                 )
 
 @app.post('/export/<charter_id>')

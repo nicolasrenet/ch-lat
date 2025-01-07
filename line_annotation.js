@@ -60,7 +60,6 @@ paper.install(window);
 window.onload = function(){
 
 	var canvas = document.getElementById("myCanvas");
-
 	paper.setup(canvas);
 	
 	paper.settings.handleSize = 6;
@@ -83,20 +82,22 @@ window.onload = function(){
 	canvas.update_img = function ( img ){
 		charterLayer.activate();
 		charter = new Raster( img );
-		scalingFactor = this.height/charter.height;
-		charter.position = view.center;
-		charter.fitBounds( view.bounds );
-
-		charter.onload = () => {
+		charter.onLoad = function() {
+			// the canvas display_size attribute is set in the containing template
+			scalingFactor = canvas.display_size[1]/charter.height;
+			charter.position = view.center;
+			charter.fitBounds( view.bounds );
 			view.draw();
+			annotationLayer.activate();
+			logState();
 		}
-		annotationLayer.activate();
 	}
 
 	
 	function logState(){
 			console.log(
 			"caller="+this+
+			"\ncanvas.size="+[canvas.width, canvas.height]+
 			"\ncharter.size="+[charter.width, charter.height]+
 			"\nscalingFactor="+scalingFactor+
 			"\nannotationLayer.active="+annotationLayer.active+
@@ -112,7 +113,6 @@ window.onload = function(){
 
 
 	canvas.update_img( img_file );
-	logState()
 
 	/*
 	 * Import segmentation data into the canvas, as paths.
