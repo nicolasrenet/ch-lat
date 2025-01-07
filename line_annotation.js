@@ -18,7 +18,6 @@
  *
  * SegmentEditMode
  * 	- click to select path
- * 		+ 'Shift-d' to delete entire path  ✓
  * 	- click to select a segment
  * 		+ color selection	  ✓
  * 		+ drag to move it         ✓
@@ -29,9 +28,8 @@
  * 	- Move a path or group of paths
  * 		+ vertically  (select; up key)                 ✓
  * 		+ horizontally                           needed?
- * 	- Copy 
- * 		+ a path (shift-select; shift-drag)		✓
- * 		+ some paths (select; shift-drag)      
+ * 	- Copy one path or more (select; shift-drag)		✓ 
+ * 	- Delete one or more selected paths (select; 'd')	✓
  * 	 
  * History:
  * 	- save history after:
@@ -54,10 +52,12 @@
  * 	- bug: 1. select path and segment on it; 2. select other path -> previous segment's marker still displayed
  */
 
-paper.install(window);
+//paper.install(window);
 
 
-window.onload = function(){
+//window.onload = function(){
+
+function annotateLines(){
 
 	var canvas = document.getElementById("myCanvas");
 	paper.setup(canvas);
@@ -75,6 +75,7 @@ window.onload = function(){
 	var currentPath = null;
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
+	var copyOn = true;
 
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
@@ -105,12 +106,12 @@ window.onload = function(){
 			"\npaths.children" + paths.children+
 			"\npathDrawingMode="+pathDrawingMode+
 			"\nsegmentEditMode="+segmentEditMode+
+			"\nCopyOn="+copyOn+
 			"\ncurrentSegmentIndex="+currentSegmentIndex+
 			"\ncurrentSegmentHandle="+currentSegmentHandle+
 			"\ncurrentPath="+currentPath);
 		console.log( paths.children )
 	}
-
 
 	canvas.update_img( img_file );
 
@@ -331,35 +332,23 @@ window.onload = function(){
 			currentSegmentIndex = -1;
 			//historySave();
 		}
-		// select all paths
+		// select all paths: alt-click
 		if (ev.modifiers.alt){
 			currentPath = null;
-			/*if (ev.modifiers.shift){
-				var clones = new Group()
-				for (const p of paths.children){ 
-					var cp = p.clone();
-					clones.addChild( cp );
-					selectPath( cp, true);
-				}
-				paths.addChildren( clones.children );
-				logState();
-			} else { */
-				for (const p of paths.children){ 
-					selectPath( p, true);
-				} 
-			//}
+			for (const p of paths.children){ selectPath( p, true); } 
 			return
 		}
 		// select one path or more
 		pathHitResult = getHitPath( ev.point );
-		if (pathHitResult !== null){
+		if (pathHitResult !== null && ! ev.modifiers.shift){
 			var p = pathHitResult.item;
 			selectPath( p, true );
-			if (! ev.modifiers.control && ! ev.modifiers.shift){
-				for (const op of paths.children){
-					if (op !== p){ selectPath( op, false ) }
-				}
+			if (currentPath !== null && ev.modifiers.control){ currentPath = null }
+			// unless ctrl-click, current selection cancels existing ones
+			if (! ev.modifiers.control ){
+				for (const op of paths.children.filter((elt) => elt !== p )){ selectPath( op, false ) }
 			}
+			logState()
 		// or nothing
 		} else {
 			for (const p of paths.children){ selectPath( p, false ); }
@@ -395,13 +384,11 @@ window.onload = function(){
 					currentPath = null;
 				}
 				//historySave();
-			}
+			} else { deletePaths( paths.children.filter((p)=>p.isSelected)); }
 		} 
 		// every key op happens on path
 		currentSegmentIndex = -1;
 		/*else if (ev.modifiers.control && Key.isDown('z')){ // buggy
-
-			console.log('Ctrl-z');
 			//historyRestore();
 		}*/
 	}
@@ -425,10 +412,10 @@ window.onload = function(){
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
 				//historySave();
-			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.shift ){
+			}/* else if ( pathHitResult.type === 'stroke' && ev.modifiers.shift ){
 				currentPath = currentPath.clone();
 				paths.addChild( currentPath );
-			}
+			}*/
 		}
 	}	
 
@@ -442,10 +429,29 @@ window.onload = function(){
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
 			currentPath.smooth({type: 'geometric'});
 		} else if ( ev.modifiers.shift ){
-			if (currentPath !== null){
-				currentPath.translate( ev.delta );
+			logState()
+			var clones = [];
+			if (copyOn){
+				for (const p of paths.children.filter((elt)=> elt.isSelected)){
+					pc = p.clone();
+					selectPath(p, false);
+					selectPath(pc, true );
+					clones.push(pc);
+				}
+				copyOn=false;
+				paths.addChildren( clones );
 			}
+			
+			for (const p of paths.children.filter((elt) => elt.isSelected)){
+				p.translate(ev.delta);
+			}
+		} else if (currentPath !== null){
+			currentPath.translate( ev.delta );
 		}
+	}
+
+	view.onMouseUp = (ev) => {
+		copyOn = true;
 	}
 
 	function selectPath( p, value ){
@@ -483,6 +489,13 @@ window.onload = function(){
 	function deletePath( path ){
 		for (var p=0; p< paths.children.length; p++){ if (paths.children[p]===path){ break; } }
 		paths.removeChildren(p, p+1)
+	}
+
+	function deletePaths( ps ){
+		var indicesToDelete = ps.map((p) => paths.children.findIndex((e) => e===p))
+		for (const i of indicesToDelete.toSorted( (x,y) => y-x)){
+			paths.removeChildren(i,i+1)
+		}
 	}
 
 	var Marker = (pt, diam, col) => {

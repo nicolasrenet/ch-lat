@@ -149,46 +149,54 @@
 		var gt_data_status = false;
 		var pred_data_checks = document.getElementsByName("check_preddata")
 		var pred_data_status = false;
+		
+		(function controlBoxInit(){
+			for (elt of gt_data_checks){
+				if (elt.id === "check_gtdata_{{charter_id}}"){
+					elt.checked=false;
+					elt.onclick = () => { 
+						if (! gt_data_status){
+							importData( 'gt' ) ;
+							gt_data_status = true;
+							check_preddata_elt = document.getElementById('check_preddata_{{charter_id}}');
+							if (check_preddata_elt !== null){ check_preddata_elt.checked=false;}
+							pred_data_status = false;
+						} else {
+							eraseData() ;
+							gt_data_status = false;
+						}
+					}
+					elt.value=false;
+				} else {
+					elt.disabled = true;
+				}
+			}
+			for (elt of pred_data_checks){
+				if (elt.id === "check_preddata_{{charter_id}}"){
+					elt.checked=false;
+					elt.onclick = () => { 
+						if (! pred_data_status){
+							eraseData();
+							importData( 'pred' ) ;
+							pred_data_status = true;
+							check_gtdata_elt = document.getElementById('check_gtdata_{{charter_id}}');
+							if (check_gtdata_elt !== null){ check_gtdata_elt.checked=false; }
+							gt_data_status = false;
+						} else {
+							eraseData() ;
+							pred_data_status = false;
+						}
+					}
+					elt.value=false
+				} else {
+					elt.disabled = true;
+				}
+			}
+		})()
 
-		for (elt of gt_data_checks){
-			if (elt.id === "check_gtdata_{{charter_id}}"){
-				elt.onclick = () => { 
-					if (! gt_data_status){
-						importData( 'gt' ) ;
-						gt_data_status = true;
-						check_preddata_elt = document.getElementById('check_preddata_{{charter_id}}');
-						if (check_preddata_elt !== null){ console.log('Unchkecing check_preddata_{{charter_id}}'); check_preddata_elt.checked=false;}
-						pred_data_status = false;
-					} else {
-						eraseData() ;
-						gt_data_status = false;
-					}
-				}
-				elt.value=false;
-			} else {
-				elt.disabled = true;
-			}
-		}
-		for (elt of pred_data_checks){
-			if (elt.id === "check_preddata_{{charter_id}}"){
-				elt.onclick = () => { 
-					if (! pred_data_status){
-						eraseData();
-						importData( 'pred' ) ;
-						pred_data_status = true;
-						check_gtdata_elt = document.getElementById('check_gtdata_{{charter_id}}');
-						if (check_gtdata_elt !== null){ console.log('Unchecking check_gtdata_{{charter_id}}'); check_gtdata_elt.checked=false; }
-						gt_data_status = false;
-					} else {
-						eraseData() ;
-						pred_data_status = false;
-					}
-				}
-				elt.value=false
-			} else {
-				elt.disabled = true;
-			}
-		}
+		paper.install(window);
+
+		window.onload=annotateLines; // in line_annotation.js
 		
 	</script>
 
