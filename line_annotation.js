@@ -7,6 +7,7 @@
  * Selection 
  * 	- click to select a path		✓
  * 	- Alt-click anywhere selects all paths  ✓
+ * 	- Ctrl-click for multi-selection        ✓
  *	- In both cases, get out of other modes ✓
  * 
  * PathDrawingMode
@@ -22,13 +23,15 @@
  * 		+ color selection	  ✓
  * 		+ drag to move it         ✓
  * 		+ 'd' to delete it        ✓ 
- * 	- Ctrl-click to select a stroke and add a segment on it ✓
- * 	- Move a segment or group of segments
- * 		+ vertically                   ✓
- * 		+ horizontally                 needed?
+ * 	- shift-ctrl-click to select a stroke and insert a segment on it ✓
+ *
+ * Path move/copy
+ * 	- Move a path or group of paths
+ * 		+ vertically  (select; up key)                 ✓
+ * 		+ horizontally                           needed?
  * 	- Copy 
- * 		+ a segment		✓
- * 		+ group of segments    
+ * 		+ a path (shift-select; shift-drag)		✓
+ * 		+ some paths (select; shift-drag)      
  * 	 
  * History:
  * 	- save history after:
@@ -48,6 +51,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
+ * 	- bug: 1. select path and segment on it; 2. select other path -> previous segment's marker still displayed
  */
 
 paper.install(window);
@@ -330,18 +334,31 @@ window.onload = function(){
 		// select all paths
 		if (ev.modifiers.alt){
 			currentPath = null;
-			for (const p of paths.children){ 
-				selectPath( p, true ); 
-			}
+			/*if (ev.modifiers.shift){
+				var clones = new Group()
+				for (const p of paths.children){ 
+					var cp = p.clone();
+					clones.addChild( cp );
+					selectPath( cp, true);
+				}
+				paths.addChildren( clones.children );
+				logState();
+			} else { */
+				for (const p of paths.children){ 
+					selectPath( p, true);
+				} 
+			//}
 			return
 		}
-		// select one path
+		// select one path or more
 		pathHitResult = getHitPath( ev.point );
 		if (pathHitResult !== null){
 			var p = pathHitResult.item;
 			selectPath( p, true );
-			for (const op of paths.children){
-				if (op !== p){ selectPath( op, false ) }
+			if (! ev.modifiers.control && ! ev.modifiers.shift){
+				for (const op of paths.children){
+					if (op !== p){ selectPath( op, false ) }
+				}
 			}
 		// or nothing
 		} else {
@@ -365,9 +382,8 @@ window.onload = function(){
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;
-			for (const p of paths.children){ selectPath(p, false) }
+			deselectAll();
 		} else if (Key.isDown('d')){
-			logState()
 			if (currentPath !== null){
 				if (currentSegmentIndex > -1){
 					currentPath.removeSegment( currentSegmentIndex );
@@ -380,7 +396,11 @@ window.onload = function(){
 				}
 				//historySave();
 			}
-		} /*else if (ev.modifiers.control && Key.isDown('z')){ // buggy
+		} 
+		// every key op happens on path
+		currentSegmentIndex = -1;
+		/*else if (ev.modifiers.control && Key.isDown('z')){ // buggy
+
 			console.log('Ctrl-z');
 			//historyRestore();
 		}*/
@@ -401,7 +421,7 @@ window.onload = function(){
 				}
 				currentSegmentHandle = new Path.Circle({ radius: paper.settings.handleSize, center: pathHitResult.segment.point, fillColor: 'red'});
 			// ctrl-clicking on a path stroke adds a node in the given position
-			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control ){
+			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control && ev.modifiers.shift){
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
 				//historySave();
@@ -450,6 +470,14 @@ window.onload = function(){
 			}
 		}
 		return hitResult;
+	}
+
+	function deselectAll(){
+		for (const p of paths.children){
+			selectPath( p, false);
+		}
+		currentPath = null;
+		currentSegmentIndex = -1;
 	}
 
 	function deletePath( path ){

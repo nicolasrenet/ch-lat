@@ -129,12 +129,12 @@
 					</div>
 					<div class="table-cell">
 						{% if ch.hasGTData %} 
-							<input class="tablechck" type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false"></input> 
+							<input class="tablechck" type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false">
 						{% endif %}
 					</div>
 					<div class="table-cell">
 						{% if ch.hasPredData %} 
-							<input class="tablechck" type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false"></input> 
+							<input class="tablechck" type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false">
 						{% endif %}
 					</div>
 				</div>
@@ -158,7 +158,7 @@
 						importData( 'gt' ) ;
 						gt_data_status = true;
 						check_preddata_elt = document.getElementById('check_preddata_{{charter_id}}');
-						if (check_preddata_elt !== null){ check_preddata_elt.value=false;}
+						if (check_preddata_elt !== null){ console.log('Unchkecing check_preddata_{{charter_id}}'); check_preddata_elt.checked=false;}
 						pred_data_status = false;
 					} else {
 						eraseData() ;
@@ -174,10 +174,11 @@
 			if (elt.id === "check_preddata_{{charter_id}}"){
 				elt.onclick = () => { 
 					if (! pred_data_status){
+						eraseData();
 						importData( 'pred' ) ;
 						pred_data_status = true;
 						check_gtdata_elt = document.getElementById('check_gtdata_{{charter_id}}');
-						if (check_gtdata_elt !== null){ check_gtdata_elt.value=false; }
+						if (check_gtdata_elt !== null){ console.log('Unchecking check_gtdata_{{charter_id}}'); check_gtdata_elt.checked=false; }
 						gt_data_status = false;
 					} else {
 						eraseData() ;
