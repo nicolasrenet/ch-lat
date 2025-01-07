@@ -1,4 +1,4 @@
-/* nprenet@gmail.com, 12/2024
+/* nprenet@gmail.com, 12/2024-01/2025
  *
  * Drawing tool for annotating charters.
  *
