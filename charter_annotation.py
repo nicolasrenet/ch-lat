@@ -78,8 +78,9 @@ def read_segmentation_file( segmentation_file: str ) -> dict:
 
 # Listing all charters, with their existing segmentation meta-data
 
-def get_charters():
-    charters = { lemmatize(p):{'filename': str(p), 'gtsegfile': None} for p in Path('.').glob(f'*{settings["charter_img_suffix"]}') }
+def get_charters(repo='static/current_repository'):
+    print(Path(repo).absolute())
+    charters = { lemmatize(p):{'filename': str(p), 'gtsegfile': None} for p in Path(repo).glob(f'*{settings["charter_img_suffix"]}') }
     for md5id in charters:
         gt_seg_filename = md5id + settings['gt_segfile_suffix']
         if Path( gt_seg_filename ).exists():
@@ -88,6 +89,8 @@ def get_charters():
         if Path( pred_seg_filename ).exists():
             charters[md5id]['hasPredData']=True
     return charters
+
+
 
 
 #################### ROUTES ###############
