@@ -2,10 +2,10 @@
 <html>
 <head>
 <!-- Load the Paper.js library -->
-	<script type="text/javascript" src="static/paper.js"></script>
+	<script type="text/javascript" src="/static/paper.js"></script>
 <!-- Define inlined JavaScript -->
 
-	<script type="text/javascript" src="static/line_annotation.js"> </script>
+	<script type="text/javascript" src="/static/line_annotation.js"> </script>
 </head>
 <body>
 	<canvas id="myCanvas" width="{{display_size[0]}}px" height="{{display_size[1]}}px"> </canvas>
@@ -15,24 +15,38 @@
 	<!-- read from line_annotation.js -->
 
 		const cnv = document.getElementById("myCanvas");
-		var img_file = "{{charters[charter_id].filename}}"; 
+		var img_file = "{{charter_images[charter_img_id].filename}}"; 
+		var img_id = '{{charter_img_id}}';
+		var img_url = '/img/{{charter_images[charter_img_id].archive}}/'+ img_id;
+
 		cnv.display_size = {{display_size}};
 
-	     	function exportData(){
+		/*function get_img(charter_img_id){
+			console.log('get_img(/img/' + charter_img_id + ')')
+			fetch("/img/"+charter_img_id,{
+				method: "GET",
+				headers: {"Content-Type": "application/octet-stream"},
+				responseType: "arrayBuffer"
+			})
+			.then( resp => { if (resp.ok) { return resp.arrayBuffer(); }; console.log("Success") ; } )
+		        .catch( err => console.log( err ) )
+		}*/
+
+	     	function exportData(charter_img_id){
 			segdata =  cnv.exportMask();
 			if (Object.keys(segdata).length === 0){
 				console.log("exportData() - abort: empty segmentation data!")
 				return
 			}
-			fetch("/export/{{charter_id}}", {
+			fetch("/export/"+charter_img_id, {
 				method: "POST",
 				headers: {"Content-Type":"application/json"},
 				body: JSON.stringify( segdata )
 			}).then( resp => { console.log(resp.json()) } )
 		}
 
-		function importData( dataType ){
-			url = "/import/{{charter_id}}?" + new URLSearchParams({segtype: dataType}).toString()
+		function importData( charter_igm_id, dataType ){
+			url = "/import/" + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
 			console.log("Importing seg data - " + url);
 			fetch(url, { method: "GET" }
 			).then( resp => { return resp.json() ; }
@@ -70,8 +84,10 @@
 		}
 		.table-header-cell{
 			display: table-cell;
-			text-align: center;
+			/*text-align: center;*/
 			border-bottom: 1px solid;
+			padding-left: 20px;
+			padding-right: 20px;
 		}
 		.table-body {
 			display: table-row-group;
@@ -87,14 +103,13 @@
 			display: table-cell;
 			padding-left: 20px;
 			padding-right: 20px;
-			text-align: center;
+			/*text-align: center;*/
 		}
-		.filename-cell {
+		.table-cell-first {
 			height: 25px;
-			text-align: left;
 		}
-		.filename-header-cell {
-			width: 80%
+		.header-cell-first {
+			width: 50%
 		}
 		#export-button {
 			flex: 1; 
@@ -111,28 +126,32 @@
 	<div id="control-box" class="box">
 		<div id="charter-table">
 			<div class="table-header">
-				<div class="table-header-cell filename-header-cell">Charter</div> 
+				<div class="table-header-cell header-cell-first">Archive//Charter</div>
+				<div class="table-header-cell">Image</div> 
 				<div class="table-header-cell">GT Segt.</div> 
 				<div class="table-header-cell">Pred Segt.</div> 
 			</div>
 			<div class="table-body">
-				{% for id, ch in charters.items() %}
+				{% for id, ch_img in charter_images.items() %}
 					
 				<div class="table-row">
-					<div class="filename-cell">
-						{% if id != charter_id %}
-						<a href="/{{id}}">{{loop.index}}. {{ch.filename}}</a>
+					<div class="table-cell-first table-cell">
+						{{loop.index}}. {{ch_img.archive}}//{{ch_img.charter}}
+					</div>
+					<div class="table-cell">
+						{% if id != charter_img_id %}
+						<a href="/{{ch_img.archive}}/{{id}}">{{id}}</a>
 						{% else %}
-						{{loop.index}}. {{ch.filename}}
+						{{id}}
 						{% endif %}
 					</div>
 					<div class="table-cell">
-						{% if ch.hasGTData %} 
+						{% if ch_img.hasGTData %} 
 							<input class="tablechck" type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false">
 						{% endif %}
 					</div>
 					<div class="table-cell">
-						{% if ch.hasPredData %} 
+						{% if ch_img.hasPredData %} 
 							<input class="tablechck" type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false">
 						{% endif %}
 					</div>
@@ -141,7 +160,7 @@
 
 			</div>
 		</div>
-		<button id="export-button" onClick="exportData()"> Export</button>
+		<button id="export-button" onClick="exportData('{{charter_img_id}}')"> Export</button>
 	</div>
 
 	<script type="text/javascript">
@@ -152,13 +171,13 @@
 		
 		(function controlBoxInit(){
 			for (elt of gt_data_checks){
-				if (elt.id === "check_gtdata_{{charter_id}}"){
+				if (elt.id === "check_gtdata_{{charter_img_id}}"){
 					elt.checked=false;
 					elt.onclick = () => { 
 						if (! gt_data_status){
-							importData( 'gt' ) ;
+							importData( '{{charter_img_id}}', 'gt' ) ;
 							gt_data_status = true;
-							check_preddata_elt = document.getElementById('check_preddata_{{charter_id}}');
+							check_preddata_elt = document.getElementById('check_preddata_{{charter_img_id}}');
 							if (check_preddata_elt !== null){ check_preddata_elt.checked=false;}
 							pred_data_status = false;
 						} else {
@@ -172,14 +191,14 @@
 				}
 			}
 			for (elt of pred_data_checks){
-				if (elt.id === "check_preddata_{{charter_id}}"){
+				if (elt.id === "check_preddata_{{charter_img_id}}"){
 					elt.checked=false;
 					elt.onclick = () => { 
 						if (! pred_data_status){
 							eraseData();
-							importData( 'pred' ) ;
+							importData( '{{charter_img_id}}', 'pred' ) ;
 							pred_data_status = true;
-							check_gtdata_elt = document.getElementById('check_gtdata_{{charter_id}}');
+							check_gtdata_elt = document.getElementById('check_gtdata_{{charter_img_id}}');
 							if (check_gtdata_elt !== null){ check_gtdata_elt.checked=false; }
 							gt_data_status = false;
 						} else {

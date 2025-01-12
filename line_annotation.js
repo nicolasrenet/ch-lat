@@ -80,10 +80,12 @@ function annotateLines(){
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
 
-	canvas.update_img = function ( img ){
+	canvas.update_img = function ( file_url ){
+		console.log( "canvas.update(" +  file_url + ")")
 		charterLayer.activate();
-		charter = new Raster( img );
+		charter = new Raster( file_url );
 		charter.onLoad = function() {
+			console.log("Loaded image " + file_url )
 			// the canvas display_size attribute is set in the containing template
 			scalingFactor = canvas.display_size[1]/charter.height;
 			charter.position = view.center;
@@ -113,7 +115,7 @@ function annotateLines(){
 		console.log( paths.children )
 	}
 
-	canvas.update_img( img_file );
+	canvas.update_img( img_url );
 
 	/*
 	 * Import segmentation data into the canvas, as paths.
