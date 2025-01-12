@@ -21,13 +21,13 @@
 
 		cnv.display_size = {{display_size}};
 
-	     	function exportData(charter_img_id){
+	     	function exportData(archive_id, charter_img_id){
 			segdata =  cnv.exportMask();
 			if (Object.keys(segdata).length === 0){
 				console.log("exportData() - abort: empty segmentation data!")
 				return
 			}
-			fetch("/export/"+charter_img_id, {
+			fetch("/export/" + archive_id + '/' + charter_img_id, {
 				method: "POST",
 				headers: {"Content-Type":"application/json"},
 				body: JSON.stringify( segdata )
@@ -160,7 +160,7 @@
 
 			</div>
 		</div>
-		<button id="export-button" onClick="exportData('{{charter_img_id}}')"> Export</button>
+		<button id="export-button" onClick="exportData('{{archive_id}}', '{{charter_img_id}}')"> Export</button>
 	</div>
 
 	<script type="text/javascript">

@@ -40,7 +40,7 @@ def lemmatize( p:Path, suffix=''):
 
 ########## DATA ACCESS ################
 
-def fsdb_write_segmentation_file( page_data: dict, charter_img_id: str)->dict:
+def fsdb_write_segmentation_file( page_data: dict, archive_id:str, charter_img_id: str)->dict:
     """
     Write segmentation data into a JSON file.
 
@@ -57,7 +57,16 @@ def fsdb_write_segmentation_file( page_data: dict, charter_img_id: str)->dict:
         "type": "centerlines",
         "text_direction": "horizontal-lr",
     })
-    output_filename = '{}.lines.gt.json'.format(charter_img_id)
+
+    if app.config['crop']:
+        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
+    else:
+        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
+
+    if not charter_img_paths:
+        return {}
+
+    output_filename = '{}.{}'.format( lemmatize( charter_img_paths[0], suffix=app.config['charter_img_suffix'] ), app.config['gt_segfile_suffix'])
     returnValue = {}
     outputfile = None
     try:
@@ -247,12 +256,12 @@ def serve_img( archive_id:str, charter_img_id:str):
     abort(404, description="Could not find charter image {} in archive {}".format( charter_img_id, archive_id))
 
 
-@app.post('/export/<charter_img_id>')
-def record_segmentation_data( charter_img_id:str ):
+@app.post('/export/<archive_id>/<charter_img_id>')
+def record_segmentation_data( archive_id:str, charter_img_id:str ):
     """Export segmentation annotation to disk.
     """
     segmentation_data = request.get_json()
-    ok = fsdb_write_segmentation_file( segmentation_data, charter_img_id )
+    ok = fsdb_write_segmentation_file( segmentation_data, archive_id, charter_img_id )
     resp = make_response( ok )
     return resp
 
