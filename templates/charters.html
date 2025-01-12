@@ -21,17 +21,6 @@
 
 		cnv.display_size = {{display_size}};
 
-		/*function get_img(charter_img_id){
-			console.log('get_img(/img/' + charter_img_id + ')')
-			fetch("/img/"+charter_img_id,{
-				method: "GET",
-				headers: {"Content-Type": "application/octet-stream"},
-				responseType: "arrayBuffer"
-			})
-			.then( resp => { if (resp.ok) { return resp.arrayBuffer(); }; console.log("Success") ; } )
-		        .catch( err => console.log( err ) )
-		}*/
-
 	     	function exportData(charter_img_id){
 			segdata =  cnv.exportMask();
 			if (Object.keys(segdata).length === 0){
@@ -126,7 +115,19 @@
 	<div id="control-box" class="box">
 		<div id="charter-table">
 			<div class="table-header">
-				<div class="table-header-cell header-cell-first">Archive//Charter</div>
+				<div class="table-header-cell header-cell-first">
+					<select id="archive_selection" onchange="window.location.replace('/archive/'+this.value)">
+						{% for arch in archives %}
+							{% if arch==archive_id %}
+								<option value="{{arch}}" selected>{{arch}}</option>
+							{% else %}
+								<option value="{{arch}}">{{arch}}</option>
+							{% endif %}
+						{% endfor %}
+						
+					</select>
+					//Charter
+				</div>
 				<div class="table-header-cell">Image</div> 
 				<div class="table-header-cell">GT Segt.</div> 
 				<div class="table-header-cell">Pred Segt.</div> 

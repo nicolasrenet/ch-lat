@@ -2,7 +2,7 @@
 A Flask interface to read and write segmentation data on locally stored charters.
 """
 from flask import Flask
-from flask import render_template, request, jsonify, make_response, redirect, url_for
+from flask import render_template, request, jsonify, make_response, redirect, url_for, abort
 from pathlib import Path
 import re
 import json
@@ -81,12 +81,19 @@ def fsdb_read_segmentation_file( segmentation_file: str ) -> dict:
             seginfile.close();
     return returnValue;
 
+def fsdb_get_archives() -> []:
+    archives = list([ p.name for p in Path( settings['fsdb_root']).glob('*') if p.is_dir() and re.match(r'[A-Z]{2}-[A-Za-z]+', p.name)])
+    return archives
+
 
 # Listing all charter images, with their existing segmentation meta-data
-def fsdb_get_charter_images(archive_id):
+def fsdb_get_charter_images(archive_id:str=''):
 
+    if not archive_id:
+        archive_id = [ p.name for p in Path( settings['fsdb_root']).glob('*') if p.is_dir() ][0]
+         
     charter_images = { lemmatize(img):{'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(settings['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, settings['charter_img_suffix'])) }
-
+    
     for md5id in charter_images:
         charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.name
         gt_seg_filename = '{}.{}'.format( md5id, settings['gt_segfile_suffix'])
@@ -95,7 +102,7 @@ def fsdb_get_charter_images(archive_id):
         pred_seg_filename = '{}.{}'.format( md5id, settings['pred_segfile_suffix'] )
         if Path( pred_seg_filename ).exists():
             charter_images[md5id]['hasPredData']=True
-    return charter_images
+    return archive_id, charter_images
 
 
 def fsdb_get_image(archive_id: str, charter_img_id:str):
@@ -113,28 +120,60 @@ def fsdb_get_image(archive_id: str, charter_img_id:str):
 
 #################### ROUTES ###############
 
+@app.errorhandler(404)
+def resource_not_found(e):
+    return jsonify(error=str(e)), 404
+
+
+
 @app.route('/')
 def charters_choice():
     """ Display first charter in the list.
     """
-    current = list(fsdb_get_charter_images().keys())[0]
-    return redirect(f'/{current}')
+    archive_id, charter_images = fsdb_get_charter_images()
+
+    if not charter_images:
+        abort(404, description="No charter images found for archive '{}'".format( archive_id ))
+    charter_img_id = list(charter_images.keys())[0]
+    return redirect(f'/{archive_id}/{charter_img_id}')
+
+@app.get('/archive')
+def all_archives():
+    archives = fsdb_get_archives()
+    if not archives:
+        abort(404, description="No archives found")
+    return make_response( archives )
+
 
 @app.route('/archive/<archive_id>')
-def charters_archive_list(archive_id:str):
-    print('charters_archive_list()')
-    current = list(fsdb_get_charter_images(archive_id).keys())[0]
-    return redirect(f'/{archive_id}/{current}')
+def archive_charter_all_images(archive_id:str):
+    _, charter_images = fsdb_get_charter_images(archive_id)
+
+    if not charter_images:
+        abort(404, description="No charter images found for archive '{}'".format( archive_id ))
+
+    charter_img_id = list( charter_images.keys())[0]
+    return redirect(f'/{archive_id}/{charter_img_id}')
 
 @app.get('/<archive_id>/<charter_img_id>')
-def charter_pick( archive_id:str, charter_img_id:str):
+def archive_charter_one_image( archive_id:str, charter_img_id:str):
     """ Display a charter image, as well as the list of charters.
     """
-    charter_images = fsdb_get_charter_images(archive_id)
+    archives = fsdb_get_archives()
+    _, charter_images = fsdb_get_charter_images(archive_id)
+
+    if not charter_images:
+        abort(404, description="No charter images found for archive '{}'".format( archive_id ))
+
+    if charter_img_id not in charter_images:
+        abort(404, description="No charter image found with id='{}'".format( charter_img_id ))
+
     with Image.open( charter_images[charter_img_id]['filename']) as img:
         display_size = [int(d*settings['scaling_factor']) for d in img.size]
         return render_template(
                 'charters.html', 
+                archives=archives,
+                archive_id=archive_id,
                 charter_images=charter_images, 
                 charter_img_id=charter_img_id, 
                 display_size=display_size
@@ -142,17 +181,14 @@ def charter_pick( archive_id:str, charter_img_id:str):
 
 @app.get('/img/<archive_id>/<charter_img_id>')
 def serve_img( archive_id:str, charter_img_id:str):
-    print('serve_img({}, {}'.format( archive_id, charter_img_id ))
     image_bytes = fsdb_get_image(archive_id, charter_img_id)
+    
     if image_bytes is not None:
         resp = make_response( image_bytes )
         resp.headers.set('Content-Type', 'image/jpeg')
         return resp
-    return make_response(404)
-
-
-
-
+     
+    abort(404, description="Could not find charter image {} in archive {}".format( charter_img_id, archive_id))
 
 
 @app.post('/export/<charter_img_id>')
