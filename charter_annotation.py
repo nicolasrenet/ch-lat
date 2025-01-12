@@ -8,26 +8,34 @@ import re
 import json
 import base64
 from PIL import Image
+from typing import List, Tuple
 
 # TODO:
+#   + Fix segmentation data export
 #
 
 app = Flask(__name__)
 
+
+
 # SETTINGS
-settings = {
-        'scaling_factor': .5,
-        'charter_img_suffix': 'img.jpg',
-        'gt_segfile_suffix': 'lines.gt.json',
-        'pred_segfile_suffix': 'lines.pred.json',
-        'fsdb_root': '/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
-}
+app.config.update(
+    scaling_factor= .7,
+    charter_img_suffix='img.jpg',
+    gt_segfile_suffix='lines.gt.json',
+    pred_segfile_suffix='lines.pred.json',
+    fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
+    crop=False,
+)
+
+app.config.from_prefixed_env()
 
 
+def lemmatize( p:Path, suffix=''):
+    if suffix:
+        return re.sub(r'(.+).{}$'.format(suffix), r'\1', str(p))
+    return re.sub(r'\..+', '',  str(p))
 
-
-def lemmatize( p:Path):
-    return re.sub(r'\..+', '',  p.name)
 
 
 ########## DATA ACCESS ################
@@ -62,7 +70,7 @@ def fsdb_write_segmentation_file( page_data: dict, charter_img_id: str)->dict:
     return returnValue
 
 
-def fsdb_read_segmentation_file( segmentation_file: str ) -> dict:
+def fsdb_read_segmentation_file(archive_id:str, segmentation_file: str ) -> dict:
     """
     Args:
         segmentation_file (str): a JSON file, Kraken-style
@@ -71,8 +79,15 @@ def fsdb_read_segmentation_file( segmentation_file: str ) -> dict:
     """
     seginfile = None
     returnValue = {}
+    if app.config['crop']:
+        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}'.format(archive_id, segmentation_file)))
+    else:
+        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, segmentation_file)))
+
+    if not charter_seg_paths:
+        return {}
     try:
-        seginfile = open(segmentation_file, 'r') 
+        seginfile = open(charter_seg_paths[0], 'r') 
         returnValue = json.load( seginfile );
     except (IOError, FileNotFoundError) as e:
         pass
@@ -81,33 +96,74 @@ def fsdb_read_segmentation_file( segmentation_file: str ) -> dict:
             seginfile.close();
     return returnValue;
 
-def fsdb_get_archives() -> []:
-    archives = list([ p.name for p in Path( settings['fsdb_root']).glob('*') if p.is_dir() and re.match(r'[A-Z]{2}-[A-Za-z]+', p.name)])
+def fsdb_get_archives() -> List[str]:
+    """
+    Get a list of all archive directories.
+
+    Returns:
+        List[str]: a list of archive names.
+    """
+    archives = list([ p.name for p in Path( app.config['fsdb_root']).glob('*') if p.is_dir() and re.match(r'[A-Z]{2}-[A-Za-z]+', p.name)])
     return archives
 
 
-# Listing all charter images, with their existing segmentation meta-data
-def fsdb_get_charter_images(archive_id:str=''):
+def fsdb_get_charter_images(archive_id:str='') -> Tuple[str,dict]:
+    """
+    For given archive, get a map of all images, with their attributes.
 
+    Args:
+        archive_id (str): the name of an archive directory; if empty, the first archive in the list is used.
+    Returns:
+        Tuple[str,dict]: a pair with the archive id passed to the function, as well as a dictionary
+            with image ids as keys and a dictionary of image attributes (filename, segmentation data, ...)
+            as value. 
+    """
     if not archive_id:
-        archive_id = [ p.name for p in Path( settings['fsdb_root']).glob('*') if p.is_dir() ][0]
-         
-    charter_images = { lemmatize(img):{'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(settings['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, settings['charter_img_suffix'])) }
-    
+        archive_id = [ p.name for p in Path( app.config['fsdb_root']).glob('*') if p.is_dir() ][0]
+    charter_images = []
+    if app.config['crop']:
+        charter_images = { lemmatize(img.name, suffix=app.config['charter_img_suffix']):{'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, app.config['charter_img_suffix'])) }
+    else:
+        charter_images = { lemmatize(img.name):{'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(app.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, app.config['charter_img_suffix'])) }
+
     for md5id in charter_images:
-        charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.name
-        gt_seg_filename = '{}.{}'.format( md5id, settings['gt_segfile_suffix'])
+        filepath_stem = lemmatize( Path(charter_images[md5id]['filename']), suffix=app.config['charter_img_suffix'] )
+        print('filepath_stem=', filepath_stem)
+
+        if app.config['crop']:
+            charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.parent.name
+        else:
+            charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.name
+
+        gt_seg_filename = '{}.{}'.format( filepath_stem, app.config['gt_segfile_suffix'])
         if Path( gt_seg_filename ).exists():
             charter_images[md5id]['hasGTData']=True
-        pred_seg_filename = '{}.{}'.format( md5id, settings['pred_segfile_suffix'] )
+        pred_seg_filename = '{}.{}'.format( filepath_stem, app.config['pred_segfile_suffix'] )
+        print(pred_seg_filename)
         if Path( pred_seg_filename ).exists():
             charter_images[md5id]['hasPredData']=True
+    print(charter_images)
+    
     return archive_id, charter_images
 
 
 def fsdb_get_image(archive_id: str, charter_img_id:str):
+    """
+    Find an image from the given archive, given its id.
+
+    Args:
+        archive_id (str): the name of an archive directory.
+        charter_img_id (str): the image id.
+    Returns:
+        bytes: an array of bytes.
+    """
     img_data=None
-    charter_img_paths = list(Path(settings['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, settings['charter_img_suffix'])))
+    print('fsdb_get_image(', charter_img_id)
+    if app.config['crop']:
+        charter_img_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
+        print(charter_img_paths)
+    else:
+        charter_img_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
     if not charter_img_paths:
         return None
     try:
@@ -128,7 +184,7 @@ def resource_not_found(e):
 
 @app.route('/')
 def charters_choice():
-    """ Display first charter in the list.
+    """ Display first charter of first archive
     """
     archive_id, charter_images = fsdb_get_charter_images()
 
@@ -169,7 +225,7 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
         abort(404, description="No charter image found with id='{}'".format( charter_img_id ))
 
     with Image.open( charter_images[charter_img_id]['filename']) as img:
-        display_size = [int(d*settings['scaling_factor']) for d in img.size]
+        display_size = [int(d*app.config['scaling_factor']) for d in img.size]
         return render_template(
                 'charters.html', 
                 archives=archives,
@@ -200,12 +256,12 @@ def record_segmentation_data( charter_img_id:str ):
     resp = make_response( ok )
     return resp
 
-@app.get('/import/<charter_img_id>')
-def get_segmentation_gt( charter_img_id:str ):
+@app.get('/import/<archive_id>/<charter_img_id>')
+def get_segmentation_gt( archive_id:str, charter_img_id:str ):
     """ Import a mask generated by this application (for updates)
     """
-    suffix = settings['pred_segfile_suffix'] if request.args.get( 'segtype' ) == 'pred' else settings['gt_segfile_suffix']
-    segmentation_data = fsdb_read_segmentation_file( '{}.{}'.format( charter_img_id, suffix ))
+    suffix = app.config['pred_segfile_suffix'] if request.args.get( 'segtype' ) == 'pred' else app.config['gt_segfile_suffix']
+    segmentation_data = fsdb_read_segmentation_file( archive_id, '{}.{}'.format( charter_img_id, suffix ))
     print(segmentation_data)
     return make_response( segmentation_data )
 

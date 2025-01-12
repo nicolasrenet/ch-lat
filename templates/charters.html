@@ -34,8 +34,8 @@
 			}).then( resp => { console.log(resp.json()) } )
 		}
 
-		function importData( charter_igm_id, dataType ){
-			url = "/import/" + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
+		function importData( archive_id, charter_img_id, dataType ){
+			url = "/import/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
 			console.log("Importing seg data - " + url);
 			fetch(url, { method: "GET" }
 			).then( resp => { return resp.json() ; }
@@ -125,8 +125,7 @@
 							{% endif %}
 						{% endfor %}
 						
-					</select>
-					//Charter
+					</select>//Charter
 				</div>
 				<div class="table-header-cell">Image</div> 
 				<div class="table-header-cell">GT Segt.</div> 
@@ -176,7 +175,7 @@
 					elt.checked=false;
 					elt.onclick = () => { 
 						if (! gt_data_status){
-							importData( '{{charter_img_id}}', 'gt' ) ;
+							importData('{{archive_id}}', '{{charter_img_id}}', 'gt' ) ;
 							gt_data_status = true;
 							check_preddata_elt = document.getElementById('check_preddata_{{charter_img_id}}');
 							if (check_preddata_elt !== null){ check_preddata_elt.checked=false;}
@@ -197,7 +196,7 @@
 					elt.onclick = () => { 
 						if (! pred_data_status){
 							eraseData();
-							importData( '{{charter_img_id}}', 'pred' ) ;
+							importData( '{{archive_id}}', '{{charter_img_id}}', 'pred' ) ;
 							pred_data_status = true;
 							check_gtdata_elt = document.getElementById('check_gtdata_{{charter_img_id}}');
 							if (check_gtdata_elt !== null){ check_gtdata_elt.checked=false; }
