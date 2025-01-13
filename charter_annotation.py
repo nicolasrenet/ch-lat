@@ -233,14 +233,20 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
     if charter_img_id not in charter_images:
         abort(404, description="No charter image found with id='{}'".format( charter_img_id ))
 
+    def get_scaling_factor( actual_width:int, max_width=1500 ):
+        """ Ensure that image canvas is not too wide, for layout purpose """
+        return app.config['scaling_factor'] if img.size[0] <= max_width else max_width/img.size[0]
+
     with Image.open( charter_images[charter_img_id]['filename']) as img:
-        display_size = [int(d*app.config['scaling_factor']) for d in img.size]
+        display_size = [int(d*get_scaling_factor(img.size[0])) for d in img.size]
         return render_template(
                 'charters.html', 
                 archives=archives,
                 archive_id=archive_id,
                 charter_images=charter_images, 
                 charter_img_id=charter_img_id, 
+                charter_img_size=img.size,
+                charter_filename=Path(charter_images[charter_img_id]['filename']).name,
                 display_size=display_size
                 )
 

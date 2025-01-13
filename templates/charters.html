@@ -1,18 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-<!-- Load the Paper.js library -->
-	<script type="text/javascript" src="/static/paper.js"></script>
-<!-- Define inlined JavaScript -->
 
+	<link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+	
+	<!-- Load the Paper.js library -->
+	<script type="text/javascript" src="/static/paper.js"></script>
+
+	<!-- Annotation GUI -->
 	<script type="text/javascript" src="/static/line_annotation.js"> </script>
 </head>
 <body>
-	<canvas id="myCanvas" width="{{display_size[0]}}px" height="{{display_size[1]}}px"> </canvas>
+	<div id="app-box" class="box">
+		<div id="canvas-box">
+			<canvas id="myCanvas" width="{{display_size[0]}}px" height="{{display_size[1]}}px"> </canvas>
+		</div>
+
+		<div id="control-box" class="box">
+			<div id="property-box" class="box">
+				<dl>
+					<li>File: {{charter_filename}}</li>
+					<li>Size: {{charter_img_size[0]}} x {{charter_img_size[1]}}</li>
+				</dl>
+			</div>
+			<button id="export-button" onClick="exportData('{{archive_id}}', '{{charter_img_id}}')"> Export</button>
+			<div id="charter-table">
+				<div class="table-header">
+					<div class="table-header-cell header-cell-first">
+						<select id="archive_selection" onchange="window.location.replace('/archive/'+this.value)">
+							{% for arch in archives %}
+								{% if arch==archive_id %}
+									<option value="{{arch}}" selected>{{arch}}</option>
+								{% else %}
+									<option value="{{arch}}">{{arch}}</option>
+								{% endif %}
+							{% endfor %}
+							
+						</select>//Charter
+					</div>
+					<div class="table-header-cell">Image</div> 
+					<div class="table-header-cell">GT Segt.</div> 
+					<div class="table-header-cell">Pred Segt.</div> 
+				</div>
+				<div class="table-body">
+					{% for id, ch_img in charter_images.items() %}
+						
+					<div class="table-row">
+						<div class="table-cell-first table-cell">
+							{{loop.index}}. {{ch_img.archive}}//{{ch_img.charter}}
+						</div>
+						<div class="table-cell">
+							{% if id != charter_img_id %}
+							<a href="/{{ch_img.archive}}/{{id}}">{{id}}</a>
+							{% else %}
+							{{id}}
+							{% endif %}
+						</div>
+						<div class="table-cell">
+							{% if ch_img.hasGTData %} 
+								<input class="tablechck" type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false">
+							{% endif %}
+						</div>
+						<div class="table-cell">
+							{% if ch_img.hasPredData %} 
+								<input class="tablechck" type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false">
+							{% endif %}
+						</div>
+					</div>
+					{% endfor %}
+
+				</div>
+			</div>
+		</div>
+	</div>
 
       	<script type="text/javascript">
-
-	<!-- read from line_annotation.js -->
+		<!-- read from line_annotation.js -->
 
 		const cnv = document.getElementById("myCanvas");
 		var img_file = "{{charter_images[charter_img_id].filename}}"; 
@@ -49,119 +112,10 @@
 
         </script>
 
-	<style>
-		/* Prevents bug in hit event */
-		.cnvbox {
-			padding: 0px;
-		}
-		.box {
-			display: flex;
-			align-items:center;
-		}
-		.box > * {
-			padding: 10px;
-		}
-		#charter-table {
-			table-layout: fixed;
-			display: table;
-			flex: 2 1;
-		}
-
-		.table-header {
-			display: table-header-group;
-			font-weight: bold;
-		}
-		.table-header-cell{
-			display: table-cell;
-			/*text-align: center;*/
-			border-bottom: 1px solid;
-			padding-left: 20px;
-			padding-right: 20px;
-		}
-		.table-body {
-			display: table-row-group;
-		}
-		.table-row > * {
-			border-bottom: 1px solid;
-		}
-		.table-row {
-			display: table-row;
-		}
-		.table-cell {
-			height: 25px;
-			display: table-cell;
-			padding-left: 20px;
-			padding-right: 20px;
-			/*text-align: center;*/
-		}
-		.table-cell-first {
-			height: 25px;
-		}
-		.header-cell-first {
-			width: 50%
-		}
-		#export-button {
-			flex: 1; 
-			height: 70px;
-			font-size: 1.5rem;
-			background-color: #a7c7e7;
-		}
-	</style>
-
 	<script type='text/javascript'>
 		<!--document.getElementById("check_gtdata_{{id}}").onclick=() => { document.getElementById("gt_data_{{id}}").submit();}-->
 	</script>
 
-	<div id="control-box" class="box">
-		<div id="charter-table">
-			<div class="table-header">
-				<div class="table-header-cell header-cell-first">
-					<select id="archive_selection" onchange="window.location.replace('/archive/'+this.value)">
-						{% for arch in archives %}
-							{% if arch==archive_id %}
-								<option value="{{arch}}" selected>{{arch}}</option>
-							{% else %}
-								<option value="{{arch}}">{{arch}}</option>
-							{% endif %}
-						{% endfor %}
-						
-					</select>//Charter
-				</div>
-				<div class="table-header-cell">Image</div> 
-				<div class="table-header-cell">GT Segt.</div> 
-				<div class="table-header-cell">Pred Segt.</div> 
-			</div>
-			<div class="table-body">
-				{% for id, ch_img in charter_images.items() %}
-					
-				<div class="table-row">
-					<div class="table-cell-first table-cell">
-						{{loop.index}}. {{ch_img.archive}}//{{ch_img.charter}}
-					</div>
-					<div class="table-cell">
-						{% if id != charter_img_id %}
-						<a href="/{{ch_img.archive}}/{{id}}">{{id}}</a>
-						{% else %}
-						{{id}}
-						{% endif %}
-					</div>
-					<div class="table-cell">
-						{% if ch_img.hasGTData %} 
-							<input class="tablechck" type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false">
-						{% endif %}
-					</div>
-					<div class="table-cell">
-						{% if ch_img.hasPredData %} 
-							<input class="tablechck" type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false">
-						{% endif %}
-					</div>
-				</div>
-				{% endfor %}
-
-			</div>
-		</div>
-		<button id="export-button" onClick="exportData('{{archive_id}}', '{{charter_img_id}}')"> Export</button>
-	</div>
 
 	<script type="text/javascript">
 		var gt_data_checks = document.getElementsByName("check_gtdata")

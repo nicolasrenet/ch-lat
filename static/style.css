@@ -1,0 +1,65 @@
+/* Prevents bug in hit event */
+#app-box {
+	display: flex;
+	flex-direction: row;
+	padding: 0px;
+}
+#canvas-box {
+	flex: 1 1 ;
+	align-items:center;
+}
+
+#control-box {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.box > * {
+	padding: 10px;
+}
+#charter-table {
+	table-layout: fixed;
+	display: table;
+	/*flex: 1 1 auto;*/
+}
+
+.table-header {
+	display: table-header-group;
+	font-weight: bold;
+}
+.table-header-cell{
+	display: table-cell;
+	/*text-align: center;*/
+	border-bottom: 1px solid;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+.table-body {
+	display: table-row-group;
+}
+.table-row > * {
+	border-bottom: 1px solid;
+}
+.table-row {
+	display: table-row;
+}
+.table-cell {
+	height: 25px;
+	display: table-cell;
+	padding-left: 10px;
+	padding-right: 10px;
+	/*text-align: center;*/
+}
+.table-cell-first {
+	height: 25px;
+}
+.header-cell-first {
+	width: 50%
+}
+#export-button {
+	/*flex: 1; */
+	height: 70px;
+	font-size: 1.5rem;
+	background-color: #a7c7e7;
+}

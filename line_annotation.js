@@ -95,7 +95,6 @@ function annotateLines(){
 			logState();
 		}
 	}
-
 	
 	function logState(){
 			console.log(
