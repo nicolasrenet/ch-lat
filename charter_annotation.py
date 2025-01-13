@@ -6,9 +6,11 @@ from flask import render_template, request, jsonify, make_response, redirect, ur
 from pathlib import Path
 import re
 import json
+import itertools
 import base64
 from PIL import Image
 from typing import List, Tuple
+import sys
 
 # TODO:
 #   + Fix segmentation data export
@@ -31,14 +33,34 @@ app.config.update(
 app.config.from_prefixed_env()
 
 
-def lemmatize( p:Path, suffix=''):
+def lemmatize( p:Path, suffix='', replacement=''):
     if suffix:
-        return re.sub(r'(.+).{}$'.format(suffix), r'\1', str(p))
-    return re.sub(r'\..+', '',  str(p))
+        return re.sub(r'(.+).{}$'.format(suffix), r'\1.{}'.format( replacement ) if replacement else r'\1', str(p))
+    return re.sub(r'\..+', f'.{replacement}' if replacement else '' ,  str(p))
 
 
 
 ########## DATA ACCESS ################
+
+def fsdb_stats():
+    """ A few stats about this database."""
+    
+    img_suff, gt_suff, pred_suff = [ app.config[k] for k in ('charter_img_suffix', 'gt_segfile_suffix', 'pred_segfile_suffix') ]
+    all_charters = list(Path(app.config['fsdb_root']).glob('*/*/*/CH.cei.xml'))
+    
+    if app.config['crop']:
+        charter_img_paths=list(Path(app.config['fsdb_root']).glob('*/*/*/*.seals.crops/*.{}'.format(img_suff)))
+    else:
+        charter_img_paths=list(Path(app.config['fsdb_root']).glob('*/*/*/*.{}'.format(img_suff)))
+
+    current_state = [ (True, Path(lemmatize(p, suffix=img_suff, replacement=pred_suff )).exists(), Path(lemmatize(p, suffix=img_suff, replacement=gt_suff )).exists()  ) for p in charter_img_paths ]
+    report = { "total_charters": len(all_charters), "total_images": len(current_state), "pred_count": len(list(itertools.filterfalse(lambda t: not t[1], current_state))), "gt_count": len(list(itertools.filterfalse(lambda t: not t[2], current_state))) }
+    report['pred_ratio']=round(float(report['pred_count']/report['total_images']),2)
+    report['gt_ratio']=round(float(report['gt_count']/report['total_images']),2)
+
+    return report
+
+
 
 def fsdb_write_segmentation_file( page_data: dict, archive_id:str, charter_img_id: str)->dict:
     """
@@ -57,16 +79,17 @@ def fsdb_write_segmentation_file( page_data: dict, archive_id:str, charter_img_i
         "type": "centerlines",
         "text_direction": "horizontal-lr",
     })
+    img_suff, gt_suff, pred_suff = [ app.config[k] for k in ('charter_img_suffix', 'gt_segfile_suffix', 'pred_segfile_suffix') ]
 
     if app.config['crop']:
-        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
+        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, img_suff)))
     else:
-        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
+        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, img_suff)))
 
     if not charter_img_paths:
         return {}
 
-    output_filename = '{}.{}'.format( lemmatize( charter_img_paths[0], suffix=app.config['charter_img_suffix'] ), app.config['gt_segfile_suffix'])
+    output_filename = lemmatize( charter_img_paths[0], suffix=img_suff, replacement=gt_suff)
     returnValue = {}
     outputfile = None
     try:
@@ -79,19 +102,20 @@ def fsdb_write_segmentation_file( page_data: dict, archive_id:str, charter_img_i
     return returnValue
 
 
-def fsdb_read_segmentation_file(archive_id:str, segmentation_file: str ) -> dict:
+def fsdb_read_segmentation_file(archive_id:str, charter_id: str, suffix: str ) -> dict:
     """
     Args:
-        segmentation_file (str): a JSON file, Kraken-style
+        charter_id (str): charter atom id
+        suffix (str): GT or prediction.
     Returns:
         dict: a segmentation dictionary.
     """
     seginfile = None
     returnValue = {}
     if app.config['crop']:
-        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}'.format(archive_id, segmentation_file)))
+        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_id, suffix)))
     else:
-        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, segmentation_file)))
+        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_id, suffix)))
 
     if not charter_seg_paths:
         return {}
@@ -113,6 +137,7 @@ def fsdb_get_archives() -> List[str]:
         List[str]: a list of archive names.
     """
     archives = list([ p.name for p in Path( app.config['fsdb_root']).glob('*') if p.is_dir() and re.match(r'[A-Z]{2}-[A-Za-z]+', p.name)])
+    archives.append('COLLECTIONS')
     return archives
 
 
@@ -247,7 +272,8 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
                 charter_img_id=charter_img_id, 
                 charter_img_size=img.size,
                 charter_filename=Path(charter_images[charter_img_id]['filename']).name,
-                display_size=display_size
+                display_size=display_size,
+                fsdb_stats=fsdb_stats(),
                 )
 
 @app.get('/img/<archive_id>/<charter_img_id>')
@@ -272,12 +298,11 @@ def record_segmentation_data( archive_id:str, charter_img_id:str ):
     return resp
 
 @app.get('/import/<archive_id>/<charter_img_id>')
-def get_segmentation_gt( archive_id:str, charter_img_id:str ):
+def get_segmentation_gt( archive_id:str, charter_img_id:str):
     """ Import a mask generated by this application (for updates)
     """
     suffix = app.config['pred_segfile_suffix'] if request.args.get( 'segtype' ) == 'pred' else app.config['gt_segfile_suffix']
-    segmentation_data = fsdb_read_segmentation_file( archive_id, '{}.{}'.format( charter_img_id, suffix ))
-    print(segmentation_data)
+    segmentation_data = fsdb_read_segmentation_file( archive_id, charter_img_id, suffix )
     return make_response( segmentation_data )
 
 

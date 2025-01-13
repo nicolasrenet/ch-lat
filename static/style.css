@@ -9,6 +9,10 @@
 	align-items:center;
 }
 
+#stat-box {
+	border-bottom: 1px solid;
+}
+
 #control-box {
 	flex: 1 1 auto;
 	display: flex;

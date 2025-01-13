@@ -17,6 +17,14 @@
 		</div>
 
 		<div id="control-box" class="box">
+			<div id="stat-box" class="box">
+				<dl>
+					<li>Charter count: {{fsdb_stats['total_charters']}}</li>
+					<li>Image count: {{fsdb_stats['total_images']}}</li>
+					<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100}}%)</li>
+					<li>Line GT files: {{fsdb_stats['gt_count']}} ({{fsdb_stats['gt_ratio']*100}}%)</li>
+				</dl>
+			</div>
 			<div id="property-box" class="box">
 				<dl>
 					<li>File: {{charter_filename}}</li>
@@ -47,7 +55,7 @@
 						
 					<div class="table-row">
 						<div class="table-cell-first table-cell">
-							{{loop.index}}. {{ch_img.archive}}//{{ch_img.charter}}
+							{{loop.index}}. {{ch_img.archive if ch_img.archive!='COLLECTIONS' else 'COLL'}}//{{ch_img.charter}}
 						</div>
 						<div class="table-cell">
 							{% if id != charter_img_id %}
