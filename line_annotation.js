@@ -51,6 +51,7 @@
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
  * 	- line merging functionality: make it more robust to accidental selection of all paths or allow reversion
+ * 	- selecting all paths with length <= current selection.length
  */
 
 //paper.install(window);
@@ -331,9 +332,10 @@ function annotateLines(){
 		}
 		// after dragging/moving a node 
 		if (segmentEditMode){
+			logState()
 			segmentEditMode = false;
-			currentPath = null;
-			currentSegmentIndex = -1;
+			deselectAll();
+			return
 			//historySave();
 		}
 		// select all paths: alt-click
@@ -375,6 +377,8 @@ function annotateLines(){
 		} else if (Key.isDown('m') || Key.isDown('f') || Key.isDown('v')){
 			mergePaths( paths.children.filter( (elt) => elt.isSelected ));
 			deselectAll();
+		} else if (Key.isDown('s')){
+			selectPaths( p => p.length <= currentPath.length );
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;
@@ -478,6 +482,14 @@ function annotateLines(){
 		}
 	}
 
+	function selectPaths( filter_func ){
+		if (currentPath === null){ console.log("No current selection. Abort."); return }
+		relevant = paths.children.filter( p => filter_func(p) );
+		for (const p of relevant){ selectPath( p, true) }
+		currentPath = null;
+		currentSegmentIndex = -1;
+	}
+
 	function getHitPath( pt ){
 		var hitResult = null;
 		for (var p=0; p<paths.children.length; p++){
@@ -491,9 +503,7 @@ function annotateLines(){
 	}
 
 	function deselectAll(){
-		for (const p of paths.children){
-			selectPath( p, false);
-		}
+		for (const p of paths.children){ selectPath( p, false); }
 		currentPath = null;
 		currentSegmentIndex = -1;
 	}
