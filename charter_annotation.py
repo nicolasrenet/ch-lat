@@ -61,12 +61,66 @@ def fsdb_stats():
     return report
 
 
+def fsdb_search( archive_id:str, charter_img_id:str, suffix:str=None) -> Path:
+    if suffix is None:
+        suffix = app.config['charter_img_suffix']
+    if app.config['crop']:
+        file_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, suffix)))
+    else:
+        file_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, suffix)))
+    if not file_paths:
+        return None
+    return file_paths[0]
+
+def fsdb_write_img_metadata(data:dict, archive_id:str, charter_img_id:str, suffix=None):
+    if suffix is None or suffix==app.config['charter_img_suffix']:
+        return {}
+    output_filename = fsdb_search( archive_id, charter_img_id )
+    if output_filename is None:
+        return {}
+    output_filename = lemmatize( output_filename, suffix=app.config['charter_img_suffix'], replacement=suffix)
+    returnValue, outputfile = {}, None
+    try:
+        outputfile = open(output_filename, 'w')
+        print( json.dumps(data, indent=4), file=outputfile)
+        outputfile.close()
+        returnValue = {'filename': output_filename, 'size': Path(output_filename).stat().st_size }
+    except (IOError) as e:
+        outputfile.close()
+    return returnValue
+
+def fsdb_read_img_metadata(archive_id:str, charter_img_id:str, suffix=None):
+    if suffix is None:
+        return {}
+
+    infile, returnValue = None, {}
+    data_path = fsdb_search( archive_id, charter_img_id, suffix=suffix)
+    if data_path is None:
+        return {}
+    try:
+        infile = open(data_path, 'r') 
+        returnValue = json.load( infile );
+    except (IOError, FileNotFoundError) as e:
+        pass
+    finally:
+        if infile is not None:
+            infile.close();
+    return returnValue;
+
+
+def fsdb_write_flags( flag_data:dict, archive_id:str, charter_img_id:str):
+    return fsdb_write_img_metadata( flag_data, archive_id, charter_img_id, suffix='flags.json')
+
+def fsdb_read_flags( archive_id:str, charter_img_id:str):
+    return fsdb_read_img_metadata( archive_id, charter_img_id, suffix='flags.json')
 
 def fsdb_write_segmentation_file( page_data: dict, archive_id:str, charter_img_id: str)->dict:
     """
     Write segmentation data into a JSON file.
 
     Args:
+        archive_id (str): archive name
+        charter_img_id (str): charter atom id
         page_data (dict): a dictionary
             {'page_wh': [<width>, <height>],
              'lines': [{'centerline': [[x1,y1], ...], 'boundary': [[x1,y1], ...]}, ...] }
@@ -79,55 +133,20 @@ def fsdb_write_segmentation_file( page_data: dict, archive_id:str, charter_img_i
         "type": "centerlines",
         "text_direction": "horizontal-lr",
     })
-    img_suff, gt_suff, pred_suff = [ app.config[k] for k in ('charter_img_suffix', 'gt_segfile_suffix', 'pred_segfile_suffix') ]
-
-    if app.config['crop']:
-        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, img_suff)))
-    else:
-        charter_img_paths=list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, img_suff)))
-
-    if not charter_img_paths:
-        return {}
-
-    output_filename = lemmatize( charter_img_paths[0], suffix=img_suff, replacement=gt_suff)
-    returnValue = {}
-    outputfile = None
-    try:
-        outputfile = open(output_filename, 'w')
-        print( json.dumps(page_data, indent=4), file=outputfile)
-        outputfile.close()
-        returnValue = {'filename': output_filename, 'size': Path(output_filename).stat().st_size }
-    except (IOError) as e:
-        outputfile.close()
-    return returnValue
+    
+    return fsdb_write_img_metadata( page_data, archive_id, charter_img_id, suffix=app.config['gt_segfile_suffix'])
 
 
-def fsdb_read_segmentation_file(archive_id:str, charter_id: str, suffix: str ) -> dict:
+def fsdb_read_segmentation_file(archive_id:str, charter_img_id: str, suffix: str ) -> dict:
     """
     Args:
-        charter_id (str): charter atom id
-        suffix (str): GT or prediction.
+        archive_id (str): archive name
+        charter_img_id (str): charter atom id
+        suffix (str): 'lines.gt.json' (GT) or 'lines.pred.json' (prediction).
     Returns:
         dict: a segmentation dictionary.
     """
-    seginfile = None
-    returnValue = {}
-    if app.config['crop']:
-        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_id, suffix)))
-    else:
-        charter_seg_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_id, suffix)))
-
-    if not charter_seg_paths:
-        return {}
-    try:
-        seginfile = open(charter_seg_paths[0], 'r') 
-        returnValue = json.load( seginfile );
-    except (IOError, FileNotFoundError) as e:
-        pass
-    finally:
-        if seginfile is not None:
-            seginfile.close();
-    return returnValue;
+    return fsdb_read_img_metadata(archive_id, charter_img_id, suffix)
 
 def fsdb_get_archives() -> List[str]:
     """
@@ -162,7 +181,6 @@ def fsdb_get_charter_images(archive_id:str='') -> Tuple[str,dict]:
 
     for md5id in charter_images:
         filepath_stem = lemmatize( Path(charter_images[md5id]['filename']), suffix=app.config['charter_img_suffix'] )
-        print('filepath_stem=', filepath_stem)
 
         if app.config['crop']:
             charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.parent.name
@@ -173,7 +191,7 @@ def fsdb_get_charter_images(archive_id:str='') -> Tuple[str,dict]:
         if Path( gt_seg_filename ).exists():
             charter_images[md5id]['hasGTData']=True
         pred_seg_filename = '{}.{}'.format( filepath_stem, app.config['pred_segfile_suffix'] )
-        print(pred_seg_filename)
+        
         if Path( pred_seg_filename ).exists():
             charter_images[md5id]['hasPredData']=True
     print(charter_images)
@@ -191,17 +209,12 @@ def fsdb_get_image(archive_id: str, charter_img_id:str):
     Returns:
         bytes: an array of bytes.
     """
-    img_data=None
-    print('fsdb_get_image(', charter_img_id)
-    if app.config['crop']:
-        charter_img_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
-        print(charter_img_paths)
-    else:
-        charter_img_paths = list(Path(app.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, app.config['charter_img_suffix'])))
-    if not charter_img_paths:
+    print('fsdb_get_image({})'.format( archive_id, charter_img_id))
+    charter_img_path = fsdb_search( archive_id, charter_img_id )
+    if charter_img_path is None:
         return None
     try:
-        data = open( charter_img_paths[0], 'rb' ).read()
+        data = open( charter_img_path, 'rb' ).read()
         return data
     except (IOError) as e:
         print("Could not open {}".format( charter_img_paths[0]))
@@ -305,4 +318,21 @@ def get_segmentation_gt( archive_id:str, charter_img_id:str):
     segmentation_data = fsdb_read_segmentation_file( archive_id, charter_img_id, suffix )
     return make_response( segmentation_data )
 
+
+@app.post('/flagwrite/<archive_id>/<charter_img_id>')
+def record_flag( archive_id:str, charter_img_id:str ):
+    """Export segmentation flags to disk.
+    """
+    flag_data = request.get_json()
+    ok = fsdb_write_flags( flag_data, archive_id, charter_img_id )
+    resp = make_response( ok )
+    return resp
+
+@app.get('/flagread/<archive_id>/<charter_img_id>')
+def get_flag( archive_id:str, charter_img_id:str):
+    """ Import segmentation flags
+    """
+    flag_data = fsdb_read_flags( archive_id, charter_img_id )
+    print(flag_data)
+    return make_response( flag_data )
 

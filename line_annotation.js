@@ -269,7 +269,8 @@ function annotateLines(){
 		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
 		var lineData = [];
 		// sorting paths according to their vertical position
-		sortedPaths = paths.children.toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+		var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+		console.log("export()" + sortedPaths)
 		for (var p=0; p<sortedPaths.length; p++){ 
 			var data = contour(p, sortedPaths[p] ); 
 			if (data !== null){ lineData.push( data ) }
@@ -373,6 +374,7 @@ function annotateLines(){
 			for (const p of paths.children){ p.translate( new Point(0, 2*p.isSelected)) } 
 		} else if (Key.isDown('m') || Key.isDown('f') || Key.isDown('v')){
 			mergePaths( paths.children.filter( (elt) => elt.isSelected ));
+			deselectAll();
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;

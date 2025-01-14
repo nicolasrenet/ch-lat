@@ -29,6 +29,14 @@
 				<dl>
 					<li>File: {{charter_filename}}</li>
 					<li>Size: {{charter_img_size[0]}} x {{charter_img_size[1]}}</li>
+					<li>
+						<form id='flag-form' action='/flagwrite/{{archive_id}}/{{charter_img_id}}' method="POST">
+						<label for="img-flag-bad" >Low-quality segmentation</label>
+						<input id='img-flag-bad' type='checkbox' name='img-flag' value='bad' class='flagchck'>
+						<label for="img-flag-other" >(Unused flag)</label>
+						<input id='img-flag-other' type='checkbox' name='img-flag' value='other' class='flagchck'>
+						</form>
+					</li>
 				</dl>
 			</div>
 			<button id="export-button" onClick="exportData('{{archive_id}}', '{{charter_img_id}}')"> Export</button>
@@ -109,8 +117,22 @@
 			url = "/import/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
 			console.log("Importing seg data - " + url);
 			fetch(url, { method: "GET" }
-			).then( resp => { return resp.json() ; }
-			).then( data => { cnv.importMask( data, dataType ); })
+			).then( resp => { cnv.importMask( resp.json(), dataType ); })
+		}
+
+		function writeFlags( flagData, archive_id, charter_img_id ){
+			fetch("/flagwrite/" + archive_id + "/" + charter_img_id, {
+				method: "POST",
+				headers: {"Content-Type":"application/json"},
+				body: JSON.stringify( flagData )
+			}).then( resp => {console.log(resp.json())} )
+		}
+
+		function readFlags( archive_id, charter_img_id ){
+			console.log('readFlags())')
+			url = "/flagread/" + archive_id + '/' + charter_img_id 
+			return fetch(url, { method: "GET" }
+			).then( resp => resp.json() ) 
 		}
 
 		function eraseData(){
@@ -126,13 +148,17 @@
 
 
 	<script type="text/javascript">
-		var gt_data_checks = document.getElementsByName("check_gtdata")
-		var gt_data_status = false;
-		var pred_data_checks = document.getElementsByName("check_preddata")
-		var pred_data_status = false;
-		
+		//console.log("Youpi")
+
 		(function controlBoxInit(){
-			for (elt of gt_data_checks){
+			var gt_data_checks = document.getElementsByName("check_gtdata")
+			var gt_data_status = false;
+			var pred_data_checks = document.getElementsByName("check_preddata")
+			var pred_data_status = false;
+			var flag_box_checks = document.getElementsByName("img-flag");
+			var flag_box_form = document.getElementById('flag-form');
+
+			for (const elt of gt_data_checks){
 				if (elt.id === "check_gtdata_{{charter_img_id}}"){
 					elt.checked=false;
 					elt.onclick = () => { 
@@ -152,7 +178,7 @@
 					elt.disabled = true;
 				}
 			}
-			for (elt of pred_data_checks){
+			for (const elt of pred_data_checks){
 				if (elt.id === "check_preddata_{{charter_img_id}}"){
 					elt.checked=false;
 					elt.onclick = () => { 
@@ -173,6 +199,22 @@
 					elt.disabled = true;
 				}
 			}
+			
+			readFlags( '{{archive_id}}', '{{charter_img_id}}' )
+			.then( flags => {
+				console.log(flags);
+				for (const elt of flag_box_checks){
+					elt.checked = flags[elt.value];
+					elt.onchange = () => {
+						var flagData = {};
+						for (const elt of flag_box_checks){
+							if (elt.checked){ flagData[elt.value]=true } else { flagData[elt.value]=false }
+						}
+						writeFlags( flagData, '{{archive_id}}', '{{charter_img_id}}' ); 		
+					}
+				}
+			});
+
 		})()
 
 		paper.install(window);
