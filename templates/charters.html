@@ -116,8 +116,9 @@
 		function importData( archive_id, charter_img_id, dataType ){
 			url = "/import/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
 			console.log("Importing seg data - " + url);
-			fetch(url, { method: "GET" }
-			).then( resp => { cnv.importMask( resp.json(), dataType ); })
+			fetch(url, { method: "GET" })
+			.then( resp => resp.json())
+			.then( data => cnv.importMask( data, dataType ) )
 		}
 
 		function writeFlags( flagData, archive_id, charter_img_id ){
