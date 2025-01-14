@@ -26,11 +26,12 @@
  *
  * Path move/copy/merge
  * 	- Move a path or group of paths
- * 		+ vertically  (select; up key)                 ✓
- * 		+ horizontally                           needed?
- * 	- Copy one path or more (select; shift-drag)		✓ 
- * 	- Delete one or more selected paths (select; 'd')	✓
- * 	- Merge two or more selected paths (select; 'm|v|f')	✓
+ * 		+ vertically  (select; up key)                 		✓
+ * 		+ horizontally                           		needed?
+ * 	- Copy one path or more (select; shift-drag)			✓ 
+ * 	- Delete one or more selected paths (select; 'd')		✓
+ * 	- Merge two or more selected paths (select; 'm|v|f')		✓
+ * 	- Merge two or more selected paths (alt. alt-shift + drag)	✓
  * 	 
  * History:
  * 	- save history after:
@@ -50,8 +51,8 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- line merging functionality: make it more robust to accidental selection of all paths or allow reversion
- * 	- selecting all paths with length <= current selection.length
+ * 	- line merging functionality: allow reversion
+ * 	
  */
 
 //paper.install(window);
@@ -78,9 +79,11 @@ function annotateLines(){
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
 	var copyOn = true;
+	var mergedPath = null;
 
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
+	var joinPathMode = false;
 
 	canvas.update_img = function ( file_url ){
 		console.log( "canvas.update(" +  file_url + ")")
@@ -142,6 +145,7 @@ function annotateLines(){
 				currentPath.smooth({type: 'geometric'});
 			}
 		} 
+		deselectAll();
 	}
 
 	/*
@@ -322,7 +326,13 @@ function annotateLines(){
 	view.onClick = (ev) => {
 
 		console.log(ev.point, ev.point.divide(scalingFactor))
-
+		if (joinPathMode){
+			joinPathMode = false;
+			currentPath.remove();
+			currentPath = null;
+			mergedPath = null;
+			return;
+		}
 		// append a segment to a path
 		if (pathDrawingMode && paths.children.length > 0){
 			var p = paths.children.at(-1);
@@ -405,8 +415,16 @@ function annotateLines(){
 	}
 	
 	view.onMouseDown = (ev) => {
-		//console.log("MouseDown:");
+		console.log("MouseDown:");
 		var pathHitResult = getHitPath( ev.point );
+		// moving selection for joining paths
+		if (ev.modifiers.alt && ev.modifiers.shift){
+			joinPathMode = true;
+			currentPath = new Path( [ ev.point ]);
+			currentPath.strokeWidth=30;
+			currentPath.strokeColor = new Color(0,0,1,0.3);
+			return
+		}
 
 		// Edit a segment
 		if (! pathDrawingMode && pathHitResult !== null && (pathHitResult.type === 'segment' || pathHitResult.type==='stroke')){
@@ -436,8 +454,20 @@ function annotateLines(){
 	}	
 
 	view.onMouseDrag = (ev) => { 
+		if (joinPathMode){
+			var lastPt = currentPath.lastSegment.point
+			currentPath.addSegment( lastPt.x+ev.delta.x, lastPt.y+ev.delta.y)
+			var hitResult = getHitPath( ev.point)
+			if (hitResult !== null && hitResult.item !== mergedPath){
+				if (mergedPath === null){ mergedPath = hitResult.item }
+				else {
+					mergedPath.addSegments( hitResult.item.segments )
+					deletePath( hitResult.item )
+				}
+			}
+			
 		// move the path node
-		if (currentSegmentIndex >= 0){
+		} else if (currentSegmentIndex >= 0){
 			segmentEditMode = true;
 			var segt = currentPath.segments[currentSegmentIndex];
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
