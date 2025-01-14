@@ -24,12 +24,13 @@
  * 		+ 'd' to delete it        ✓ 
  * 	- shift-ctrl-click to select a stroke and insert a segment on it ✓
  *
- * Path move/copy
+ * Path move/copy/merge
  * 	- Move a path or group of paths
  * 		+ vertically  (select; up key)                 ✓
  * 		+ horizontally                           needed?
  * 	- Copy one path or more (select; shift-drag)		✓ 
  * 	- Delete one or more selected paths (select; 'd')	✓
+ * 	- Merge two or more selected paths (select; 'm|v|f')	✓
  * 	 
  * History:
  * 	- save history after:
@@ -49,7 +50,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- line merging functionality
+ * 	- line merging functionality: make it more robust to accidental selection of all paths or allow reversion
  */
 
 //paper.install(window);
@@ -289,6 +290,7 @@ function annotateLines(){
 		paths.removeChildren();
 	}
 
+
 	/* User interface */
 	view.onDoubleClick = (ev) => {
 		
@@ -369,6 +371,8 @@ function annotateLines(){
 		} else if (Key.isDown('down')){
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			for (const p of paths.children){ p.translate( new Point(0, 2*p.isSelected)) } 
+		} else if (Key.isDown('m') || Key.isDown('f') || Key.isDown('v')){
+			mergePaths( paths.children.filter( (elt) => elt.isSelected ));
 		} else if (Key.isDown('escape')){
 			pathDrawingMode = false;
 			segmentEditMode = false;
@@ -514,6 +518,17 @@ function annotateLines(){
 		for (s of p.segments){ Marker( s.point, 6, 'red' ); }
 	}
 
+
+	function mergePaths( pths ){
+		/* Join paths along the x-axis */
+		if (pths.length < 2){ return null; }
+		xSortedPaths = pths.toSorted( (p1, p2) => p1.segments[0].point.x - p2.segments[0].point.x ) 
+		for (var pi=1; pi<xSortedPaths.length; pi++){
+			xSortedPaths[0].addSegments( xSortedPaths[pi].segments )
+		}
+		deletePaths( xSortedPaths.slice(1));
+	}
+
 	function historySave( op ){
 		//console.log("historySave()");
 		//history[historyCount++]=op;
@@ -532,5 +547,7 @@ function annotateLines(){
 		segmentEditMode = false;
 		pathDrawingMode = false;
 	}
+
+
 }
 
