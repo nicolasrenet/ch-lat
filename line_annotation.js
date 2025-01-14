@@ -49,7 +49,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- bug: 1. select path and segment on it; 2. select other path -> previous segment's marker still displayed
+ * 	- line merging functionality
  */
 
 //paper.install(window);
@@ -397,8 +397,13 @@ function annotateLines(){
 	view.onMouseDown = (ev) => {
 		//console.log("MouseDown:");
 		var pathHitResult = getHitPath( ev.point );
+
 		// Edit a segment
 		if (! pathDrawingMode && pathHitResult !== null && (pathHitResult.type === 'segment' || pathHitResult.type==='stroke')){
+			if (currentPath !== pathHitResult.item && currentSegmentHandle !== null){
+				currentSegmentHandle.remove();
+				currentSegmentHandle = null;
+			}
 			currentPath = pathHitResult.item;
 			// clicking on a path node (="Segment") makes this node editable (drag)
 			if (pathHitResult.type === 'segment'){
@@ -407,7 +412,7 @@ function annotateLines(){
 				if (currentSegmentHandle !== null){
 					currentSegmentHandle.remove();
 				}
-				currentSegmentHandle = new Path.Circle({ radius: paper.settings.handleSize, center: pathHitResult.segment.point, fillColor: 'red'});
+				currentSegmentHandle = Marker(pathHitResult.segment.point, paper.settings.handleSize, 'red');
 			// ctrl-clicking on a path stroke adds a node in the given position
 			} else if ( pathHitResult.type === 'stroke' && ev.modifiers.control && ev.modifiers.shift){
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
@@ -499,9 +504,10 @@ function annotateLines(){
 		}
 	}
 
-	var Marker = (pt, diam, col) => {
+	function Marker (pt, diam, col) {
 		var p = Path.Circle( pt, diam );
 		p.fillColor=col;
+		return p;
 	};
 
 	function markPath( p ){
