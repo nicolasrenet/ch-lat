@@ -170,6 +170,14 @@ function annotateLines(){
 		    	return [ Math.round(pt.x), Math.round(pt.y)] ;
 		}
 
+		var truncate_point = function (pt_arr, max_width, max_height) {
+			if (pt_arr[0] < 0){ pt_arr[0] = 0; } 
+			else if (pt_arr[0] >= charter.width){ pt_arr[0] = charter.width-1; }
+			if (pt_arr[1] < 0){ pt_arr[1] = 0; }
+			else if (pt_arr[1] >= charter.height){ pt_arr[1] = charter.height-1; }
+			return pt_arr
+		}
+
 		var contour = function (id, p){
 
 			if (p.segments.length < 2){ return null }
@@ -208,9 +216,9 @@ function annotateLines(){
 					var pt = p.segments[i].point;
 					var ptL = p.segments[i-1].point;
 					var ptR = p.segments[i+1].point;
-					var vectL = (ptL.subtract(pt)).normalize( p.strokeWidth/2);
-					var vectR = (ptR.subtract(pt)).normalize( p.strokeWidth/2);
-					var normalVect = vectL.subtract(vectR).rotate(90);
+					var vectL = (ptL.subtract(pt)).normalize(p.strokeWidth/2);
+					var vectR = (ptR.subtract(pt)).normalize(p.strokeWidth/2);
+					var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
 					var vertebraN = pt.add(normalVect);
 					//Marker( vertebraN, 6, 'green' );
 					var vertebraS = pt.subtract(normalVect);
@@ -218,7 +226,7 @@ function annotateLines(){
 					contourPath.insert(0, vertebraS );
 					contourPath.add( vertebraN );
 
-					//baselinePath.add( vertebraS );
+					baselinePath.add( vertebraS );
 				}
 		    	}
 			var vertebraRS = pt4.add(normalVectEnd);
@@ -235,51 +243,22 @@ function annotateLines(){
 		    
 		    	contourPath.selected = true;
 		    
-		    	// adding points along curves
-		    	var centerline = new Path( p.segments );
-			centerline.smooth({type: 'geometric'});
-			var centerlineArray = [];
-			for (const c of centerline.curves ){
-				centerlineArray.push( c.point1 );
-				//var midPoint1 = c.getPointAt( c.length/3 );
-				//var midPoint2 = c.getPointAt( c.length*2/3 );
-				//centerlineArray.push( midPoint1 );
-				//centerlineArray.push( midPoint2 );
-				centerlineArray.push( c.point2 );
-			}
-			centerlineArray = centerlineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
-
-			baselinePath.smooth({type: 'geometric'});
-			var baselineArray = [];
-			for (const c of baselinePath.curves ){
-				baselineArray.push( c.point1 );
-				//var midPoint1 = c.getPointAt( c.length/3 );
-				//var midPoint2 = c.getPointAt( c.length*2/3 );
-				//baselineArray.push( midPoint1 );
-				//baselineArray.push( midPoint2 );
-				baselineArray.push( c.point2 );
-			}
-			baselineArray = baselineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
-
+			var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
 		    	var boundaryArray = [];
 		    	for (const c of contourPath.curves){
 				boundaryArray.push( c.point1 );
-				//var midPoint1 = c.getPointAt( c.length/3 );
-				//var midPoint2 = c.getPointAt( c.length*2/3 );
-				//boundaryArray.push( midPoint1 );
-				//boundaryArray.push( midPoint2 );
+				var midPoint1 = c.getPointAt( c.length/3 );
+				var midPoint2 = c.getPointAt( c.length*2/3 );
+				boundaryArray.push( midPoint1 );
+				boundaryArray.push( midPoint2 );
+				if (c.point2 === contourPath.curves[0].point1){ break }
 				boundaryArray.push( c.point2 );
 		    	}
 			boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
-			console.log(boundaryArray);
+			boundaryArray = boundaryArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
 
-			boundaryArray = boundaryArray.map( (pt) => {
-				if (pt[0] < 0){ pt[0] = 0 } 
-				if (pt[0] >= charter.width){ pt[0] = charter.width-1 };
-				if (pt[1] < 0){ console.log("Translating out-of-image y-coordinate: " + pt[1]); pt[1] = 0 };
-				if (pt[1] >= charter.height){ pt[1] = charter.height-1 };
-				return pt
-			})
+			var baselineArray = baselinePath.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
+			baselineArray = baselineArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
 
 			//markPath( baselinePath )
 			contourPath.selected=true;
