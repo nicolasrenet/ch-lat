@@ -393,7 +393,7 @@ function annotateLines(){
 			pathDrawingMode = false;
 			segmentEditMode = false;
 			deselectAll();
-		} else if (Key.isDown('d')){
+		} else if (Key.isDown('d') || Key.isDown('delete')){
 			if (currentPath !== null){
 				if (currentSegmentIndex > -1){
 					currentPath.removeSegment( currentSegmentIndex );

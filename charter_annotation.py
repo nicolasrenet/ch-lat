@@ -157,7 +157,7 @@ def fsdb_get_archives() -> List[str]:
     """
     archives = list([ p.name for p in Path( app.config['fsdb_root']).glob('*') if p.is_dir() and re.match(r'[A-Z]{2}-[A-Za-z]+', p.name)])
     archives.append('COLLECTIONS')
-    return archives
+    return sorted(archives)
 
 
 def fsdb_get_charter_images(archive_id:str='') -> Tuple[str,dict]:
