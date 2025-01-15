@@ -52,6 +52,9 @@
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
  * 	- line merging functionality: allow reversion
+ * 	- cut an existing path
+ * 	- sort points in merged paths
+ * 	- big bug in exportation routine
  * 	
  */
 
@@ -68,6 +71,11 @@ function annotateLines(){
 	paper.settings.handleSize = 6;
 	paper.settings.hitTolerance = 6;
 	var defaultStrokeWidth = 6;
+
+	var groundTruthColor = new Color(0,1,0,0.6);
+	var predictionColor = new Color(1,0,0,0.6);
+	var selectionColor = new Color(0,0,1,0.7);
+	var joinLineColor = new Color(0,0.5,0.5,0.5);
 
 	var charter = null;
 	var charterLayer = new Layer();
@@ -134,13 +142,13 @@ function annotateLines(){
 			if (type === 'gt'){
 				paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
 				currentPath = paths.children.at(-1);
-				currentPath.strokeColor='red';
+				currentPath.strokeColor=new Color(1,0,0,.5);
 				currentPath.strokeWidth=line['strokeWidth'];
 				currentPath.smooth({type: 'geometric'});
 			} else if (type==='pred'){
 				paths.addChild( new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
 				currentPath = paths.children.at(-1);
-				currentPath.strokeColor='red';
+				currentPath.strokeColor=new Color(1,0,0,.5);
 				currentPath.strokeWidth=defaultStrokeWidth;
 				currentPath.smooth({type: 'geometric'});
 			}
@@ -176,7 +184,7 @@ function annotateLines(){
 		    	var pt1 = p.segments[0].point;
 		    	var pt2 = p.segments[1].point;       
 		    	var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2);
-		    	var endPt1 = pt1.subtract(vect);
+		    	var endPt1 = pt1.subtract(vect.divide(2));
 		    	var normalVect = vect.rotate(90);
 			
 			var vertebraLS = pt1.add(normalVect);
@@ -191,7 +199,7 @@ function annotateLines(){
 		    	var pt3 = p.segments.at(-2).point;
 		    	var pt4 = p.segments.at(-1).point;       
 		    	var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2);
-		    	var endPt2 = pt4.add(vectEnd);
+		    	var endPt2 = pt4.add(vectEnd.divide(2));
 		    	var normalVectEnd = vectEnd.rotate(90);
 
 		    	if (p.segments.length > 2){
@@ -202,15 +210,15 @@ function annotateLines(){
 					var ptR = p.segments[i+1].point;
 					var vectL = (ptL.subtract(pt)).normalize( p.strokeWidth/2);
 					var vectR = (ptR.subtract(pt)).normalize( p.strokeWidth/2);
-					var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
+					var normalVect = vectL.subtract(vectR).rotate(90);
 					var vertebraN = pt.add(normalVect);
 					//Marker( vertebraN, 6, 'green' );
 					var vertebraS = pt.subtract(normalVect);
 					//Marker( vertebraS, 6, 'red' );
-					contourPath.add( vertebraN );
 					contourPath.insert(0, vertebraS );
+					contourPath.add( vertebraN );
 
-					baselinePath.add( vertebraS );
+					//baselinePath.add( vertebraS );
 				}
 		    	}
 			var vertebraRS = pt4.add(normalVectEnd);
@@ -233,10 +241,10 @@ function annotateLines(){
 			var centerlineArray = [];
 			for (const c of centerline.curves ){
 				centerlineArray.push( c.point1 );
-				var midPoint1 = c.getPointAt( c.length/3 );
-				var midPoint2 = c.getPointAt( c.length*2/3 );
-				centerlineArray.push( midPoint1 );
-				centerlineArray.push( midPoint2 );
+				//var midPoint1 = c.getPointAt( c.length/3 );
+				//var midPoint2 = c.getPointAt( c.length*2/3 );
+				//centerlineArray.push( midPoint1 );
+				//centerlineArray.push( midPoint2 );
 				centerlineArray.push( c.point2 );
 			}
 			centerlineArray = centerlineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
@@ -245,10 +253,10 @@ function annotateLines(){
 			var baselineArray = [];
 			for (const c of baselinePath.curves ){
 				baselineArray.push( c.point1 );
-				var midPoint1 = c.getPointAt( c.length/3 );
-				var midPoint2 = c.getPointAt( c.length*2/3 );
-				baselineArray.push( midPoint1 );
-				baselineArray.push( midPoint2 );
+				//var midPoint1 = c.getPointAt( c.length/3 );
+				//var midPoint2 = c.getPointAt( c.length*2/3 );
+				//baselineArray.push( midPoint1 );
+				//baselineArray.push( midPoint2 );
 				baselineArray.push( c.point2 );
 			}
 			baselineArray = baselineArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
@@ -256,16 +264,25 @@ function annotateLines(){
 		    	var boundaryArray = [];
 		    	for (const c of contourPath.curves){
 				boundaryArray.push( c.point1 );
-				var midPoint1 = c.getPointAt( c.length/3 );
-				var midPoint2 = c.getPointAt( c.length*2/3 );
-				boundaryArray.push( midPoint1 );
-				boundaryArray.push( midPoint2 );
+				//var midPoint1 = c.getPointAt( c.length/3 );
+				//var midPoint2 = c.getPointAt( c.length*2/3 );
+				//boundaryArray.push( midPoint1 );
+				//boundaryArray.push( midPoint2 );
 				boundaryArray.push( c.point2 );
 		    	}
 			boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
+			console.log(boundaryArray);
+
+			boundaryArray = boundaryArray.map( (pt) => {
+				if (pt[0] < 0){ pt[0] = 0 } 
+				if (pt[0] >= charter.width){ pt[0] = charter.width-1 };
+				if (pt[1] < 0){ console.log("Translating out-of-image y-coordinate: " + pt[1]); pt[1] = 0 };
+				if (pt[1] >= charter.height){ pt[1] = charter.height-1 };
+				return pt
+			})
 
 			//markPath( baselinePath )
-			contourPath.selected=false;
+			contourPath.selected=true;
 			//contourPath.remove();
 
 		    	return { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth }
@@ -313,7 +330,7 @@ function annotateLines(){
 		} else {
 			pathDrawingMode = true;
 			var path = new Path() ;
-			path.strokeColor = 'red';
+			path.strokeColor = new Color(1,0,0,0.5);
 			path.strokeWidth = defaultStrokeWidth;
 			path.strokeCap = 'round';
 			path.strokeJoin = 'round';
@@ -422,7 +439,7 @@ function annotateLines(){
 			joinPathMode = true;
 			currentPath = new Path( [ ev.point ]);
 			currentPath.strokeWidth=30;
-			currentPath.strokeColor = new Color(0,0,1,0.3);
+			currentPath.strokeColor = joinLineColor;
 			return
 		}
 
@@ -504,11 +521,11 @@ function annotateLines(){
 		if (value){
 			p.selected = true;
 			p.isSelected = true;
-			p.strokeColor = 'blue';
+			p.strokeColor = new Color(0,0,1,0.6)
 		} else {
 			p.selected = false;
 			p.isSelected = false;
-			p.strokeColor = 'red';
+			p.strokeColor = new Color(1,0,0,0.4);
 		}
 	}
 
