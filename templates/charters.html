@@ -42,7 +42,7 @@
 			<div id="export-box">
 				<button id="preview-on"> Export preview</button>
 				<button id="preview-off"> Export preview off</button>
-				<button id="export-button" onClick="exportData('{{archive_id}}', '{{charter_img_id}}')"> Export</button>
+				<button id="export-button"> Export</button>
 			</div>
 			<div id="charter-table">
 				<div class="table-header">
@@ -229,6 +229,11 @@
 				cnv.previewMaskOff();
 				this.style.display = "none";
 				document.getElementById("preview-on").style.display="block"
+			}
+			document.getElementById("export-button").onclick=function(){
+				exportData('{{archive_id}}', '{{charter_img_id}}');
+				document.getElementById("preview-on").style.display="none";
+				document.getElementById("preview-off").style.display="block";
 			}
 
 		})()

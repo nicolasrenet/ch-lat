@@ -51,7 +51,6 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- *      - (template) make export-preview-off/on button toggle after export	
  */
 
 //paper.install(window);
@@ -67,6 +66,7 @@ function annotateLines(){
 	paper.settings.handleSize = 6;
 	paper.settings.hitTolerance = 6;
 	var defaultStrokeWidth = 6;
+	var scalingFactor = 1;
 
 	var groundTruthColor = new Color(0,1,0,0.6);
 	var predictionColor = new Color(1,0,0,0.6);
@@ -75,21 +75,12 @@ function annotateLines(){
 
 	var charter = null;
 	var charterLayer = new Layer();
-	//charterLayer = 'charterLayer';
-	//paper.project.addLayer( charterLayer )
-
 	var annotationLayer = new Layer();
-	//annotationLayer.name = 'annotationLayer';
-	//paper.project.addLayer( annotationLayer )
-
 	var contourLayer = new Layer();
-	//contourLayer.name = 'contourLayer'
-	//paper.project.addLayer( contourLayer )
-
-	var scalingFactor = 1;
 
 	annotationLayer.activate()
 	var paths = new Group();
+
 	var currentPath = null;
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
@@ -99,7 +90,6 @@ function annotateLines(){
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
 	var joinPathMode = false;
-
 
 	canvas.update_img = function ( file_url ){
 		console.log( "canvas.update(" +  file_url + ")")
@@ -165,8 +155,8 @@ function annotateLines(){
 			}
 		} 
 		deselectAll();
-		//logState()
 	}
+
 
 	/*
 	 * Export current paths as a dictionary that describes:
@@ -174,22 +164,7 @@ function annotateLines(){
 	 * + centerlines
 	 * + baselines
 	 * + polygons (= contour of strokes)
-	 *
 	 */
-
-	canvas.previewMaskOn = function (){
-		contourLayer.activate();
-		for (var p=0; p<paths.children.length; p++){ contour(p, paths.children[p] ); }
-		annotationLayer.activate();
-		//logState()
-	}
-
-
-	canvas.previewMaskOff = function (){
-		contourLayer.removeChildren()
-		//logState()
-	}
-
 	canvas.exportMask = function (){
 
 		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
@@ -199,7 +174,7 @@ function annotateLines(){
 		console.log("export()" + sortedPaths)
 		contourLayer.activate()
 		for (var p=0; p<sortedPaths.length; p++){ 
-			var data = contour(p, sortedPaths[p] ); 
+			var data = contour(p, sortedPaths[p] )[1]; 
 			if (data !== null){ lineData.push( data ) }
 		}
 		annotationLayer.activate()
@@ -215,9 +190,27 @@ function annotateLines(){
 	/*
 	 * Removes all existing paths from the canvas.
 	 */
-	canvas.eraseMask = function (){
-		paths.removeChildren();
+	canvas.eraseMask = function (){ paths.removeChildren(); }
+
+	canvas.previewMaskOn = function (){
+		var contours = []
+		contourLayer.activate();
+		var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+		for (var p=0; p<sortedPaths.length; p++){ contours.push( contour(p, sortedPaths[p] )[0]); }
+
+		// check overlaps
+		deselectAll();
+		for (var p=0; p< contours.length-1; p++){
+			if (ps[p].intersects( ps[p+1])){
+				console.log("Polygons " + p + " and " + (p+1) + " intersect.")
+				selectPath(sortedPaths[p], true);
+				selectPath(sortedPaths[p+1], true);
+			}
+		}
+		annotationLayer.activate();
 	}
+
+	canvas.previewMaskOff = function (){ contourLayer.removeChildren() }
 
 
 	/* User interface */
@@ -613,7 +606,7 @@ function annotateLines(){
 		//markPath( baselinePath )
 		//contourPath.selected=true;
 	
-		return { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth }
+		return [ contourPath, { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth } ]
 	}
 
 	function historySave( op ){
