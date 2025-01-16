@@ -52,9 +52,9 @@
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
  * 	- line merging functionality: allow reversion
- * 	- cut an existing path
- * 	- sort points in merged paths
- * 	- big bug in exportation routine
+ * 	- cut into an existing path
+ * 	- sort points in merged paths before storing
+ * 	- show/disable exported contours
  * 	
  */
 
