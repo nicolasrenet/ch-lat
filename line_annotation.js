@@ -51,8 +51,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- show/disable exported contours
- *      - make export-preview-off/on button toggle after export	
+ *      - (template) make export-preview-off/on button toggle after export	
  */
 
 //paper.install(window);
