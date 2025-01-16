@@ -9,6 +9,26 @@
 	align-items:center;
 }
 
+#export-box {
+	display: flex;
+	border-bottom: 1px solid;
+}
+
+#preview-on {
+	flex: 1 1 100px;
+}
+
+#preview-off {
+	display: none;
+	flex: 1 1 100px;
+}
+#export-button {
+	flex: 3 1;
+	height: 70px;
+	font-size: 1.5rem;
+	background-color: #a7c7e7;
+}
+
 #stat-box {
 	border-bottom: 1px solid;
 }
@@ -23,6 +43,7 @@
 	padding: 10px;
 }
 #charter-table {
+	padding-top: 20px;
 	table-layout: fixed;
 	display: table;
 	/*flex: 1 1 auto;*/
@@ -60,12 +81,6 @@
 }
 .header-cell-first {
 	width: 50%
-}
-#export-button {
-	/*flex: 1; */
-	height: 70px;
-	font-size: 1.5rem;
-	background-color: #a7c7e7;
 }
 label {
 	padding-left: 30px;

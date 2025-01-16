@@ -51,11 +51,8 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- line merging functionality: allow reversion
- * 	- cut into an existing path
- * 	- sort points in merged paths before storing
  * 	- show/disable exported contours
- * 	
+ *      - make export-preview-off/on button toggle after export	
  */
 
 //paper.install(window);
@@ -79,9 +76,20 @@ function annotateLines(){
 
 	var charter = null;
 	var charterLayer = new Layer();
+	//charterLayer = 'charterLayer';
+	//paper.project.addLayer( charterLayer )
+
 	var annotationLayer = new Layer();
+	//annotationLayer.name = 'annotationLayer';
+	//paper.project.addLayer( annotationLayer )
+
+	var contourLayer = new Layer();
+	//contourLayer.name = 'contourLayer'
+	//paper.project.addLayer( contourLayer )
+
 	var scalingFactor = 1;
 
+	annotationLayer.activate()
 	var paths = new Group();
 	var currentPath = null;
 	var currentSegmentIndex = -1;
@@ -92,6 +100,7 @@ function annotateLines(){
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
 	var joinPathMode = false;
+
 
 	canvas.update_img = function ( file_url ){
 		console.log( "canvas.update(" +  file_url + ")")
@@ -104,7 +113,7 @@ function annotateLines(){
 			charter.position = view.center;
 			charter.fitBounds( view.bounds );
 			view.draw();
-			annotationLayer.activate();
+			annotationLayer.activate()
 			logState();
 		}
 	}
@@ -115,7 +124,9 @@ function annotateLines(){
 			"\ncanvas.size="+[canvas.width, canvas.height]+
 			"\ncharter.size="+[charter.width, charter.height]+
 			"\nscalingFactor="+scalingFactor+
-			"\nannotationLayer.active="+annotationLayer.active+
+			"\nannotationLayer.active="+(annotationLayer===project.activeLayer)+ "("+ annotationLayer.children.length + " children)" +
+			"\ncharterLayer.active="+(charterLayer===project.activeLayer)+" (" + charterLayer.children.length + " children)" +
+			"\ncontourLayer.active="+(contourLayer===project.activeLayer)+" (" + contourLayer.children.length + " children)" +
 			"\npaths.children.length="+paths.children.length+
 			"\npaths.children" + paths.children+
 			"\npathDrawingMode="+pathDrawingMode+
@@ -135,7 +146,8 @@ function annotateLines(){
 	 * @param {object} pageData - line descriptions.
 	 */
 	canvas.importMask = function ( pageData, type ){
-
+		
+		logState()
 		if (!('lines' in pageData)){ console.log("Segmentation data empty: abort."); return }
 		paths.removeChildren();
 		for (line of pageData['lines']){
@@ -154,6 +166,7 @@ function annotateLines(){
 			}
 		} 
 		deselectAll();
+		//logState()
 	}
 
 	/*
@@ -164,118 +177,33 @@ function annotateLines(){
 	 * + polygons (= contour of strokes)
 	 *
 	 */
+
+	canvas.previewMaskOn = function (){
+		contourLayer.activate();
+		for (var p=0; p<paths.children.length; p++){ contour(p, paths.children[p] ); }
+		annotationLayer.activate();
+		//logState()
+	}
+
+
+	canvas.previewMaskOff = function (){
+		contourLayer.removeChildren()
+		//logState()
+	}
+
 	canvas.exportMask = function (){
-
-		var toIntXY = function ( pt ){
-		    	return [ Math.round(pt.x), Math.round(pt.y)] ;
-		}
-
-		var truncate_point = function (pt_arr, max_width, max_height) {
-			if (pt_arr[0] < 0){ pt_arr[0] = 0; } 
-			else if (pt_arr[0] >= charter.width){ pt_arr[0] = charter.width-1; }
-			if (pt_arr[1] < 0){ pt_arr[1] = 0; }
-			else if (pt_arr[1] >= charter.height){ pt_arr[1] = charter.height-1; }
-			return pt_arr
-		}
-
-		var contour = function (id, p){
-
-			if (p.segments.length < 2){ return null }
-
-		    	var pointsNorth = [];
-		    	var pointsSouth = [];
-		    	var contourPath = new Path();
-			var baselinePath = new Path();
-		    	//contourPath.strokeColor='#000000'
-		    	//contourPath.strokeWidth=2;
-
-		    	var pt1 = p.segments[0].point;
-		    	var pt2 = p.segments[1].point;       
-		    	var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2);
-		    	var endPt1 = pt1.subtract(vect.divide(2));
-		    	var normalVect = vect.rotate(90);
-			
-			var vertebraLS = pt1.add(normalVect);
-			//Marker( vertebraLS, 6, 'red' )
-			var vertebraLN = pt1.subtract(normalVect);
-			//Marker( vertebraLN, 6, 'green' )
-		    	contourPath.add( vertebraLN );
-		    	contourPath.insert(0, vertebraLS);
-
-			baselinePath.add( vertebraLS );
-
-		    	var pt3 = p.segments.at(-2).point;
-		    	var pt4 = p.segments.at(-1).point;       
-		    	var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2);
-		    	var endPt2 = pt4.add(vectEnd.divide(2));
-		    	var normalVectEnd = vectEnd.rotate(90);
-
-		    	if (p.segments.length > 2){
-
-				for (var i=1; i<p.segments.length-1; i++){
-					var pt = p.segments[i].point;
-					var ptL = p.segments[i-1].point;
-					var ptR = p.segments[i+1].point;
-					var vectL = (ptL.subtract(pt)).normalize(p.strokeWidth/2);
-					var vectR = (ptR.subtract(pt)).normalize(p.strokeWidth/2);
-					var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
-					var vertebraN = pt.add(normalVect);
-					//Marker( vertebraN, 6, 'green' );
-					var vertebraS = pt.subtract(normalVect);
-					//Marker( vertebraS, 6, 'red' );
-					contourPath.insert(0, vertebraS );
-					contourPath.add( vertebraN );
-
-					baselinePath.add( vertebraS );
-				}
-		    	}
-			var vertebraRS = pt4.add(normalVectEnd);
-			var vertebraRN = pt4.subtract(normalVectEnd);
-			//Marker( vertebraRS, 6, 'red' );
-			//Marker( vertebraRN, 6, 'green' );
-		    	contourPath.add( vertebraRN );
-		    	contourPath.insert(0, vertebraRS );
-			baselinePath.add( vertebraRS );
-		    	contourPath.insert( contourPath.segments.length/2, endPt1);
-		    	contourPath.add( endPt2 );
-		    	contourPath.closed = true;
-		    	contourPath.smooth({type: 'geometric'});
-		    
-		    	contourPath.selected = true;
-		    
-			var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
-		    	var boundaryArray = [];
-		    	for (const c of contourPath.curves){
-				boundaryArray.push( c.point1 );
-				var midPoint1 = c.getPointAt( c.length/3 );
-				var midPoint2 = c.getPointAt( c.length*2/3 );
-				boundaryArray.push( midPoint1 );
-				boundaryArray.push( midPoint2 );
-				if (c.point2 === contourPath.curves[0].point1){ break }
-				boundaryArray.push( c.point2 );
-		    	}
-			boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
-			boundaryArray = boundaryArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
-
-			var baselineArray = baselinePath.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
-			baselineArray = baselineArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
-
-			//markPath( baselinePath )
-			contourPath.selected=true;
-			//contourPath.remove();
-
-		    	return { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth }
-		}
 
 		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
 		var lineData = [];
 		// sorting paths according to their vertical position
 		var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		console.log("export()" + sortedPaths)
+		contourLayer.activate()
 		for (var p=0; p<sortedPaths.length; p++){ 
 			var data = contour(p, sortedPaths[p] ); 
 			if (data !== null){ lineData.push( data ) }
 		}
+		annotationLayer.activate()
 		
 		if (lineData.length > 0){
 			pageData['lines']=lineData;
@@ -322,6 +250,7 @@ function annotateLines(){
 	view.onClick = (ev) => {
 
 		console.log(ev.point, ev.point.divide(scalingFactor))
+		//eraseSegmentHandle();
 		if (joinPathMode){
 			joinPathMode = false;
 			currentPath.remove();
@@ -363,9 +292,13 @@ function annotateLines(){
 			logState()
 		// or nothing
 		} else {
+			eraseSegmentHandle();
+			segmentEditMode = false; 
 			for (const p of paths.children){ selectPath( p, false ); }
 		}
 	}
+
+	view.onKeyUp = (ev) => { eraseSegmentHandle() }
 
 	view.onKeyDown = (ev) => {
 		if (Key.isDown('>')) {
@@ -375,7 +308,7 @@ function annotateLines(){
 			for (const p of paths.children){ p.strokeWidth -= (1*p.isSelected); }
 			//historySave();
 		} else if (Key.isDown('up')){
-			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
+			eraseSegmentHandle();
 			for (const p of paths.children){ p.translate( new Point(0, -2*p.isSelected)) } 
 		} else if (Key.isDown('down')){
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
@@ -389,6 +322,13 @@ function annotateLines(){
 			pathDrawingMode = false;
 			segmentEditMode = false;
 			deselectAll();
+		} else if (Key.isDown('c') ){
+			if (currentPath !== null && currentPath.segments.length > 2 && currentSegmentIndex >=1 && currentSegmentIndex < currentPath.segments.length-1 ){
+				paths.addChild( new Path( currentPath.segments.slice(currentSegmentIndex)));
+				paths.children.at(-1).strokeColor='green';
+				paths.children.at(-1).strokeWidth=defaultStrokeWidth;
+				currentPath.segments.splice( currentSegmentIndex+1 );
+			}
 		} else if (Key.isDown('d') || Key.isDown('delete')){
 			if (currentPath !== null){
 				if (currentSegmentIndex > -1){
@@ -450,6 +390,7 @@ function annotateLines(){
 	}	
 
 	view.onMouseDrag = (ev) => { 
+		eraseSegmentHandle();	
 		if (joinPathMode){
 			var lastPt = currentPath.lastSegment.point
 			currentPath.addSegment( lastPt.x+ev.delta.x, lastPt.y+ev.delta.y)
@@ -458,18 +399,12 @@ function annotateLines(){
 				if (mergedPath === null){ mergedPath = hitResult.item }
 				else {
 					mergedPath.addSegments( hitResult.item.segments )
+					mergedPath.segments.sort( (s1,s2 ) => s1.point.x - s2.point.x ); 
 					deletePath( hitResult.item )
 				}
 			}
 			
 		// move the path node
-		} else if (currentSegmentIndex >= 0){
-			segmentEditMode = true;
-			var segt = currentPath.segments[currentSegmentIndex];
-			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
-			currentPath.removeSegment( currentSegmentIndex );
-			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
-			currentPath.smooth({type: 'geometric'});
 		} else if ( ev.modifiers.shift ){
 			logState()
 			var clones = [];
@@ -487,6 +422,13 @@ function annotateLines(){
 			for (const p of paths.children.filter((elt) => elt.isSelected)){
 				p.translate(ev.delta);
 			}
+		} else if (currentSegmentIndex >= 0){
+			segmentEditMode = true;
+			var segt = currentPath.segments[currentSegmentIndex];
+			//if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
+			currentPath.removeSegment( currentSegmentIndex );
+			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
+			currentPath.smooth({type: 'geometric'});
 		} else if (currentPath !== null){
 			currentPath.translate( ev.delta );
 		}
@@ -528,6 +470,13 @@ function annotateLines(){
 		return hitResult;
 	}
 
+	function eraseSegmentHandle(){
+		if (currentSegmentHandle !== null){
+			currentSegmentHandle.remove();
+			currentSegmentHandle = null;
+		}
+	}
+
 	function deselectAll(){
 		for (const p of paths.children){ selectPath( p, false); }
 		currentPath = null;
@@ -565,6 +514,107 @@ function annotateLines(){
 			xSortedPaths[0].addSegments( xSortedPaths[pi].segments )
 		}
 		deletePaths( xSortedPaths.slice(1));
+	}
+
+
+	var toIntXY = function ( pt ){
+		return [ Math.round(pt.x), Math.round(pt.y)] ;
+	}
+
+	var truncate_point = function (pt_arr, max_width, max_height) {
+		if (pt_arr[0] < 0){ pt_arr[0] = 0; } 
+		else if (pt_arr[0] >= charter.width){ pt_arr[0] = charter.width-1; }
+		if (pt_arr[1] < 0){ pt_arr[1] = 0; }
+		else if (pt_arr[1] >= charter.height){ pt_arr[1] = charter.height-1; }
+		return pt_arr
+	}
+
+	var contour = function (id, p){
+
+		if (p.segments.length < 2){ return null }
+
+		var pointsNorth = [];
+		var pointsSouth = [];
+		var contourPath = new Path();
+		var baselinePath = new Path();
+		//contourPath.strokeColor='#000000'
+		//contourPath.strokeWidth=2;
+
+		var pt1 = p.segments[0].point;
+		var pt2 = p.segments[1].point;       
+		var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2);
+		var endPt1 = pt1.subtract(vect.divide(2));
+		var normalVect = vect.rotate(90);
+		
+		var vertebraLS = pt1.add(normalVect);
+		//Marker( vertebraLS, 6, 'red' )
+		var vertebraLN = pt1.subtract(normalVect);
+		//Marker( vertebraLN, 6, 'green' )
+		contourPath.add( vertebraLN );
+		contourPath.insert(0, vertebraLS);
+
+		baselinePath.add( vertebraLS );
+
+		var pt3 = p.segments.at(-2).point;
+		var pt4 = p.segments.at(-1).point;       
+		var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2);
+		var endPt2 = pt4.add(vectEnd.divide(2));
+		var normalVectEnd = vectEnd.rotate(90);
+
+		if (p.segments.length > 2){
+
+			for (var i=1; i<p.segments.length-1; i++){
+				var pt = p.segments[i].point;
+				var ptL = p.segments[i-1].point;
+				var ptR = p.segments[i+1].point;
+				var vectL = (ptL.subtract(pt)).normalize(p.strokeWidth/2);
+				var vectR = (ptR.subtract(pt)).normalize(p.strokeWidth/2);
+				var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
+				var vertebraN = pt.add(normalVect);
+				//Marker( vertebraN, 6, 'green' );
+				var vertebraS = pt.subtract(normalVect);
+				//Marker( vertebraS, 6, 'red' );
+				contourPath.insert(0, vertebraS );
+				contourPath.add( vertebraN );
+
+				baselinePath.add( vertebraS );
+			}
+		}
+		var vertebraRS = pt4.add(normalVectEnd);
+		var vertebraRN = pt4.subtract(normalVectEnd);
+		//Marker( vertebraRS, 6, 'red' );
+		//Marker( vertebraRN, 6, 'green' );
+		contourPath.add( vertebraRN );
+		contourPath.insert(0, vertebraRS );
+		baselinePath.add( vertebraRS );
+		contourPath.insert( contourPath.segments.length/2, endPt1);
+		contourPath.add( endPt2 );
+		contourPath.closed = true;
+		contourPath.smooth({type: 'geometric'});
+	    
+		contourPath.selected = true;
+	    
+		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
+		var boundaryArray = [];
+		for (const c of contourPath.curves){
+			boundaryArray.push( c.point1 );
+			var midPoint1 = c.getPointAt( c.length/3 );
+			var midPoint2 = c.getPointAt( c.length*2/3 );
+			boundaryArray.push( midPoint1 );
+			boundaryArray.push( midPoint2 );
+			if (c.point2 === contourPath.curves[0].point1){ break }
+			boundaryArray.push( c.point2 );
+		}
+		boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
+		boundaryArray = boundaryArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
+
+		var baselineArray = baselinePath.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
+		baselineArray = baselineArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
+
+		//markPath( baselinePath )
+		//contourPath.selected=true;
+	
+		return { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth }
 	}
 
 	function historySave( op ){

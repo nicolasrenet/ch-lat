@@ -39,7 +39,11 @@
 					</li>
 				</dl>
 			</div>
-			<button id="export-button" onClick="exportData('{{archive_id}}', '{{charter_img_id}}')"> Export</button>
+			<div id="export-box">
+				<button id="preview-on"> Export preview</button>
+				<button id="preview-off"> Export preview off</button>
+				<button id="export-button" onClick="exportData('{{archive_id}}', '{{charter_img_id}}')"> Export</button>
+			</div>
 			<div id="charter-table">
 				<div class="table-header">
 					<div class="table-header-cell header-cell-first">
@@ -215,6 +219,18 @@
 					}
 				}
 			});
+
+			document.getElementById("preview-on").onclick=function(){
+				cnv.previewMaskOn();
+				console.log("This: " + this)
+				this.style.display = "none";
+				document.getElementById("preview-off").style.display="block"
+			}
+			document.getElementById("preview-off").onclick=function(){
+				cnv.previewMaskOff();
+				this.style.display = "none";
+				document.getElementById("preview-on").style.display="block"
+			}
 
 		})()
 
