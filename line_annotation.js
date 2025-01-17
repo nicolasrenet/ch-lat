@@ -52,7 +52,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- collision prevention
+ * 	- active charter should always be at top of the list
  */
 
 //paper.install(window);
@@ -302,6 +302,24 @@ function annotateLines(){
 
 	view.onKeyDown = (ev) => {
 		if (Key.isDown('>')) {
+			// compute contours 
+			contourLayer.activate();
+			contourLayer.visible=false;
+			contours=[];
+			var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+			for (var p=0; p<sortedPaths.length; p++){ contours.push( contour(p, sortedPaths[p] )[0]); }
+			// check overlaps, deselect intersecting
+			for (var p=0; p< contours.length-1; p++){
+				if (contours[p].intersects( contours[p+1])){
+					console.log("Polygons " + p + " and " + (p+1) + " intersect.")
+					selectPath(sortedPaths[p], false);
+					selectPath(sortedPaths[p+1], false);
+				}
+			}
+			contourLayer.removeChildren();
+			contourLayer.visible=true;
+			annotationLayer.activate();
+			// increment
 			for (const p of paths.children){ p.strokeWidth += (1*p.isSelected); }
 			//historySave();
 		} else if (Key.isDown('<')){
@@ -543,7 +561,7 @@ function annotateLines(){
 		var pt1 = p.segments[0].point;
 		var pt2 = p.segments[1].point;       
 		var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2);
-		var endPt1 = pt1.subtract(vect.divide(2));
+		var endPt1 = pt1;//.subtract(vect.divide(2));
 		var normalVect = vect.rotate(90);
 		
 		var vertebraLS = pt1.add(normalVect);
@@ -558,7 +576,7 @@ function annotateLines(){
 		var pt3 = p.segments.at(-2).point;
 		var pt4 = p.segments.at(-1).point;       
 		var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2);
-		var endPt2 = pt4.add(vectEnd.divide(2));
+		var endPt2 = pt4;//.add(vectEnd.divide(2));
 		var normalVectEnd = vectEnd.rotate(90);
 
 		if (p.segments.length > 2){
