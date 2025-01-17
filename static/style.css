@@ -39,9 +39,21 @@
 	flex: 1 1
 }
 
+#settings-form > * {
+	padding: 10px;
+}
+
+#stroke-width {
+	width: 50px;
+}
+
 .flex-row {
 	display: flex;
 	flex-direction: row;
+}
+
+.right-positioned-label {
+	padding-left: 10px;
 }
 
 .flex-col {

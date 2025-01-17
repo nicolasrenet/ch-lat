@@ -32,6 +32,7 @@
  * 	- Delete one or more selected paths (select; 'd')		✓
  * 	- Merge two or more selected paths (select; 'm|v|f')		✓
  * 	- Merge two or more selected paths (alt. alt-shift + drag)	✓
+ * 	- Cut a path at given point (select point; 'c')			✓
  * 	 
  * History:
  * 	- save history after:
@@ -51,7 +52,6 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- make contour smoothing optional
  * 	- collision prevention
  */
 
@@ -67,13 +67,17 @@ function annotateLines(){
 	
 	paper.settings.handleSize = 6;
 	paper.settings.hitTolerance = 6;
-	var defaultStrokeWidth = 6;
 	var scalingFactor = 1;
 
-	var groundTruthColor = new Color(0,1,0,0.6);
-	var predictionColor = new Color(1,0,0,0.6);
-	var selectionColor = new Color(0,0,1,0.7);
-	var joinLineColor = new Color(0,0.5,0.5,0.5);
+	var settings = {
+		strokeWidth: 6,
+		groundTruthColor: new Color(0,1,0,0.6),
+		predictionColor: new Color(1,0,0,0.6),
+		selectionColor: new Color(0,0,1,0.7),
+		newLineColor: new Color(0,0.5,0.5,0.5),
+		smoothing: true,
+		collisionHandling: false,
+	}
 
 	var charter = null;
 	var charterLayer = new Layer();
@@ -93,7 +97,7 @@ function annotateLines(){
 	var segmentEditMode = false;
 	var joinPathMode = false;
 
-	canvas.update_img = function ( file_url ){
+	function updateImg( file_url ){
 		console.log( "canvas.update(" +  file_url + ")")
 		charterLayer.activate();
 		charter = new Raster( file_url );
@@ -108,6 +112,11 @@ function annotateLines(){
 			logState();
 		}
 	}
+
+
+	function applySettings( settingDoc ){ settings = { ...settings, ...settingDoc } };
+
+	function getSetting( key ){ return settings[key] }
 	
 	function logState(){
 			console.log(
@@ -129,32 +138,29 @@ function annotateLines(){
 		console.log( paths.children )
 	}
 
-	canvas.update_img( img_url );
+	updateImg( img_url );
 
 	/*
 	 * Import segmentation data into the canvas, as paths.
 	 *
 	 * @param {object} pageData - line descriptions.
 	 */
-	canvas.importMask = function ( pageData, type ){
+	var importMask = ( pageData, type ) => {
 		
 		logState()
 		if (!('lines' in pageData)){ console.log("Segmentation data empty: abort."); return }
 		paths.removeChildren();
 		for (line of pageData['lines']){
+			var strokeWdith = settings.strokeWidth;
 			if (type === 'gt'){
 				paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
-				currentPath = paths.children.at(-1);
-				currentPath.strokeColor=new Color(1,0,0,.5);
-				currentPath.strokeWidth=line['strokeWidth'];
-				currentPath.smooth({type: 'geometric'});
+				strokeWidth = line['strokeWidth'];
 			} else if (type==='pred'){
 				paths.addChild( new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
-				currentPath = paths.children.at(-1);
-				currentPath.strokeColor=new Color(1,0,0,.5);
-				currentPath.strokeWidth=defaultStrokeWidth;
-				currentPath.smooth({type: 'geometric'});
 			}
+			currentPath = paths.children.at(-1);
+			currentPath.strokeWidth=settings.strokeWidth;
+			if (settings.smoothing) currentPath.smooth({type: 'geometric'});
 		} 
 		deselectAll();
 	}
@@ -167,7 +173,7 @@ function annotateLines(){
 	 * + baselines
 	 * + polygons (= contour of strokes)
 	 */
-	canvas.exportMask = function (){
+	var exportMask = () => {
 
 		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
 		var lineData = [];
@@ -192,27 +198,27 @@ function annotateLines(){
 	/*
 	 * Removes all existing paths from the canvas.
 	 */
-	canvas.eraseMask = function (){ paths.removeChildren(); }
+	var eraseMask = () => { paths.removeChildren(); }
 
-	canvas.previewMaskOn = function (){
-		var contours = []
-		contourLayer.activate();
-		var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
-		for (var p=0; p<sortedPaths.length; p++){ contours.push( contour(p, sortedPaths[p] )[0]); }
+	var previewMaskOn = ( on ) => {
+		if (on){
+			var contours = []
+			contourLayer.activate();
+			var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+			for (var p=0; p<sortedPaths.length; p++){ contours.push( contour(p, sortedPaths[p] )[0]); }
 
-		// check overlaps
-		deselectAll();
-		for (var p=0; p< contours.length-1; p++){
-			if (ps[p].intersects( ps[p+1])){
-				console.log("Polygons " + p + " and " + (p+1) + " intersect.")
-				selectPath(sortedPaths[p], true);
-				selectPath(sortedPaths[p+1], true);
+			// check overlaps
+			deselectAll();
+			for (var p=0; p< contours.length-1; p++){
+				if (contours[p].intersects( contours[p+1])){
+					console.log("Polygons " + p + " and " + (p+1) + " intersect.")
+					selectPath(sortedPaths[p], true);
+					selectPath(sortedPaths[p+1], true);
+				}
 			}
-		}
-		annotationLayer.activate();
+			annotationLayer.activate();
+		} else { contourLayer.removeChildren() }
 	}
-
-	canvas.previewMaskOff = function (){ contourLayer.removeChildren() }
 
 
 	/* User interface */
@@ -224,15 +230,15 @@ function annotateLines(){
 			var pIdx = paths.children.length-1;
 			if (p.segments.length===1){ paths.removeChildren( pIdx, pIdx+1 );}
 			else {
-				p.smooth({type: 'geometric'});
+				if (settings.smoothing) p.smooth({type: 'geometric'});
 				selectPath(p, false);
 			}
 			//historySave();
 		} else {
 			pathDrawingMode = true;
 			var path = new Path() ;
-			path.strokeColor = new Color(1,0,0,0.5);
-			path.strokeWidth = defaultStrokeWidth;
+			path.strokeColor = settings.newLineColor;
+			path.strokeWidth = settings.strokeWidth;
 			path.strokeCap = 'round';
 			path.strokeJoin = 'round';
 			selectPath(path, false);
@@ -256,7 +262,7 @@ function annotateLines(){
 		if (pathDrawingMode && paths.children.length > 0){
 			var p = paths.children.at(-1);
 			p.add(ev.point);
-			p.smooth();
+			if (settings.smoothing) p.smooth();
 			return;
 		}
 		// after dragging/moving a node 
@@ -319,8 +325,8 @@ function annotateLines(){
 		} else if (Key.isDown('c') ){
 			if (currentPath !== null && currentPath.segments.length > 2 && currentSegmentIndex >=1 && currentSegmentIndex < currentPath.segments.length-1 ){
 				paths.addChild( new Path( currentPath.segments.slice(currentSegmentIndex)));
-				paths.children.at(-1).strokeColor='green';
-				paths.children.at(-1).strokeWidth=defaultStrokeWidth;
+				paths.children.at(-1).strokeColor=settings.newLineColor;
+				paths.children.at(-1).strokeWidth=settings.strokeWidth;
 				currentPath.segments.splice( currentSegmentIndex+1 );
 			}
 		} else if (Key.isDown('d') || Key.isDown('delete')){
@@ -352,7 +358,7 @@ function annotateLines(){
 			joinPathMode = true;
 			currentPath = new Path( [ ev.point ]);
 			currentPath.strokeWidth=30;
-			currentPath.strokeColor = joinLineColor;
+			currentPath.strokeColor = newLineColor;
 			return
 		}
 
@@ -422,7 +428,7 @@ function annotateLines(){
 			//if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			currentPath.removeSegment( currentSegmentIndex );
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
-			currentPath.smooth({type: 'geometric'});
+			if (settings.smoothing) currentPath.smooth({type: 'geometric'});
 		} else if (currentPath !== null){
 			currentPath.translate( ev.delta );
 		}
@@ -436,11 +442,11 @@ function annotateLines(){
 		if (value){
 			p.selected = true;
 			p.isSelected = true;
-			p.strokeColor = new Color(0,0,1,0.6)
+			p.strokeColor = settings.selectionColor;
 		} else {
 			p.selected = false;
 			p.isSelected = false;
-			p.strokeColor = new Color(1,0,0,0.4);
+			p.strokeColor = settings.predictionColor;
 		}
 	}
 
@@ -584,7 +590,7 @@ function annotateLines(){
 		contourPath.insert( contourPath.segments.length/2, endPt1);
 		contourPath.add( endPt2 );
 		contourPath.closed = true;
-		contourPath.smooth({type: 'geometric'});
+		if (settings.smoothing) contourPath.smooth({type: 'geometric'});
 	    
 		contourPath.selected = true;
 	    
@@ -630,6 +636,16 @@ function annotateLines(){
 		pathDrawingMode = false;
 	}
 
+
+	/* exposed functions */
+	return { 
+		exportMask: exportMask, 
+		importMask: importMask, 
+		previewMaskOn: previewMaskOn,
+		eraseMask: eraseMask,
+		applySettings: applySettings,
+		getSetting: getSetting, 
+	}
 
 }
 

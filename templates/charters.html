@@ -36,8 +36,8 @@
 					<form id="settings-form" action='/{settingswrite}' method='POST'>
 						<div class="flex-row"><label>Stroke width</label><input id="stroke-width" type="number" name="strokeWidth"></div>
 						<div class="flex-row"><label>Image ZoI:</label> 
-							<input id="radio-full" type="radio" name="image-type-radio"> <label>Full</label> 
-							<input id="radio-crop" type="radio" name="image-type-radio"> <label>OldText</label> 
+							<input id="radio-full" type="radio" name="image-type-radio"> <label class="right-positioned-label">Full</label> 
+							<input id="radio-crop" type="radio" name="image-type-radio"> <label class="right-positioned-label">OldText</label> 
 						</div>
 						<div class="flex-row"><label>Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
 						<div class="flex-row"><label>Collision prevention</label><input id="collision-check" type="checkbox" name="collisionHandling"></div>
@@ -116,6 +116,7 @@
       	<script type="text/javascript">
 		<!-- read from line_annotation.js -->
 
+		var guiTool = null
 		const cnv = document.getElementById("myCanvas");
 		var img_file = "{{charter_images[charter_img_id].filename}}"; 
 		var img_id = '{{charter_img_id}}';
@@ -124,7 +125,7 @@
 		cnv.display_size = {{display_size}};
 
 	     	function exportData(archive_id, charter_img_id){
-			segdata =  cnv.exportMask();
+			segdata =  guiTool.exportMask();
 			if (Object.keys(segdata).length === 0){
 				console.log("exportData() - abort: empty segmentation data!")
 				return
@@ -141,7 +142,7 @@
 			console.log("Importing seg data - " + url);
 			fetch(url, { method: "GET" })
 			.then( resp => resp.json())
-			.then( data => cnv.importMask( data, dataType ) )
+			.then( data => guiTool.importMask( data, dataType ) )
 		}
 
 		function writeFlags( flagData, archive_id, charter_img_id ){
@@ -159,10 +160,6 @@
 			).then( resp => resp.json() ) 
 		}
 
-		function eraseData(){
-			cnv.eraseMask();
-		}
-
 
         </script>
 
@@ -176,52 +173,36 @@
 
 		(function controlBoxInit(){
 			var gt_data_checks = document.getElementsByName("check_gtdata")
-			var gt_data_status = false;
 			var pred_data_checks = document.getElementsByName("check_preddata")
-			var pred_data_status = false;
 			var flag_box_checks = document.getElementsByName("img-flag");
 			var flag_box_form = document.getElementById('flag-form');
 
 			for (const elt of gt_data_checks){
 				if (elt.id === "check_gtdata_{{charter_img_id}}"){
 					elt.checked=false;
-					elt.onclick = () => { 
-						if (! gt_data_status){
+					elt.onchange = () => { 
+						if (elt.checked){
+							guiTool.eraseMask();
 							importData('{{archive_id}}', '{{charter_img_id}}', 'gt' ) ;
-							gt_data_status = true;
 							check_preddata_elt = document.getElementById('check_preddata_{{charter_img_id}}');
 							if (check_preddata_elt !== null){ check_preddata_elt.checked=false;}
-							pred_data_status = false;
-						} else {
-							eraseData() ;
-							gt_data_status = false;
-						}
+						} else { guiTool.eraseMask() ; }
 					}
-					elt.value=false;
-				} else {
-					elt.disabled = true;
-				}
+				} else { elt.disabled = true; }
 			}
 			for (const elt of pred_data_checks){
 				if (elt.id === "check_preddata_{{charter_img_id}}"){
 					elt.checked=false;
-					elt.onclick = () => { 
-						if (! pred_data_status){
-							eraseData();
+					elt.onchange = () => { 
+						if (elt.checked){
+							guiTool.eraseMask();
 							importData( '{{archive_id}}', '{{charter_img_id}}', 'pred' ) ;
-							pred_data_status = true;
 							check_gtdata_elt = document.getElementById('check_gtdata_{{charter_img_id}}');
 							if (check_gtdata_elt !== null){ check_gtdata_elt.checked=false; }
 							gt_data_status = false;
-						} else {
-							eraseData() ;
-							pred_data_status = false;
-						}
+						} else { guiTool.eraseMask() ; }
 					}
-					elt.value=false
-				} else {
-					elt.disabled = true;
-				}
+				} else { elt.disabled = true; }
 			}
 			
 			readFlags( '{{archive_id}}', '{{charter_img_id}}' )
@@ -248,17 +229,18 @@
 						setting[elt.name]=this.value;
 					} else if (this.type === 'checkbox'){ setting[elt.name]=this.checked; }
 					console.log(setting)
+					guiTool.applySettings( setting )
 				}
 			}
 
 
 			document.getElementById("preview-on").onclick=function(){
-				cnv.previewMaskOn();
+				guiTool.previewMaskOn( true );
 				this.style.display = "none";
 				document.getElementById("preview-off").style.display="block"
 			}
 			document.getElementById("preview-off").onclick=function(){
-				cnv.previewMaskOff();
+				guiTool.previewMaskOn( false );
 				this.style.display = "none";
 				document.getElementById("preview-on").style.display="block"
 			}
@@ -272,7 +254,11 @@
 
 		paper.install(window);
 
-		window.onload=annotateLines; // in line_annotation.js
+		window.onload=() => { 
+			guiTool = annotateLines(); // in line_annotation.js
+			document.getElementById('stroke-width').value=guiTool.getSetting('strokeWidth')
+
+		}
 		
 	</script>
 

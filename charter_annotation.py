@@ -23,6 +23,7 @@ app = Flask(__name__)
 # SETTINGS
 app.config.update(
     scaling_factor= .7,
+    max_width=1500,
     charter_img_suffix='img.jpg',
     gt_segfile_suffix='lines.gt.json',
     pred_segfile_suffix='lines.pred.json',
@@ -271,9 +272,10 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
     if charter_img_id not in charter_images:
         abort(404, description="No charter image found with id='{}'".format( charter_img_id ))
 
-    def get_scaling_factor( actual_width:int, max_width=1500 ):
+    def get_scaling_factor( actual_width:int, max_width=app.config['max_width'] ):
         """ Ensure that image canvas is not too wide, for layout purpose """
-        return app.config['scaling_factor'] if img.size[0] <= max_width else max_width/img.size[0]
+        #return app.config['scaling_factor'] if img.size[0] <= max_width else max_width/img.size[0]
+        return max_width/img.size[0]
 
     with Image.open( charter_images[charter_img_id]['filename']) as img:
         display_size = [int(d*get_scaling_factor(img.size[0])) for d in img.size]
