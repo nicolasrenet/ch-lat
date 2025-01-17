@@ -51,6 +51,8 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
+ * 	- make contour smoothing optional
+ * 	- collision prevention
  */
 
 //paper.install(window);

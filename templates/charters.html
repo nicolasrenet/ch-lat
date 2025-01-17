@@ -16,14 +16,33 @@
 			<canvas id="myCanvas" width="{{display_size[0]}}px" height="{{display_size[1]}}px"> </canvas>
 		</div>
 
-		<div id="control-box" class="box">
-			<div id="stat-box" class="box">
-				<dl>
-					<li>Charter count: {{fsdb_stats['total_charters']}}</li>
-					<li>Image count: {{fsdb_stats['total_images']}}</li>
-					<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100}}%)</li>
-					<li>Line GT files: {{fsdb_stats['gt_count']}} ({{fsdb_stats['gt_ratio']*100}}%)</li>
-				</dl>
+		<div id="control-box" class="box flex-col">
+			<div id="app-wide-properties" class="box flex-row">
+				<div id="stat-box" class="box">
+					<dl>
+						<li>Charter count: {{fsdb_stats['total_charters']}}</li>
+						<li>Image count: {{fsdb_stats['total_images']}}</li>
+						<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100}}%)</li>
+						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{fsdb_stats['gt_ratio']*100}}%)</li>
+					</dl>
+				</div>
+				<!-- Settings:
+					- server-side: crop/full 
+				 	- client-side: smooth, collision, stroke-width
+					In any case: apply changes immediately to the client; store on server; at start-up, read both from GUI app and template
+						   -->
+
+				<div id="settings-box" class="box flex-col">
+					<form id="settings-form" action='/{settingswrite}' method='POST'>
+						<div class="flex-row"><label>Stroke width</label><input id="stroke-width" type="number" name="strokeWidth"></div>
+						<div class="flex-row"><label>Image ZoI:</label> 
+							<input id="radio-full" type="radio" name="image-type-radio"> <label>Full</label> 
+							<input id="radio-crop" type="radio" name="image-type-radio"> <label>OldText</label> 
+						</div>
+						<div class="flex-row"><label>Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
+						<div class="flex-row"><label>Collision prevention</label><input id="collision-check" type="checkbox" name="collisionHandling"></div>
+					</form>
+				</div>
 			</div>
 			<div id="property-box" class="box">
 				<dl>
@@ -213,12 +232,25 @@
 					elt.onchange = () => {
 						var flagData = {};
 						for (const elt of flag_box_checks){
-							if (elt.checked){ flagData[elt.value]=true } else { flagData[elt.value]=false }
+			if (elt.checked){ flagData[elt.value]=true } else { flagData[elt.value]=false }
 						}
 						writeFlags( flagData, '{{archive_id}}', '{{charter_img_id}}' ); 		
 					}
 				}
 			});
+
+			var settings = document.getElementById("settings-form")
+			for (const elt of settings.querySelectorAll("input")){
+				console.log(elt.id)
+				elt.onchange = function(){
+					var setting = {};
+					if (this.id === 'stroke-width'){
+						setting[elt.name]=this.value;
+					} else if (this.type === 'checkbox'){ setting[elt.name]=this.checked; }
+					console.log(setting)
+				}
+			}
+
 
 			document.getElementById("preview-on").onclick=function(){
 				cnv.previewMaskOn();

@@ -31,12 +31,26 @@
 
 #stat-box {
 	border-bottom: 1px solid;
+	flex: 2 1
+}
+
+#settings-box {
+	border: 1px solid;
+	flex: 1 1
+}
+
+.flex-row {
+	display: flex;
+	flex-direction: row;
+}
+
+.flex-col {
+	display: flex;
+	flex-direction: column;
 }
 
 #control-box {
 	flex: 1 1 auto;
-	display: flex;
-	flex-direction: column;
 }
 
 .box > * {
@@ -83,5 +97,5 @@
 	width: 50%
 }
 label {
-	padding-left: 30px;
+	padding-right: 10px;
 }
