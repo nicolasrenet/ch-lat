@@ -151,7 +151,7 @@ function annotateLines(){
 		if (!('lines' in pageData)){ console.log("Segmentation data empty: abort."); return }
 		paths.removeChildren();
 		for (line of pageData['lines']){
-			var strokeWdith = settings.strokeWidth;
+			var strokeWidth = settings.strokeWidth;
 			if (type === 'gt'){
 				paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
 				strokeWidth = line['strokeWidth'];
@@ -159,7 +159,7 @@ function annotateLines(){
 				paths.addChild( new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
 			}
 			currentPath = paths.children.at(-1);
-			currentPath.strokeWidth=settings.strokeWidth;
+			currentPath.strokeWidth=strokeWidth;
 			if (settings.smoothing) currentPath.smooth({type: 'geometric'});
 		} 
 		deselectAll();
