@@ -180,9 +180,9 @@ def fsdb_get_charter_images(archive_id:str='') -> Tuple[str,dict]:
     else:
         charter_images = { lemmatize(img.name):{'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(app.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, app.config['charter_img_suffix'])) }
 
-    for md5id in charter_images:
+    for number, md5id in enumerate(charter_images, start=1):
         filepath_stem = lemmatize( Path(charter_images[md5id]['filename']), suffix=app.config['charter_img_suffix'] )
-
+        charter_images[md5id]['number']=number
         if app.config['crop']:
             charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.parent.name
         else:
@@ -265,6 +265,11 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
     """
     archives = fsdb_get_archives()
     _, charter_images = fsdb_get_charter_images(archive_id)
+    # ensure that image of interest is a the top
+    img_ids = list(charter_images.keys())
+    item_of_interest_idx = img_ids.index( charter_img_id )
+    print(type(item_of_interest_idx), item_of_interest_idx)
+    charter_images = { img_id:charter_images[img_id] for img_id in img_ids[item_of_interest_idx:]+img_ids[:item_of_interest_idx]}
 
     if not charter_images:
         abort(404, description="No charter images found for archive '{}'".format( archive_id ))

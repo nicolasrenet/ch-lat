@@ -52,7 +52,6 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- active charter should always be at top of the list
  */
 
 //paper.install(window);

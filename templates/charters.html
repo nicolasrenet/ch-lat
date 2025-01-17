@@ -86,7 +86,7 @@
 						
 					<div class="table-row">
 						<div class="table-cell-first table-cell">
-							{{loop.index}}. {{ch_img.archive if ch_img.archive!='COLLECTIONS' else 'COLL'}}//{{ch_img.charter}}
+							{{ch_img.number}}. {{ch_img.archive if ch_img.archive!='COLLECTIONS' else 'COLL'}}//{{ch_img.charter}}
 						</div>
 						<div class="table-cell">
 							{% if id != charter_img_id %}
