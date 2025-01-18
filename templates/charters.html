@@ -127,36 +127,35 @@
 
 		var guiTool = null
 		const cnv = document.getElementById("myCanvas");
-		var img_file = "{{charter_images[0].filename}}"; 
-		var img_id = '{{charter_img_id}}';
-		var img_url = '/img/{{charter_images[0].archive}}/'+ img_id;
+		const img_file = "{{charter_images[0].filename}}"; 
+		const img_id = '{{charter_img_id}}';
+		const img_url = '/img/{{charter_images[0].archive}}/'+ img_id;
 
 		cnv.display_size = {{display_size}};
 
 	     	function exportData(archive_id, charter_img_id){
-			segdata =  guiTool.exportMask();
+			const segdata =  guiTool.exportMask();
 			if (Object.keys(segdata).length === 0){ console.log("exportData() - abort: empty segmentation data!"); return }
-			url = "/segdata/" + archive_id + '/' + charter_img_id;
+			const url = "/segdata/" + archive_id + '/' + charter_img_id;
 			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( segdata ) })
 			.then( resp => { console.log(resp.json()) } )
 		}
 
 		function importData( archive_id, charter_img_id, dataType ){
-			url = "/segdata/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
+			const url = "/segdata/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
 			fetch(url, { method: "GET" })
 			.then( resp => resp.json())
 			.then( data => guiTool.importMask( data, dataType ) )
 		}
 
 		function writeFlags( flagData, archive_id, charter_img_id ){
-			url = "/flag/" + archive_id + "/" + charter_img_id;
+			const url = "/flags/" + archive_id + "/" + charter_img_id;
 			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( flagData )})
 			.then( resp => {console.log(resp.json())} )
 		}
 
 		function readFlags( archive_id, charter_img_id ){
-			console.log('readFlags())')
-			url = "/flag/" + archive_id + '/' + charter_img_id 
+			const url = "/flags/" + archive_id + '/' + charter_img_id 
 			return fetch(url, { method: "GET" }) .then( resp => resp.json() ) 
 		}
 
@@ -170,15 +169,11 @@
 		}
 
 
-        </script>
-
-	<script type="text/javascript">
-
 		(function controlBoxInit(){
-			var gt_data_checks = document.getElementsByName("check_gtdata")
-			var pred_data_checks = document.getElementsByName("check_preddata")
-			var flag_box_checks = document.getElementsByName("img-flag");
-			var flag_box_form = document.getElementById('flag-form');
+			const gt_data_checks = document.getElementsByName("check_gtdata")
+			const pred_data_checks = document.getElementsByName("check_preddata")
+			const flag_box_checks = document.getElementsByName("img-flag");
+			const flag_box_form = document.getElementById('flag-form');
 
 			for (const elt of gt_data_checks){
 				if (elt.id === "check_gtdata_{{charter_img_id}}"){
@@ -250,6 +245,9 @@
 				this.style.display = "none";
 				document.getElementById("preview-on").style.display="block"
 			}
+			// working on the canvas immediately switches the preview off
+			cnv.onclick = () => { document.getElementById("preview-off").onclick() }
+
 			document.getElementById("export-button").onclick=function(){
 				exportData('{{archive_id}}', '{{charter_img_id}}');
 				document.getElementById("preview-on").style.display="none";
@@ -271,9 +269,6 @@
 					if (elt.type === 'checkbox'){ console.log(elt.name + '=' + conf[elt.name]);  elt.checked = conf[elt.name] }
 				}
 			})
-
-			
-
 		}
 		
 	</script>

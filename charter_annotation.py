@@ -324,7 +324,7 @@ def get_segmentation_gt( archive_id:str, charter_img_id:str):
     return make_response( segmentation_data )
 
 
-@app.post('/flag/<archive_id>/<charter_img_id>')
+@app.post('/flags/<archive_id>/<charter_img_id>')
 def record_flag( archive_id:str, charter_img_id:str ):
     """Export segmentation flags to disk.
     """
@@ -333,7 +333,7 @@ def record_flag( archive_id:str, charter_img_id:str ):
     resp = make_response( ok )
     return resp
 
-@app.get('/flag/<archive_id>/<charter_img_id>')
+@app.get('/flags/<archive_id>/<charter_img_id>')
 def get_flag( archive_id:str, charter_img_id:str):
     """ Import segmentation flags
     """
