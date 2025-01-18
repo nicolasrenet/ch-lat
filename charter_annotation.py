@@ -194,7 +194,6 @@ def fsdb_get_charter_images(archive_id:str='') -> Tuple[str,dict]:
         
         if Path( pred_seg_filename ).exists():
             ch_img['hasPredData']=True
-    print(charter_images)
     
     return archive_id, charter_images
 
@@ -209,7 +208,6 @@ def fsdb_get_image(archive_id: str, charter_img_id:str):
     Returns:
         bytes: an array of bytes.
     """
-    print('fsdb_get_image({})'.format( archive_id, charter_img_id))
     charter_img_path = fsdb_search( archive_id, charter_img_id )
     if charter_img_path is None:
         return None
@@ -266,9 +264,7 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
     _, charter_images = fsdb_get_charter_images(archive_id)
     # ensure that image of interest is a the top
     item_of_interest_idx= list([ img['id'] for img in  charter_images]).index(charter_img_id)
-    print("Item of interest", item_of_interest_idx)
     charter_img_filename = charter_images[item_of_interest_idx]['filename']
-    print("Filename", charter_img_filename)
     charter_images = charter_images[item_of_interest_idx:]+charter_images[:item_of_interest_idx]
 
     if not charter_images:
@@ -281,7 +277,7 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
         """ Ensure that image canvas is not too wide, for layout purpose """
         #return app.config['scaling_factor'] if img.size[0] <= max_width else max_width/img.size[0]
         return max_width/img.size[0]
-    print("Successful search")
+    
     with Image.open( charter_img_filename, 'r') as img:
         display_size = [int(d*get_scaling_factor(img.size[0])) for d in img.size]
         return render_template(
@@ -340,6 +336,5 @@ def get_flag( archive_id:str, charter_img_id:str):
     """ Import segmentation flags
     """
     flag_data = fsdb_read_flags( archive_id, charter_img_id )
-    print(flag_data)
     return make_response( flag_data )
 
