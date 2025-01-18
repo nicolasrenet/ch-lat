@@ -92,18 +92,19 @@
 .table-row > * {
 	border-bottom: 1px solid;
 }
+
+.row-of-interest > * {
+	color: #8b4000;
+	font-weight: bold;
+}
+
 .table-row {
 	display: table-row;
 }
 .table-cell {
-	height: 25px;
 	display: table-cell;
-	padding-left: 10px;
-	padding-right: 10px;
+	padding: 8px;
 	/*text-align: center;*/
-}
-.table-cell-first {
-	height: 25px;
 }
 .header-cell-first {
 	width: 50%

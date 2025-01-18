@@ -19,11 +19,19 @@
 		<div id="control-box" class="box flex-col">
 			<div id="app-wide-properties" class="box flex-row">
 				<div id="stat-box" class="box">
+					FSDB:
 					<dl>
 						<li>Charter count: {{fsdb_stats['total_charters']}}</li>
 						<li>Image count: {{fsdb_stats['total_images']}}</li>
 						<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100}}%)</li>
 						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{fsdb_stats['gt_ratio']*100}}%)</li>
+					</dl>
+
+					Archive:
+					<dl>
+						<!--<li>Charter count: {{ charter_images|map(attribute='charter')|unique|list}}</li>--> 
+						<li>Charter count: </li>
+						<li>Image count: {{charter_images.items()|length}}</li>
 					</dl>
 				</div>
 				<!-- Settings:
@@ -75,18 +83,19 @@
 								{% endif %}
 							{% endfor %}
 							
-						</select>//Charter
+						</select> /*/*/Charter
 					</div>
 					<div class="table-header-cell">Image</div> 
-					<div class="table-header-cell">GT Segt.</div> 
-					<div class="table-header-cell">Pred Segt.</div> 
+					<div class="table-header-cell">GT.</div> 
+					<div class="table-header-cell">Pred.</div> 
 				</div>
 				<div class="table-body">
 					{% for id, ch_img in charter_images.items() %}
 						
-					<div class="table-row">
+					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
 						<div class="table-cell-first table-cell">
-							{{ch_img.number}}. {{ch_img.archive if ch_img.archive!='COLLECTIONS' else 'COLL'}}//{{ch_img.charter}}
+							<!--{{ch_img.number}}. {{ch_img.archive if ch_img.archive!='COLLECTIONS' else 'COLL'}}//{{ch_img.charter}}-->
+							{{ch_img.number}}. {{ch_img.charter}}
 						</div>
 						<div class="table-cell">
 							{% if id != charter_img_id %}
