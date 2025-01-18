@@ -135,38 +135,38 @@
 
 	     	function exportData(archive_id, charter_img_id){
 			segdata =  guiTool.exportMask();
-			if (Object.keys(segdata).length === 0){
-				console.log("exportData() - abort: empty segmentation data!")
-				return
-			}
-			fetch("/export/" + archive_id + '/' + charter_img_id, {
-				method: "POST",
-				headers: {"Content-Type":"application/json"},
-				body: JSON.stringify( segdata )
-			}).then( resp => { console.log(resp.json()) } )
+			if (Object.keys(segdata).length === 0){ console.log("exportData() - abort: empty segmentation data!"); return }
+			url = "/segdata/" + archive_id + '/' + charter_img_id;
+			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( segdata ) })
+			.then( resp => { console.log(resp.json()) } )
 		}
 
 		function importData( archive_id, charter_img_id, dataType ){
-			url = "/import/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
-			console.log("Importing seg data - " + url);
+			url = "/segdata/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
 			fetch(url, { method: "GET" })
 			.then( resp => resp.json())
 			.then( data => guiTool.importMask( data, dataType ) )
 		}
 
 		function writeFlags( flagData, archive_id, charter_img_id ){
-			fetch("/flagwrite/" + archive_id + "/" + charter_img_id, {
-				method: "POST",
-				headers: {"Content-Type":"application/json"},
-				body: JSON.stringify( flagData )
-			}).then( resp => {console.log(resp.json())} )
+			url = "/flag/" + archive_id + "/" + charter_img_id;
+			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( flagData )})
+			.then( resp => {console.log(resp.json())} )
 		}
 
 		function readFlags( archive_id, charter_img_id ){
 			console.log('readFlags())')
-			url = "/flagread/" + archive_id + '/' + charter_img_id 
-			return fetch(url, { method: "GET" }
-			).then( resp => resp.json() ) 
+			url = "/flag/" + archive_id + '/' + charter_img_id 
+			return fetch(url, { method: "GET" }) .then( resp => resp.json() ) 
+		}
+
+		function readAppConfig(){
+			return fetch('/appconfig', {method: "GET" }).then( resp => resp.json())
+		}
+
+		function writeAppConfig( configData ){
+			fetch("/appconfig", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( configData )})
+			.then( resp => {console.log(resp.json())})
 		}
 
 
@@ -223,15 +223,18 @@
 				}
 			});
 
-			var settings = document.getElementById("settings-form")
-			for (const elt of settings.querySelectorAll("input")){
-				console.log(elt.id)
+			
+			for (const elt of document.getElementById("settings-form").querySelectorAll("input")){
 				elt.onchange = function(){
 					var setting = {};
 					if (this.id === 'stroke-width'){
 						setting[elt.name]=this.value;
-					} else if (this.type === 'checkbox'){ setting[elt.name]=this.checked; }
-					console.log(setting)
+					} else if (this.type === 'checkbox'){
+						setting[elt.name]=this.checked;
+					}
+					// store server-side
+					writeAppConfig( setting )
+					// tell the canvas tool
 					guiTool.applySettings( setting )
 				}
 			}
@@ -259,7 +262,17 @@
 
 		window.onload=() => { 
 			guiTool = annotateLines(); // in line_annotation.js
-			document.getElementById('stroke-width').value=guiTool.getSetting('strokeWidth')
+
+			document.getElementById('stroke-width').value=guiTool.getSetting('strokeWidth');
+
+			// reading app config from server
+			readAppConfig().then( conf => {
+				for (const elt of document.getElementById('settings-form').querySelectorAll("input")){
+					if (elt.type === 'checkbox'){ console.log(elt.name + '=' + conf[elt.name]);  elt.checked = conf[elt.name] }
+				}
+			})
+
+			
 
 		}
 		

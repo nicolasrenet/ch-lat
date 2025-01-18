@@ -52,6 +52,8 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
+ * 	- export preview off when modifying lines
+ * 	- check that smoothing/collision values are read by template
  */
 
 //paper.install(window);
@@ -74,7 +76,8 @@ function annotateLines(){
 		predictionColor: new Color(1,0,0,0.6),
 		selectionColor: new Color(0,0,1,0.7),
 		newLineColor: new Color(0,0.5,0.5,0.5),
-		smoothing: true,
+		highlighterColor: new Color(1,1,0,0.5),
+		smoothing: false,
 		collisionHandling: false,
 	}
 
@@ -376,7 +379,7 @@ function annotateLines(){
 			joinPathMode = true;
 			currentPath = new Path( [ ev.point ]);
 			currentPath.strokeWidth=30;
-			currentPath.strokeColor = newLineColor;
+			currentPath.strokeColor = settings.highlighterColor;
 			return
 		}
 
