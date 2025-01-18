@@ -13,7 +13,6 @@ from typing import List, Tuple
 import sys
 
 # TODO:
-#   + Fix segmentation data export
 #
 
 app = Flask(__name__)
@@ -173,28 +172,28 @@ def fsdb_get_charter_images(archive_id:str='') -> Tuple[str,dict]:
             as value. 
     """
     if not archive_id:
-        archive_id = [ p.name for p in Path( app.config['fsdb_root']).glob('*') if p.is_dir() ][0]
+        archive_id = sorted([ p.name for p in Path( app.config['fsdb_root']).glob('*') if p.is_dir() ])[0]
     charter_images = []
     if app.config['crop']:
-        charter_images = { lemmatize(img.name, suffix=app.config['charter_img_suffix']):{'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, app.config['charter_img_suffix'])) }
+        charter_images = [ {'id': lemmatize(img.name, suffix=app.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(app.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, app.config['charter_img_suffix'])) ]
     else:
-        charter_images = { lemmatize(img.name):{'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(app.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, app.config['charter_img_suffix'])) }
+        charter_images = [ {'id': lemmatize(img.name, suffix=app.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(app.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, app.config['charter_img_suffix'])) ]
 
-    for number, md5id in enumerate(charter_images, start=1):
-        filepath_stem = lemmatize( Path(charter_images[md5id]['filename']), suffix=app.config['charter_img_suffix'] )
-        charter_images[md5id]['number']=number
+    for number, ch_img in enumerate(charter_images, start=1):
+        filepath_stem = lemmatize( Path(ch_img['filename']), suffix=app.config['charter_img_suffix'] )
+        ch_img['number']=number
         if app.config['crop']:
-            charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.parent.name
+            ch_img['charter']=Path(ch_img['filename']).parent.parent.name
         else:
-            charter_images[md5id]['charter']=Path(charter_images[md5id]['filename']).parent.name
+            ch_img['charter']=Path(ch_img['filename']).parent.name
 
         gt_seg_filename = '{}.{}'.format( filepath_stem, app.config['gt_segfile_suffix'])
         if Path( gt_seg_filename ).exists():
-            charter_images[md5id]['hasGTData']=True
+            ch_img['hasGTData']=True
         pred_seg_filename = '{}.{}'.format( filepath_stem, app.config['pred_segfile_suffix'] )
         
         if Path( pred_seg_filename ).exists():
-            charter_images[md5id]['hasPredData']=True
+            ch_img['hasPredData']=True
     print(charter_images)
     
     return archive_id, charter_images
@@ -238,7 +237,7 @@ def charters_choice():
 
     if not charter_images:
         abort(404, description="No charter images found for archive '{}'".format( archive_id ))
-    charter_img_id = list(charter_images.keys())[0]
+    charter_img_id = charter_images[0]['id']
     return redirect(f'/{archive_id}/{charter_img_id}')
 
 @app.get('/archive')
@@ -256,7 +255,7 @@ def archive_charter_all_images(archive_id:str):
     if not charter_images:
         abort(404, description="No charter images found for archive '{}'".format( archive_id ))
 
-    charter_img_id = list( charter_images.keys())[0]
+    charter_img_id = charter_images[0]['id']
     return redirect(f'/{archive_id}/{charter_img_id}')
 
 @app.get('/<archive_id>/<charter_img_id>')
@@ -266,23 +265,24 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
     archives = fsdb_get_archives()
     _, charter_images = fsdb_get_charter_images(archive_id)
     # ensure that image of interest is a the top
-    img_ids = list(charter_images.keys())
-    item_of_interest_idx = img_ids.index( charter_img_id )
-    print(type(item_of_interest_idx), item_of_interest_idx)
-    charter_images = { img_id:charter_images[img_id] for img_id in img_ids[item_of_interest_idx:]+img_ids[:item_of_interest_idx]}
+    item_of_interest_idx= list([ img['id'] for img in  charter_images]).index(charter_img_id)
+    print("Item of interest", item_of_interest_idx)
+    charter_img_filename = charter_images[item_of_interest_idx]['filename']
+    print("Filename", charter_img_filename)
+    charter_images = charter_images[item_of_interest_idx:]+charter_images[:item_of_interest_idx]
 
     if not charter_images:
         abort(404, description="No charter images found for archive '{}'".format( archive_id ))
 
-    if charter_img_id not in charter_images:
+    if charter_img_id not in [ img['id'] for img in charter_images]:
         abort(404, description="No charter image found with id='{}'".format( charter_img_id ))
 
     def get_scaling_factor( actual_width:int, max_width=app.config['max_width'] ):
         """ Ensure that image canvas is not too wide, for layout purpose """
         #return app.config['scaling_factor'] if img.size[0] <= max_width else max_width/img.size[0]
         return max_width/img.size[0]
-
-    with Image.open( charter_images[charter_img_id]['filename']) as img:
+    print("Successful search")
+    with Image.open( charter_img_filename, 'r') as img:
         display_size = [int(d*get_scaling_factor(img.size[0])) for d in img.size]
         return render_template(
                 'charters.html', 
@@ -291,7 +291,7 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
                 charter_images=charter_images, 
                 charter_img_id=charter_img_id, 
                 charter_img_size=img.size,
-                charter_filename=Path(charter_images[charter_img_id]['filename']).name,
+                charter_filename=Path(charter_img_filename).name,
                 display_size=display_size,
                 fsdb_stats=fsdb_stats(),
                 )

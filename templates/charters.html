@@ -27,11 +27,11 @@
 						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{fsdb_stats['gt_ratio']*100}}%)</li>
 					</dl>
 
-					Archive:
+					Archive {{archive_id}}:
 					<dl>
 						<!--<li>Charter count: {{ charter_images|map(attribute='charter')|unique|list}}</li>--> 
-						<li>Charter count: </li>
-						<li>Image count: {{charter_images.items()|length}}</li>
+						<li>Charter count: {{charter_images|map(attribute='charter')|unique|list|count}}</li>
+						<li>Image count: {{charter_images|length}}</li>
 					</dl>
 				</div>
 				<!-- Settings:
@@ -54,7 +54,7 @@
 			</div>
 			<div id="property-box" class="box">
 				<dl>
-					<li>File: {{charter_filename}}</li>
+					<li>Image file: {{charter_filename}}</li>
 					<li>Size: {{charter_img_size[0]}} x {{charter_img_size[1]}}</li>
 					<li>
 						<form id='flag-form' action='/flagwrite/{{archive_id}}/{{charter_img_id}}' method="POST">
@@ -90,7 +90,7 @@
 					<div class="table-header-cell">Pred.</div> 
 				</div>
 				<div class="table-body">
-					{% for id, ch_img in charter_images.items() %}
+					{% for ch_img in charter_images %}
 						
 					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
 						<div class="table-cell-first table-cell">
@@ -98,20 +98,20 @@
 							{{ch_img.number}}. {{ch_img.charter}}
 						</div>
 						<div class="table-cell">
-							{% if id != charter_img_id %}
-							<a href="/{{ch_img.archive}}/{{id}}">{{id}}</a>
+							{% if ch_img.id != charter_img_id %}
+							<a href="/{{ch_img.archive}}/{{ch_img.id}}">{{ch_img.id}}</a>
 							{% else %}
-							{{id}}
+							{{ch_img.id}}
 							{% endif %}
 						</div>
 						<div class="table-cell">
 							{% if ch_img.hasGTData %} 
-								<input class="tablechck" type="checkbox" id="check_gtdata_{{id}}" name="check_gtdata" value="false">
+								<input class="tablechck" type="checkbox" id="check_gtdata_{{ch_img.id}}" name="check_gtdata" value="false">
 							{% endif %}
 						</div>
 						<div class="table-cell">
 							{% if ch_img.hasPredData %} 
-								<input class="tablechck" type="checkbox" id="check_preddata_{{id}}" name="check_preddata" value="false">
+								<input class="tablechck" type="checkbox" id="check_preddata_{{ch_img.id}}" name="check_preddata" value="false">
 							{% endif %}
 						</div>
 					</div>
@@ -127,9 +127,9 @@
 
 		var guiTool = null
 		const cnv = document.getElementById("myCanvas");
-		var img_file = "{{charter_images[charter_img_id].filename}}"; 
+		var img_file = "{{charter_images[0].filename}}"; 
 		var img_id = '{{charter_img_id}}';
-		var img_url = '/img/{{charter_images[charter_img_id].archive}}/'+ img_id;
+		var img_url = '/img/{{charter_images[0].archive}}/'+ img_id;
 
 		cnv.display_size = {{display_size}};
 
@@ -172,13 +172,7 @@
 
         </script>
 
-	<script type='text/javascript'>
-		<!--document.getElementById("check_gtdata_{{id}}").onclick=() => { document.getElementById("gt_data_{{id}}").submit();}-->
-	</script>
-
-
 	<script type="text/javascript">
-		//console.log("Youpi")
 
 		(function controlBoxInit(){
 			var gt_data_checks = document.getElementsByName("check_gtdata")
