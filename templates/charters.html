@@ -265,6 +265,7 @@
 
 			// reading app config from server
 			readAppConfig().then( conf => {
+				guiTool.applySettings( conf )
 				for (const elt of document.getElementById('settings-form').querySelectorAll("input")){
 					if (elt.type === 'checkbox'){ console.log(elt.name + '=' + conf[elt.name]);  elt.checked = conf[elt.name] }
 				}

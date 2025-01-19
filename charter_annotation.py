@@ -27,13 +27,12 @@ app.config.update(
     gt_segfile_suffix='lines.gt.json',
     pred_segfile_suffix='lines.pred.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
-    gui_tool_smoothing=0,
-    gui_tool_collisionHandling=1,
+    gui_tool_smoothing=False,
+    gui_tool_collisionHandling=True,
     crop=False,
 )
 
 app.config.from_prefixed_env()
-
 
 def lemmatize( p:Path, suffix='', replacement=''):
     if suffix:
@@ -338,12 +337,14 @@ def get_flag( archive_id:str, charter_img_id:str):
     """ Import segmentation flags
     """
     flag_data = fsdb_read_flags( archive_id, charter_img_id )
+    # note: since data read from json file, no need to jsonify
     return make_response( flag_data )
 
 
 @app.get('/appconfig')
 def get_config():
-    return make_response( { k.replace('gui_tool_', ''):v for k,v in app.config.items() if 'gui_tool_' in k } )
+    config_data = json.dumps({ k.replace('gui_tool_', ''):v for k,v in app.config.items() if 'gui_tool_' in k } )
+    return make_response( config_data )
 
 
 @app.post('/appconfig')

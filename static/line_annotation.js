@@ -114,7 +114,7 @@ function annotateLines(){
 	}
 
 
-	function applySettings( settingDoc ){ settings = { ...settings, ...settingDoc } };
+	function applySettings( settingDoc ){ settings = { ...settings, ...settingDoc } ; }
 
 	function getSetting( key ){ return settings[key] }
 	
