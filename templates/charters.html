@@ -140,26 +140,26 @@
 	     	function exportData(archive_id, charter_img_id){
 			const segdata =  guiTool.exportMask();
 			if (Object.keys(segdata).length === 0){ console.log("exportData() - abort: empty segmentation data!"); return }
-			const url = "/segdata/" + archive_id + '/' + charter_img_id;
+			const url = "/segdata/${archive_id}/${charter_img_id}";
 			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( segdata ) })
 			.then( resp => { console.log(resp.json()) } )
 		}
 
 		function importData( archive_id, charter_img_id, dataType ){
-			const url = "/segdata/" + archive_id + '/' + charter_img_id + "?" + new URLSearchParams({segtype: dataType}).toString()
+			const url = "/segdata/${archive_id}/${charter_img_id}?" + {new URLSearchParams({segtype: dataType}).toString()
 			fetch(url, { method: "GET" })
 			.then( resp => resp.json())
 			.then( data => guiTool.importMask( data, dataType ) )
 		}
 
 		function writeFlags( flagData, archive_id, charter_img_id ){
-			const url = "/flags/" + archive_id + "/" + charter_img_id;
+			const url = "/flags/${archive_id}/${charter_img_id}";
 			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( flagData )})
 			.then( resp => {console.log(resp.json())} )
 		}
 
 		function readFlags( archive_id, charter_img_id ){
-			const url = "/flags/" + archive_id + '/' + charter_img_id 
+			const url = "/flags/${archive_id}/${charter_img_id}"
 			return fetch(url, { method: "GET" }) .then( resp => resp.json() ) 
 		}
 

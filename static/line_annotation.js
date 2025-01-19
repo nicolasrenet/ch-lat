@@ -101,11 +101,10 @@ function annotateLines(){
 	var joinPathMode = false;
 
 	function updateImg( file_url ){
-		console.log( "canvas.update(" +  file_url + ")")
 		charterLayer.activate();
 		charter = new Raster( file_url );
 		charter.onLoad = function() {
-			console.log("Loaded image " + file_url )
+			console.log("Loaded image ${file_url}" )
 			// the canvas display_size attribute is set in the containing template
 			scalingFactor = canvas.display_size[1]/charter.height;
 			charter.position = view.center;
@@ -126,18 +125,18 @@ function annotateLines(){
 			"caller="+this+
 			"\ncanvas.size="+[canvas.width, canvas.height]+
 			"\ncharter.size="+[charter.width, charter.height]+
-			"\nscalingFactor="+scalingFactor+
-			"\nannotationLayer.active="+(annotationLayer===project.activeLayer)+ "("+ annotationLayer.children.length + " children)" +
-			"\ncharterLayer.active="+(charterLayer===project.activeLayer)+" (" + charterLayer.children.length + " children)" +
-			"\ncontourLayer.active="+(contourLayer===project.activeLayer)+" (" + contourLayer.children.length + " children)" +
-			"\npaths.children.length="+paths.children.length+
-			"\npaths.children" + paths.children+
-			"\npathDrawingMode="+pathDrawingMode+
-			"\nsegmentEditMode="+segmentEditMode+
-			"\nCopyOn="+copyOn+
-			"\ncurrentSegmentIndex="+currentSegmentIndex+
-			"\ncurrentSegmentHandle="+currentSegmentHandle+
-			"\ncurrentPath="+currentPath);
+			"\nscalingFactor=${scalingFactor}" +
+			"\nannotationLayer.active=${annotationLayer===project.activeLayer} (${annotationLayer.children.length}  children)" +
+			"\ncharterLayer.active=${charterLayer===project.activeLayer} (${charterLayer.children.length} children)" +
+			"\ncontourLayer.active=${contourLayer===project.activeLayer} (${contourLayer.children.length} children)" +
+			"\npaths.children.length=${paths.children.length}" +
+			"\npaths.children=${paths.children}" +
+			"\npathDrawingMode=${pathDrawingMode}" +
+			"\nsegmentEditMode=${segmentEditMode}" +
+			"\nCopyOn=${copyOn}" +
+			"\ncurrentSegmentIndex=${currentSegmentIndex}" +
+			"\ncurrentSegmentHandle=${currentSegmentHandle}" +
+			"\ncurrentPath=${currentPath}"; 
 		console.log( paths.children )
 	}
 
@@ -217,7 +216,7 @@ function annotateLines(){
 		for (var p=0; p< contours.length-1; p++){
 			for (var nghbr=p+1; nghbr<contours.length && nghbr<=p+settings.overlapScope; nghbr++){
 				if (contours[p].intersects( contours[nghbr])){
-					console.log("Polygons " + p + " and " + nghbr + " intersect.")
+					console.log("Polygons ${p} and ${nghbr} intersect.")
 					selectPath(sortedPaths[p], selectFlag);
 					selectPath(sortedPaths[nghbr], selectFlag);
 				}
