@@ -167,7 +167,7 @@ function annotateLines(){
 			if (type === 'gt'){
 				var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
 				p.baselineOffset = 0 ; 
-				if ('baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
+				if (settings.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
 				paths.addChild( p );
 				strokeWidth = line['strokeWidth'];
 			} else if (type==='pred'){
@@ -279,7 +279,7 @@ function annotateLines(){
 			var path = new Path() ;
 			path.strokeColor = settings.newLineColor;
 			path.strokeWidth = settings.strokeWidth;
-			path.strokeCap = 'round';
+			//path.strokeCap = 'round';
 			path.strokeJoin = 'round';
 			path.baselineOffset = 0; // not used unless baselineOffset enabled
 			selectPath(path, false);
