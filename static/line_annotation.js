@@ -33,6 +33,7 @@
  * 	- Merge two or more selected paths (select; 'm|v|f')		✓
  * 	- Merge two or more selected paths (alt. alt-shift + drag)	✓
  * 	- Cut a path at given point (select point; 'c')			✓
+ * 	- (optional) prevent overlaps when thickening lines		✓
  * 	 
  * History:
  * 	- save history after:
@@ -136,7 +137,7 @@ function annotateLines(){
 			"\nCopyOn=${copyOn}" +
 			"\ncurrentSegmentIndex=${currentSegmentIndex}" +
 			"\ncurrentSegmentHandle=${currentSegmentHandle}" +
-			"\ncurrentPath=${currentPath}"; 
+			"\ncurrentPath=${currentPath}"); 
 		console.log( paths.children )
 	}
 

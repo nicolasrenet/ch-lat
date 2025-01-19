@@ -35,10 +35,10 @@
 					</dl>
 				</div>
 				<!-- Settings:
-					- server-side: crop/full 
-				 	- client-side: smooth, overlap, stroke-width
-					In any case: apply changes immediately to the client; store on server; at start-up, read both from GUI app and template
-						   -->
+					- server-side: crop/full
+				 	- client-side: stroke-width
+					- both: overlap handling
+			        -->
 
 				<div id="settings-box" class="box flex-col">
 					<span class="list-head">Settings:</span>
@@ -146,7 +146,7 @@
 		}
 
 		function importData( archive_id, charter_img_id, dataType ){
-			const url = "/segdata/${archive_id}/${charter_img_id}?" + {new URLSearchParams({segtype: dataType}).toString()
+			const url = "/segdata/${archive_id}/${charter_img_id}?" + new URLSearchParams({segtype: dataType}).toString()
 			fetch(url, { method: "GET" })
 			.then( resp => resp.json())
 			.then( data => guiTool.importMask( data, dataType ) )
