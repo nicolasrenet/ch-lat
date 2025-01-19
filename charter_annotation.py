@@ -27,9 +27,11 @@ app.config.update(
     gt_segfile_suffix='lines.gt.json',
     pred_segfile_suffix='lines.pred.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
-    gui_tool_smoothing=False,
-    gui_tool_collisionHandling=True,
     crop=False,
+    gui_tool_smoothing=False,
+    gui_tool_overlapHandling=True,
+    gui_tool_overlapBuffer=2,
+    gui_tool_overlapScope=3,
 )
 
 app.config.from_prefixed_env()

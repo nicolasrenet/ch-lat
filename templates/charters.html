@@ -36,20 +36,22 @@
 				</div>
 				<!-- Settings:
 					- server-side: crop/full 
-				 	- client-side: smooth, collision, stroke-width
+				 	- client-side: smooth, overlap, stroke-width
 					In any case: apply changes immediately to the client; store on server; at start-up, read both from GUI app and template
 						   -->
 
 				<div id="settings-box" class="box flex-col">
-					<span class="config-title">Settings:</span>
+					<span class="list-head">Settings:</span>
 					<form id="settings-form" action='/{settingswrite}' method='POST'>
-						<div class="flex-row"><label class="config-label">Stroke width</label><input id="stroke-width" type="number" name="strokeWidth"></div>
+						<div class="flex-row"><label class="config-label">Stroke width (px)</label><input id="stroke-width" type="number" name="strokeWidth"></div>
 						<div class="flex-row"><label class="config-label">Image ZoI:</label> 
 							<input id="radio-full" type="radio" name="image-type-radio"> <label class="right-positioned-label">Full</label> 
 							<input id="radio-crop" type="radio" name="image-type-radio"> <label class="right-positioned-label">OldText</label> 
 						</div>
 						<div class="flex-row"><label class="config-label">Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
-						<div class="flex-row"><label class="config-label">Collision prevention</label><input id="collision-check" type="checkbox" name="collisionHandling"></div>
+						<div class="flex-row"><label class="config-label">Collision prevention</label><input id="overlap-check" type="checkbox" name="overlapHandling"></div>
+						<div class="flex-row"><label class="config-label">Overlap buffer (line count)</label><input id="overlap-buffer" type="number" name="overlapBuffer"></div>
+						<div class="flex-row"><label class="config-label">Overlap scope (px)</label><input id="overlap-scope" type="number" name="overlapScope"></div>
 					</form>
 				</div>
 			</div>
@@ -224,10 +226,14 @@
 			for (const elt of document.getElementById("settings-form").querySelectorAll("input")){
 				elt.onchange = function(){
 					var setting = {};
-					if (this.id === 'stroke-width'){
+					if (this.type === 'number'){
 						setting[elt.name]=this.value;
 					} else if (this.type === 'checkbox'){
 						setting[elt.name]=this.checked;
+						if (elt.name==='overlapHandling') { 
+							document.getElementById("overlap-scope").disabled = !this.checked
+							document.getElementById("overlap-buffer").disabled = !this.checked
+						}
 					}
 					// store server-side
 					writeAppConfig( setting )
@@ -263,13 +269,19 @@
 		window.onload=() => { 
 			guiTool = annotateLines(); // in line_annotation.js
 
-			document.getElementById('stroke-width').value=guiTool.getSetting('strokeWidth');
+			for (const numberInput of document.querySelectorAll("#settings-box input[type='number']")){
+				console.log(numberInput)
+				numberInput.value=guiTool.getSetting(numberInput.name);
+			}
 
 			// reading app config from server
 			readAppConfig().then( conf => {
+				console.log("readAppConfig()")
+				console.log(conf)
 				guiTool.applySettings( conf )
 				for (const elt of document.getElementById('settings-form').querySelectorAll("input")){
-					if (elt.type === 'checkbox'){ console.log(elt.name + '=' + conf[elt.name]);  elt.checked = conf[elt.name] }
+					if (elt.type === 'checkbox'){ elt.checked = conf[elt.name]; }
+					else if (elt.type === 'number' && (elt.name==='overlapScope' || elt.name==='overlapBuffer')){ elt.disabled = !conf['overlapHandling'] }
 				}
 			})
 		}

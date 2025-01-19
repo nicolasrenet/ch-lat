@@ -52,6 +52,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
+ * 	- define polygon as width + offset wr/ baseline, that stays in place
  */
 
 //paper.install(window);
@@ -70,13 +71,15 @@ function annotateLines(){
 
 	var settings = {
 		strokeWidth: 6,
+		overlapScope: 3,
+		overlapBuffer: 2,
 		groundTruthColor: new Color(0,1,0,0.6),
 		predictionColor: new Color(1,0,0,0.6),
 		selectionColor: new Color(0,0,1,0.7),
 		newLineColor: new Color(0,0.5,0.5,0.5),
 		highlighterColor: new Color(1,1,0,0.5),
 		smoothing: false,
-		collisionHandling: false,
+		overlapHandling: false,
 	}
 
 	var charter = null;
@@ -200,22 +203,34 @@ function annotateLines(){
 	 */
 	var eraseMask = () => { paths.removeChildren(); }
 
-	var previewMaskOn = ( on ) => {
-		if (on){
-			var contours = []
-			contourLayer.activate();
-			var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
-			for (var p=0; p<sortedPaths.length; p++){ contours.push( contour(p, sortedPaths[p] )[0]); }
 
-			// check overlaps
-			deselectAll();
-			for (var p=0; p< contours.length-1; p++){
-				if (contours[p].intersects( contours[p+1])){
-					console.log("Polygons " + p + " and " + (p+1) + " intersect.")
-					selectPath(sortedPaths[p], true);
-					selectPath(sortedPaths[p+1], true);
+	var checkOverlaps = (paths, selectFlag=true) => {
+		var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+		var copiedPaths = []
+		for (const p of sortedPaths){
+			const copy = p.clone(insert=false);
+			copy.strokeWidth += settings.overlapBuffer;
+			copiedPaths.push( copy );
+		}
+		var contours = []
+		for (var p=0; p<copiedPaths.length; p++){ contours.push( contour(p, copiedPaths[p] )[0]); copiedPaths[p].remove() }
+		for (var p=0; p< contours.length-1; p++){
+			for (var nghbr=p+1; nghbr<contours.length && nghbr<=p+settings.overlapScope; nghbr++){
+				if (contours[p].intersects( contours[nghbr])){
+					console.log("Polygons " + p + " and " + nghbr + " intersect.")
+					selectPath(sortedPaths[p], selectFlag);
+					selectPath(sortedPaths[nghbr], selectFlag);
 				}
 			}
+		}
+	}
+
+	var previewMaskOn = ( on ) => {
+		if (on){
+			deselectAll();
+			contourLayer.activate();
+			checkOverlaps( paths, false );
+			contourLayer.visible = true;	
 			annotationLayer.activate();
 		} else { contourLayer.removeChildren() }
 	}
@@ -303,21 +318,11 @@ function annotateLines(){
 	view.onKeyDown = (ev) => {
 		if (Key.isDown('>')) {
 			// check overlaps, deselect intersecting
-			if (settings.collisionHandling){
+			if (settings.overlapHandling){
 				contourLayer.activate();
 				contourLayer.visible=false;
-				contours=[];
-				var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
-				for (var p=0; p<sortedPaths.length; p++){ contours.push( contour(p, sortedPaths[p] )[0]); }
-				for (var p=0; p< contours.length-1; p++){
-					if (contours[p].intersects( contours[p+1])){
-						console.log("Polygons " + p + " and " + (p+1) + " intersect.")
-						selectPath(sortedPaths[p], false);
-						selectPath(sortedPaths[p+1], false);
-					}
-				}
+				checkOverlaps( paths, false );
 				contourLayer.removeChildren();
-				contourLayer.visible=true;
 			}
 			annotationLayer.activate();
 			// increment

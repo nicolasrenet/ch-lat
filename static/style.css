@@ -56,7 +56,7 @@ dl {
 	padding: 10px;
 }
 
-#stroke-width {
+#settings-form input[type='number'] {
 	width: 50px;
 }
 
@@ -66,7 +66,7 @@ dl {
 }
 
 .config-label {
-	width: 100px;
+	width: 250px;
 }
 
 .right-positioned-label {
