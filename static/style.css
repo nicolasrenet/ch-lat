@@ -30,13 +30,26 @@
 }
 
 #stat-box {
-	border-bottom: 1px solid;
+	/*border-bottom: 1px solid;*/
 	flex: 2 1
 }
 
 #settings-box {
 	border: 1px solid;
 	flex: 1 1
+}
+
+.inside {
+	list-style-position: inside;
+}
+
+dl {
+	line-height: 1.5;
+}
+
+.list-head {
+	line-height: 2.5;
+	font-weight: bold;
 }
 
 #settings-form > * {
@@ -50,6 +63,10 @@
 .flex-row {
 	display: flex;
 	flex-direction: row;
+}
+
+.config-label {
+	width: 100px;
 }
 
 .right-positioned-label {

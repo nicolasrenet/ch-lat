@@ -19,16 +19,16 @@
 		<div id="control-box" class="box flex-col">
 			<div id="app-wide-properties" class="box flex-row">
 				<div id="stat-box" class="box">
-					FSDB:
-					<dl>
+					<dl class="inside">
+						<span class="list-head">FSDB:</span>
 						<li>Charter count: {{fsdb_stats['total_charters']}}</li>
 						<li>Image count: {{fsdb_stats['total_images']}}</li>
 						<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100}}%)</li>
 						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{fsdb_stats['gt_ratio']*100}}%)</li>
 					</dl>
 
-					Archive {{archive_id}}:
-					<dl>
+					<dl class="inside">
+						<span class="list-head">Archive {{archive_id}}:</span>
 						<!--<li>Charter count: {{ charter_images|map(attribute='charter')|unique|list}}</li>--> 
 						<li>Charter count: {{charter_images|map(attribute='charter')|unique|list|count}}</li>
 						<li>Image count: {{charter_images|length}}</li>
@@ -41,19 +41,21 @@
 						   -->
 
 				<div id="settings-box" class="box flex-col">
+					<span class="config-title">Settings:</span>
 					<form id="settings-form" action='/{settingswrite}' method='POST'>
-						<div class="flex-row"><label>Stroke width</label><input id="stroke-width" type="number" name="strokeWidth"></div>
-						<div class="flex-row"><label>Image ZoI:</label> 
+						<div class="flex-row"><label class="config-label">Stroke width</label><input id="stroke-width" type="number" name="strokeWidth"></div>
+						<div class="flex-row"><label class="config-label">Image ZoI:</label> 
 							<input id="radio-full" type="radio" name="image-type-radio"> <label class="right-positioned-label">Full</label> 
 							<input id="radio-crop" type="radio" name="image-type-radio"> <label class="right-positioned-label">OldText</label> 
 						</div>
-						<div class="flex-row"><label>Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
-						<div class="flex-row"><label>Collision prevention</label><input id="collision-check" type="checkbox" name="collisionHandling"></div>
+						<div class="flex-row"><label class="config-label">Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
+						<div class="flex-row"><label class="config-label">Collision prevention</label><input id="collision-check" type="checkbox" name="collisionHandling"></div>
 					</form>
 				</div>
 			</div>
 			<div id="property-box" class="box">
-				<dl>
+				<dl class="inside">
+					<span class="list-head">This file:</span>
 					<li>Image file: {{charter_filename}}</li>
 					<li>Size: {{charter_img_size[0]}} x {{charter_img_size[1]}}</li>
 					<li>
