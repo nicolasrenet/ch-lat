@@ -34,6 +34,7 @@
  * 	- Merge two or more selected paths (alt. alt-shift + drag)	✓
  * 	- Cut a path at given point (select point; 'c')			✓
  * 	- (optional) prevent overlaps when thickening lines		✓
+ * 	- (optional) offset baselines                                   ✓
  * 	 
  * History:
  * 	- save history after:
@@ -53,7 +54,7 @@
  *
  * TODO:
  * 	- modes should be exclusive of each other, with a single mode variable
- * 	- define polygon as width + offset wr/ baseline, that stays in place
+ * 	- stats about line thickness
  */
 
 //paper.install(window);
@@ -72,15 +73,17 @@ function annotateLines(){
 
 	var settings = {
 		strokeWidth: 6,
-		overlapScope: 3,
-		overlapBuffer: 2,
 		groundTruthColor: new Color(0,1,0,0.6),
 		predictionColor: new Color(1,0,0,0.6),
 		selectionColor: new Color(0,0,1,0.7),
 		newLineColor: new Color(0,0.5,0.5,0.5),
 		highlighterColor: new Color(1,1,0,0.5),
+		baselineColor: new Color(.48,.04,0.08),
 		smoothing: false,
 		overlapHandling: false,
+		overlapScope: 3,
+		overlapBuffer: 2,
+		baselineOffsets: false,
 	}
 
 	var charter = null;
@@ -105,7 +108,7 @@ function annotateLines(){
 		charterLayer.activate();
 		charter = new Raster( file_url );
 		charter.onLoad = function() {
-			console.log("Loaded image ${file_url}" )
+			console.log(`Loaded image ${file_url}` )
 			// the canvas display_size attribute is set in the containing template
 			scalingFactor = canvas.display_size[1]/charter.height;
 			charter.position = view.center;
@@ -117,7 +120,13 @@ function annotateLines(){
 	}
 
 
-	function applySettings( settingDoc ){ settings = { ...settings, ...settingDoc } ; }
+	function applySettings( settingDoc ){ 
+		settings = { ...settings, ...settingDoc } ;
+		if (! settings.baselineOffsets){
+			for (const p of paths.children){ p.baselineOffset=0 }
+			previewMaskOn( false );
+		}
+	}
 
 	function getSetting( key ){ return settings[key] }
 	
@@ -126,18 +135,18 @@ function annotateLines(){
 			"caller="+this+
 			"\ncanvas.size="+[canvas.width, canvas.height]+
 			"\ncharter.size="+[charter.width, charter.height]+
-			"\nscalingFactor=${scalingFactor}" +
-			"\nannotationLayer.active=${annotationLayer===project.activeLayer} (${annotationLayer.children.length}  children)" +
-			"\ncharterLayer.active=${charterLayer===project.activeLayer} (${charterLayer.children.length} children)" +
-			"\ncontourLayer.active=${contourLayer===project.activeLayer} (${contourLayer.children.length} children)" +
-			"\npaths.children.length=${paths.children.length}" +
-			"\npaths.children=${paths.children}" +
-			"\npathDrawingMode=${pathDrawingMode}" +
-			"\nsegmentEditMode=${segmentEditMode}" +
-			"\nCopyOn=${copyOn}" +
-			"\ncurrentSegmentIndex=${currentSegmentIndex}" +
-			"\ncurrentSegmentHandle=${currentSegmentHandle}" +
-			"\ncurrentPath=${currentPath}"); 
+			`\nscalingFactor=${scalingFactor}` +
+			`\nannotationLayer.active=${annotationLayer===project.activeLayer} (${annotationLayer.children.length}  children)` +
+			`\ncharterLayer.active=${charterLayer===project.activeLayer} (${charterLayer.children.length} children)` +
+			`\ncontourLayer.active=${contourLayer===project.activeLayer} (${contourLayer.children.length} children)` +
+			`\npaths.children.length=${paths.children.length}` +
+			`\npaths.children=${paths.children}` +
+			`\npathDrawingMode=${pathDrawingMode}` +
+			`\nsegmentEditMode=${segmentEditMode}` +
+			`\nCopyOn=${copyOn}` +
+			`\ncurrentSegmentIndex=${currentSegmentIndex}` +
+			`\ncurrentSegmentHandle=${currentSegmentHandle}` +
+			`\ncurrentPath=${currentPath}`); 
 		console.log( paths.children )
 	}
 
@@ -156,10 +165,15 @@ function annotateLines(){
 		for (line of pageData['lines']){
 			var strokeWidth = settings.strokeWidth;
 			if (type === 'gt'){
-				paths.addChild( new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
+				var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
+				p.baselineOffset = 0 ; 
+				if ('baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
+				paths.addChild( p );
 				strokeWidth = line['strokeWidth'];
 			} else if (type==='pred'){
-				paths.addChild( new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor))));
+				var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))
+				p.baselineOffset = 0;
+				paths.addChild( p );
 			}
 			currentPath = paths.children.at(-1);
 			currentPath.strokeWidth=strokeWidth;
@@ -185,7 +199,7 @@ function annotateLines(){
 		console.log("export()" + sortedPaths)
 		contourLayer.activate()
 		for (var p=0; p<sortedPaths.length; p++){ 
-			var data = contour(p, sortedPaths[p] )[1]; 
+			var data = contour(p, sortedPaths[p] ).data; 
 			if (data !== null){ lineData.push( data ) }
 		}
 		annotationLayer.activate()
@@ -212,12 +226,23 @@ function annotateLines(){
 			copy.strokeWidth += settings.overlapBuffer;
 			copiedPaths.push( copy );
 		}
+		var checkContours = [] // just for checking: hidden
 		var contours = []
-		for (var p=0; p<copiedPaths.length; p++){ contours.push( contour(p, copiedPaths[p] )[0]); copiedPaths[p].remove() }
-		for (var p=0; p< contours.length-1; p++){
+		var baselines = []
+		for (var p=0; p<copiedPaths.length; p++){ 
+			// draw contours, but not the baseline!
+			checkContours.push( contour(p, copiedPaths[p], false ).contourPath);
+			checkContours.at(-1).visible=false;
+			copiedPaths[p].remove();
+			var [ct, bl] = ['contourPath', 'baselinePath'].map( k => contour(p, sortedPaths[p])[k] );
+			ct.selected = true
+			contours.push( ct ); 
+			baselines.push( bl );
+		}
+		for (var p=0; p<contours.length-1; p++){
 			for (var nghbr=p+1; nghbr<contours.length && nghbr<=p+settings.overlapScope; nghbr++){
-				if (contours[p].intersects( contours[nghbr])){
-					console.log("Polygons ${p} and ${nghbr} intersect.")
+				if (checkContours[p].intersects( checkContours[nghbr]) && settings.overlapHandling){
+					console.log(`Polygons ${p} and ${nghbr} intersect.`)
 					selectPath(sortedPaths[p], selectFlag);
 					selectPath(sortedPaths[nghbr], selectFlag);
 				}
@@ -229,7 +254,7 @@ function annotateLines(){
 		if (on){
 			deselectAll();
 			contourLayer.activate();
-			checkOverlaps( paths, false );
+			checkOverlaps( paths, true ); // true = overlapping paths are highlighted
 			contourLayer.visible = true;	
 			annotationLayer.activate();
 		} else { contourLayer.removeChildren() }
@@ -256,6 +281,7 @@ function annotateLines(){
 			path.strokeWidth = settings.strokeWidth;
 			path.strokeCap = 'round';
 			path.strokeJoin = 'round';
+			path.baselineOffset = 0; // not used unless baselineOffset enabled
 			selectPath(path, false);
 			paths.addChild( path );
 			paths.children.at(-1).add( ev.point ) ;
@@ -326,17 +352,23 @@ function annotateLines(){
 			}
 			annotationLayer.activate();
 			// increment
-			for (const p of paths.children){ p.strokeWidth += (1*p.isSelected); }
+			for (const p of paths.children){ p.strokeWidth += (1*p.isSelected);}
 			//historySave();
 		} else if (Key.isDown('<')){
 			for (const p of paths.children){ p.strokeWidth -= (1*p.isSelected); }
 			//historySave();
 		} else if (Key.isDown('up')){
 			eraseSegmentHandle();
-			for (const p of paths.children){ p.translate( new Point(0, -2*p.isSelected)) } 
+			for (const p of paths.children){ 
+				p.translate( new Point(0, -2*p.isSelected)); 
+				p.baselineOffset += (2*p.isSelected*settings.baselineOffsets) 
+			} 
 		} else if (Key.isDown('down')){
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
-			for (const p of paths.children){ p.translate( new Point(0, 2*p.isSelected)) } 
+			for (const p of paths.children){ 
+				p.translate( new Point(0, 2*p.isSelected)) ; 
+				p.baselineOffset -= (2*p.isSelected*settings.baselineOffsets)
+			} 
 		} else if (Key.isDown('m') || Key.isDown('f') || Key.isDown('v')){
 			mergePaths( paths.children.filter( (elt) => elt.isSelected ));
 			deselectAll();
@@ -553,10 +585,9 @@ function annotateLines(){
 		return pt_arr
 	}
 
-	var contour = function (id, p){
+	var contour = function (id, p, baseline=true){
 
 		if (p.segments.length < 2){ return null }
-
 		var pointsNorth = [];
 		var pointsSouth = [];
 		var contourPath = new Path();
@@ -577,7 +608,7 @@ function annotateLines(){
 		contourPath.add( vertebraLN );
 		contourPath.insert(0, vertebraLS);
 
-		baselinePath.add( vertebraLS );
+		//baselinePath.add( vertebraLS );
 
 		var pt3 = p.segments.at(-2).point;
 		var pt4 = p.segments.at(-1).point;       
@@ -601,7 +632,7 @@ function annotateLines(){
 				contourPath.insert(0, vertebraS );
 				contourPath.add( vertebraN );
 
-				baselinePath.add( vertebraS );
+				//baselinePath.add( vertebraS );
 			}
 		}
 		var vertebraRS = pt4.add(normalVectEnd);
@@ -610,13 +641,11 @@ function annotateLines(){
 		//Marker( vertebraRN, 6, 'green' );
 		contourPath.add( vertebraRN );
 		contourPath.insert(0, vertebraRS );
-		baselinePath.add( vertebraRS );
+		//baselinePath.add( vertebraRS );
 		contourPath.insert( contourPath.segments.length/2, endPt1);
 		contourPath.add( endPt2 );
 		contourPath.closed = true;
 		if (settings.smoothing) contourPath.smooth({type: 'geometric'});
-	    
-		contourPath.selected = true;
 	    
 		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
 		var boundaryArray = [];
@@ -632,13 +661,16 @@ function annotateLines(){
 		boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
 		boundaryArray = boundaryArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
 
-		var baselineArray = baselinePath.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
-		baselineArray = baselineArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
+		var baselinePath = null;
+		if (baseline) {
+			baselinePath = new Path( p.segments.map( s => s.point.add(new Point(0, p.baselineOffset))));
+			baselinePath.strokeColor=settings.baselineColor;
+			baselinePath.strokeWidth=2;
+			var baselineArray = baselinePath.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
+			baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
+		}
 
-		//markPath( baselinePath )
-		//contourPath.selected=true;
-	
-		return [ contourPath, { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth } ]
+		return { 'contourPath': contourPath, 'baselinePath': baselinePath, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth, 'baselineOffset': p.baselineOffset } }
 	}
 
 	function historySave( op ){
