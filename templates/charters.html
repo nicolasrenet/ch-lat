@@ -23,8 +23,8 @@
 						<span class="list-head">FSDB:</span>
 						<li>Charter count: {{fsdb_stats['total_charters']}}</li>
 						<li>Image count: {{fsdb_stats['total_images']}}</li>
-						<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100}}%)</li>
-						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{fsdb_stats['gt_ratio']*100}}%)</li>
+						<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100|round}}%)</li>
+						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{(fsdb_stats['gt_ratio']*100)|round(1)}}%)</li>
 					</dl>
 
 					<dl class="inside">
