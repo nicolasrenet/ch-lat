@@ -17,16 +17,16 @@
  * 	- click to add a segment	✓
  *
  * SegmentEditMode
- * 	- click to select path
  * 	- click to select a segment
- * 		+ color selection	  ✓
- * 		+ drag to move it         ✓
- * 		+ 'd' to delete it        ✓ 
+ * 		+ color selection		✓
+ * 		+ drag to move it		✓
+ * 		+ 'd' to delete it		✓ 
  * 	- shift-ctrl-click to select a stroke and insert a segment on it ✓
  *
  * Path move/copy/merge
  * 	- Move a path or group of paths
- * 		+ vertically  (select; up key)                 		✓
+ * 		+ move baseline vertically  (select + mouse drag)	✓ 
+ * 		+ line wr/ baseline, vertically (select + up key)	✓
  * 		+ horizontally                           		needed?
  * 	- Copy one path or more (select; shift-drag)			✓ 
  * 	- Delete one or more selected paths (select; 'd')		✓
@@ -53,7 +53,6 @@
  * 
  *
  * TODO:
- * 	- modes should be exclusive of each other, with a single mode variable
  * 	- stats about line thickness
  */
 
@@ -97,13 +96,19 @@ function annotateLines(){
 	var currentPath = null;
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
-	var copyOn = true;
 	var mergedPath = null;
 
-	var pathDrawingMode = false;
-	var segmentEditMode = false;
-	var joinPathMode = false;
-	var previewMode = false;
+
+	const Modes = Object.freeze({
+		normal: 0,
+		pathDrawing: 1,
+		segmentEdit: 2,
+		noPathCopy: 3,
+		joinPath: 4,
+		preview: 5
+	});
+
+	var mode=Modes.normal;
 
 	function updateImg( file_url ){
 		charterLayer.activate();
@@ -142,10 +147,10 @@ function annotateLines(){
 			`\ncontourLayer.active=${contourLayer===project.activeLayer} (${contourLayer.children.length} children)` +
 			`\npaths.children.length=${paths.children.length}` +
 			`\npaths.children=${paths.children}` +
-			`\npathDrawingMode=${pathDrawingMode}` +
-			`\nsegmentEditMode=${segmentEditMode}` +
-			`\npreviewMode=${previewMode}` +
-			`\nCopyOn=${copyOn}` +
+			`\npathDrawingMode=${mode==Modes.pathDrawing}` +
+			`\nsegmentEditMode=${mode===Modes.segmentEdit}` +
+			`\npreviewMode=${mode===Modes.preview}` +
+			`\nCopyOn=${mode!==Modes.noPathCopy}` +
 			`\ncurrentSegmentIndex=${currentSegmentIndex}` +
 			`\ncurrentSegmentHandle=${currentSegmentHandle}` +
 			`\ncurrentPath=${currentPath}`); 
@@ -224,7 +229,7 @@ function annotateLines(){
 
 	var previewMaskOn = ( on ) => {
 		if (on){
-			if (previewMode){ return } else { previewMode=true }
+			if (mode===Modes.preview){ return } else { mode=Modes.previewMode }
 			deselectAll();
 			contourLayer.activate();
 			checkOverlaps( paths, true ); // true = overlapping paths are highlighted
@@ -233,7 +238,7 @@ function annotateLines(){
 		} else if (previewMode) { 
 			contourLayer.removeChildren(); 
 			for (const p of paths.children){ selectPath(p,false);}
-			previewMode = false;
+			mode = Modes.normal;
 		}
 	}
 
@@ -252,7 +257,7 @@ function annotateLines(){
 			if (data !== null){ lineData.push( data ) }
 		}
 		annotationLayer.activate()
-		previewMode = true
+		mode = Modes.preview
 
 		if (lineData.length > 0){
 			pageData['lines']=lineData;
@@ -265,8 +270,8 @@ function annotateLines(){
 	/* User interface */
 	view.onDoubleClick = (ev) => {
 		
-		if (pathDrawingMode){
-			pathDrawingMode = false;
+		if (mode === Modes.pathDrawing){
+			mode=Modes.normal;
 			var p = paths.children.at(-1);
 			var pIdx = paths.children.length-1;
 			if (p.segments.length===1){ paths.removeChildren( pIdx, pIdx+1 );}
@@ -276,7 +281,7 @@ function annotateLines(){
 			}
 			//historySave();
 		} else {
-			pathDrawingMode = true;
+			mode = Modes.pathDrawing;
 			var path = new Path() ;
 			path.strokeColor = settings.newLineColor;
 			path.strokeWidth = settings.strokeWidth;
@@ -293,25 +298,25 @@ function annotateLines(){
 
 		//console.log(ev.point, ev.point.divide(scalingFactor))
 		//eraseSegmentHandle();
-		if (previewMode){ previewMaskOn( false ) }
-		if (joinPathMode){
-			joinPathMode = false;
+		if (mode===Modes.preview){ previewMaskOn( false ) }
+		if (mode===Modes.joinPath){
+			mode=Modes.normal;
 			currentPath.remove();
 			currentPath = null;
 			mergedPath = null;
 			return;
 		}
 		// append a segment to a path
-		if (pathDrawingMode && paths.children.length > 0){
+		if (mode===Modes.pathDrawing && paths.children.length > 0){
 			var p = paths.children.at(-1);
 			p.add(ev.point);
 			if (settings.smoothing) p.smooth();
 			return;
 		}
 		// after dragging/moving a node 
-		if (segmentEditMode){
+		if (mode===Modes.segmentEdit){
 			logState()
-			segmentEditMode = false;
+			mode=Modes.normal;
 			deselectAll();
 			return
 			//historySave();
@@ -336,7 +341,7 @@ function annotateLines(){
 		// or nothing
 		} else {
 			eraseSegmentHandle();
-			segmentEditMode = false; 
+			mode=Modes.normal;
 			for (const p of paths.children){ selectPath( p, false ); }
 		}
 	}
@@ -379,8 +384,7 @@ function annotateLines(){
 		} else if (Key.isDown('s')){
 			selectPaths( p => p.length <= currentPath.length );
 		} else if (Key.isDown('escape')){
-			pathDrawingMode = false;
-			segmentEditMode = false;
+			mode = Modes.normal;
 			deselectAll();
 		} else if (Key.isDown('c') ){
 			if (currentPath !== null && currentPath.segments.length > 2 && currentSegmentIndex >=1 && currentSegmentIndex < currentPath.segments.length-1 ){
@@ -415,7 +419,7 @@ function annotateLines(){
 		var pathHitResult = getHitPath( ev.point );
 		// moving selection for joining paths
 		if (ev.modifiers.alt && ev.modifiers.shift){
-			joinPathMode = true;
+			mode = Modes.joinPath;
 			currentPath = new Path( [ ev.point ]);
 			currentPath.strokeWidth=30;
 			currentPath.strokeColor = settings.highlighterColor;
@@ -423,7 +427,7 @@ function annotateLines(){
 		}
 
 		// Edit a segment
-		if (! pathDrawingMode && pathHitResult !== null && (pathHitResult.type === 'segment' || pathHitResult.type==='stroke')){
+		if (mode !== Modes.pathDrawing && pathHitResult !== null && (pathHitResult.type === 'segment' || pathHitResult.type==='stroke')){
 			if (currentPath !== pathHitResult.item && currentSegmentHandle !== null){
 				currentSegmentHandle.remove();
 				currentSegmentHandle = null;
@@ -451,7 +455,7 @@ function annotateLines(){
 
 	view.onMouseDrag = (ev) => { 
 		eraseSegmentHandle();	
-		if (joinPathMode){
+		if (mode===Modes.joinPath){
 			var lastPt = currentPath.lastSegment.point
 			currentPath.addSegment( lastPt.x+ev.delta.x, lastPt.y+ev.delta.y)
 			var hitResult = getHitPath( ev.point)
@@ -464,18 +468,18 @@ function annotateLines(){
 				}
 			}
 			
-		// move the path node
+		// copy the path
 		} else if ( ev.modifiers.shift ){
 			logState()
 			var clones = [];
-			if (copyOn){
+			if (mode !== Modes.noPathCopy){
 				for (const p of paths.children.filter((elt)=> elt.isSelected)){
 					pc = p.clone();
 					selectPath(p, false);
 					selectPath(pc, true );
 					clones.push(pc);
 				}
-				copyOn=false;
+				mode=Modes.noPathCopy;
 				paths.addChildren( clones );
 			}
 			
@@ -483,7 +487,7 @@ function annotateLines(){
 				p.translate(ev.delta);
 			}
 		} else if (currentSegmentIndex >= 0){
-			segmentEditMode = true;
+			mode = Modes.segmentEdit;
 			var segt = currentPath.segments[currentSegmentIndex];
 			//if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			currentPath.removeSegment( currentSegmentIndex );
@@ -495,7 +499,7 @@ function annotateLines(){
 	}
 
 	view.onMouseUp = (ev) => {
-		copyOn = true;
+		if (mode === Modes.noPathCopy) mode = Modes.normal;
 	}
 
 	function selectPath( p, value ){
@@ -693,8 +697,7 @@ function annotateLines(){
 			history[thisOpIndex]=null;
 			historyCount--;
 		}
-		segmentEditMode = false;
-		pathDrawingMode = false;
+		mode = Modes.normal;
 	}
 
 
