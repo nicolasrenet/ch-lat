@@ -127,5 +127,6 @@ dl {
 	width: 50%
 }
 label {
+	padding-left: 10px;
 	padding-right: 10px;
 }

@@ -57,19 +57,21 @@
 				</div>
 			</div>
 			<div id="property-box" class="box">
+						<form id='flag-form' action='/flagwrite/{{archive_id}}/{{charter_img_id}}' method="POST">
 				<dl class="inside">
 					<span class="list-head">This file:</span>
 					<li>Image file: {{charter_filename}}</li>
 					<li>Size: {{charter_img_size[0]}} x {{charter_img_size[1]}}</li>
 					<li>
-						<form id='flag-form' action='/flagwrite/{{archive_id}}/{{charter_img_id}}' method="POST">
-						<label for="img-flag-bad" >Low-quality segmentation</label>
-						<input id='img-flag-bad' type='checkbox' name='img-flag' value='bad' class='flagchck'>
-						<label for="img-flag-redo" >Export issue (redo)</label>
-						<input id='img-flag-redo' type='checkbox' name='img-flag' value='redo' class='flagchck'>
-						</form>
+							<label for="img-flag-bad" >Low-quality segmentation</label>
+							<input id='img-flag-bad' type='checkbox' name='img-flag' value='bad' class='flagchck'>
+							<label for="img-flag-redo" >Export issue (redo)</label>
+							<input id='img-flag-redo' type='checkbox' name='img-flag' value='redo' class='flagchck'>
+							<label for="img-flag-offset-baseline">Offset baselines</label>
+							<input id='img-flag-offset-baseline' type='checkbox' name='img-flag' value='redo' class='flagchck'>
 					</li>
 				</dl>
+							</form>
 			</div>
 			<div id="export-box">
 				<button id="preview-on"> Export preview</button>
