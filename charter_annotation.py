@@ -115,6 +115,13 @@ def fsdb_read_img_metadata(archive_id:str, charter_img_id:str, suffix=None):
 def fsdb_write_flags( flag_data:dict, archive_id:str, charter_img_id:str):
     return fsdb_write_img_metadata( flag_data, archive_id, charter_img_id, suffix='flags.json')
 
+def fsdb_update_flags(updates:dict, archive_id:str, charter_img_id:str):
+    flag_data = fsdb_read_img_metadata( archive_id, charter_img_id, suffix='flags.json')
+    flag_data.update( updates )
+    print(f"fsdb_update_flags({updates}) -> {flag_data}")
+    return fsdb_write_img_metadata( flag_data, archive_id, charter_img_id, suffix='flags.json')
+
+
 def fsdb_read_flags( archive_id:str, charter_img_id:str):
     return fsdb_read_img_metadata( archive_id, charter_img_id, suffix='flags.json')
 
@@ -309,10 +316,11 @@ def serve_img( archive_id:str, charter_img_id:str):
 
 
 @app.post('/segdata/<archive_id>/<charter_img_id>')
-def record_segmentation_data( archive_id:str, charter_img_id:str ):
+def write_segmentation_data( archive_id:str, charter_img_id:str ):
     """Export segmentation annotation to disk.
     """
     segmentation_data = request.get_json()
+    fsdb_update_flags({'baseline-offset': bool(len(segmentation_data['lines'][0]['baseline']))}, archive_id, charter_img_id)
     ok = fsdb_write_segmentation_file( segmentation_data, archive_id, charter_img_id )
     resp = make_response( ok )
     return resp
@@ -327,7 +335,7 @@ def get_segmentation_gt( archive_id:str, charter_img_id:str):
 
 
 @app.post('/flags/<archive_id>/<charter_img_id>')
-def record_flag( archive_id:str, charter_img_id:str ):
+def write_flags( archive_id:str, charter_img_id:str ):
     """Export segmentation flags to disk.
     """
     flag_data = request.get_json()
@@ -336,7 +344,7 @@ def record_flag( archive_id:str, charter_img_id:str ):
     return resp
 
 @app.get('/flags/<archive_id>/<charter_img_id>')
-def get_flag( archive_id:str, charter_img_id:str):
+def get_flags( archive_id:str, charter_img_id:str):
     """ Import segmentation flags
     """
     flag_data = fsdb_read_flags( archive_id, charter_img_id )

@@ -68,7 +68,7 @@
 							<label for="img-flag-redo" >Export issue (redo)</label>
 							<input id='img-flag-redo' type='checkbox' name='img-flag' value='redo' class='flagchck'>
 							<label for="img-flag-offset-baseline">Offset baselines</label>
-							<input id='img-flag-offset-baseline' type='checkbox' name='img-flag' value='redo' class='flagchck'>
+							<input id='img-flag-offset-baseline' type='checkbox' name='img-flag' value='baseline-offset' class='flagchck'>
 					</li>
 				</dl>
 							</form>
@@ -213,7 +213,6 @@
 			
 			readFlags( '{{archive_id}}', '{{charter_img_id}}' )
 			.then( flags => {
-				console.log(flags);
 				for (const elt of flag_box_checks){
 					elt.checked = flags[elt.value];
 					elt.onchange = () => {
@@ -258,7 +257,7 @@
 				document.getElementById("preview-on").style.display="block"
 			}
 			// working on the canvas immediately switches the preview off
-			cnv.onclick = () => { document.getElementById("preview-off").onclick() }
+			//cnv.onclick = () => { document.getElementById("preview-off").onclick() }
 
 			document.getElementById("export-button").onclick=function(){
 				exportData('{{archive_id}}', '{{charter_img_id}}');

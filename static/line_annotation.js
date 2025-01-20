@@ -103,6 +103,7 @@ function annotateLines(){
 	var pathDrawingMode = false;
 	var segmentEditMode = false;
 	var joinPathMode = false;
+	var previewMode = false;
 
 	function updateImg( file_url ){
 		charterLayer.activate();
@@ -143,6 +144,7 @@ function annotateLines(){
 			`\npaths.children=${paths.children}` +
 			`\npathDrawingMode=${pathDrawingMode}` +
 			`\nsegmentEditMode=${segmentEditMode}` +
+			`\npreviewMode=${previewMode}` +
 			`\nCopyOn=${copyOn}` +
 			`\ncurrentSegmentIndex=${currentSegmentIndex}` +
 			`\ncurrentSegmentHandle=${currentSegmentHandle}` +
@@ -152,11 +154,7 @@ function annotateLines(){
 
 	updateImg( img_url );
 
-	/*
-	 * Import segmentation data into the canvas, as paths.
-	 *
-	 * @param {object} pageData - line descriptions.
-	 */
+
 	var importMask = ( pageData, type ) => {
 		
 		logState()
@@ -183,34 +181,6 @@ function annotateLines(){
 	}
 
 
-	/*
-	 * Export current paths as a dictionary that describes:
-	 *
-	 * + centerlines
-	 * + baselines
-	 * + polygons (= contour of strokes)
-	 */
-	var exportMask = () => {
-
-		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
-		var lineData = [];
-		// sorting paths according to their vertical position
-		var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
-		console.log("export()" + sortedPaths)
-		contourLayer.activate()
-		for (var p=0; p<sortedPaths.length; p++){ 
-			var data = contour(p, sortedPaths[p] ).data; 
-			if (data !== null){ lineData.push( data ) }
-		}
-		annotationLayer.activate()
-		
-		if (lineData.length > 0){
-			pageData['lines']=lineData;
-			//console.log(pageData)
-			return pageData;
-		}
-		return {}
-	}
 
 	/*
 	 * Removes all existing paths from the canvas.
@@ -234,8 +204,10 @@ function annotateLines(){
 			checkContours.push( contour(p, copiedPaths[p], false ).contourPath);
 			checkContours.at(-1).visible=false;
 			copiedPaths[p].remove();
-			var [ct, bl] = ['contourPath', 'baselinePath'].map( k => contour(p, sortedPaths[p])[k] );
+			contour_dictionary = contour(p, sortedPaths[p])
+			var [ct, bl] = ['contourPath', 'baselinePath'].map( k => contour_dictionary[k] );
 			ct.selected = true
+			sortedPaths[p].selected=true
 			contours.push( ct ); 
 			baselines.push( bl );
 		}
@@ -252,14 +224,43 @@ function annotateLines(){
 
 	var previewMaskOn = ( on ) => {
 		if (on){
+			if (previewMode){ return } else { previewMode=true }
 			deselectAll();
 			contourLayer.activate();
 			checkOverlaps( paths, true ); // true = overlapping paths are highlighted
 			contourLayer.visible = true;	
 			annotationLayer.activate();
-		} else { contourLayer.removeChildren() }
+		} else if (previewMode) { 
+			contourLayer.removeChildren(); 
+			for (const p of paths.children){ selectPath(p,false);}
+			previewMode = false;
+		}
 	}
 
+	var exportMask = () => {
+
+		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
+		var lineData = [];
+		// sorting paths according to their vertical position
+		var sortedPaths = paths.children.filter( p => p.segments.length > 0).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
+		console.log("export()" + sortedPaths)
+		contourLayer.activate()
+		for (var p=0; p<sortedPaths.length; p++){ 
+			contour_dictionary = contour(p, sortedPaths[p])
+			var [ct,data] = ['contourPath', 'data'].map( k => contour_dictionary[k] );
+			ct.selected=true;
+			if (data !== null){ lineData.push( data ) }
+		}
+		annotationLayer.activate()
+		previewMode = true
+
+		if (lineData.length > 0){
+			pageData['lines']=lineData;
+			//console.log(pageData)
+			return pageData;
+		}
+		return {}
+	}
 
 	/* User interface */
 	view.onDoubleClick = (ev) => {
@@ -290,8 +291,9 @@ function annotateLines(){
 
 	view.onClick = (ev) => {
 
-		console.log(ev.point, ev.point.divide(scalingFactor))
+		//console.log(ev.point, ev.point.divide(scalingFactor))
 		//eraseSegmentHandle();
+		if (previewMode){ previewMaskOn( false ) }
 		if (joinPathMode){
 			joinPathMode = false;
 			currentPath.remove();
@@ -358,12 +360,14 @@ function annotateLines(){
 			for (const p of paths.children){ p.strokeWidth -= (1*p.isSelected); }
 			//historySave();
 		} else if (Key.isDown('up')){
+			ev.preventDefault()
 			eraseSegmentHandle();
 			for (const p of paths.children){ 
 				p.translate( new Point(0, -2*p.isSelected)); 
 				p.baselineOffset += (2*p.isSelected*settings.baselineOffsets) 
 			} 
 		} else if (Key.isDown('down')){
+			ev.preventDefault()
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			for (const p of paths.children){ 
 				p.translate( new Point(0, 2*p.isSelected)) ; 
@@ -662,11 +666,12 @@ function annotateLines(){
 		boundaryArray = boundaryArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
 
 		var baselinePath = null;
-		if (baseline) {
+		var baselineArray = [];
+		if (baseline && settings.baselineOffsets) {	
 			baselinePath = new Path( p.segments.map( s => s.point.add(new Point(0, p.baselineOffset))));
 			baselinePath.strokeColor=settings.baselineColor;
 			baselinePath.strokeWidth=2;
-			var baselineArray = baselinePath.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
+			baselineArray = baselinePath.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
 			baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
 		}
 
