@@ -55,7 +55,8 @@
  * TODO:
  * 	- stats about line thickness
  * 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
- * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path
+ * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path.
+ * 	- bug: pre-import of a segmentation file (at page loading) has scaling error
  */
 
 //paper.install(window);
