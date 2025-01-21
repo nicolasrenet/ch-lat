@@ -48,6 +48,11 @@
 							<input id="radio-full" type="radio" name="image-type-radio"> <label class="right-positioned-label">Full</label> 
 							<input id="radio-crop" type="radio" name="image-type-radio"> <label class="right-positioned-label">OldText</label> 
 						</div>
+						<div class="flex-row"><label class="config-label">Default data:</label> 
+							<input id="radio-none-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">None.</label> 
+							<input id="radio-pred-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">Pred.</label> 
+							<input id="radio-gt-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">GT</label> 
+						</div>
 						<div class="flex-row"><label class="config-label">Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
 						<div class="flex-row"><label class="config-label">Baseline offsets</label><input id="baseline-check" type="checkbox" name="baselineOffsets"></div>
 						<div class="flex-row"><label class="config-label">Collision prevention</label><input id="overlap-check" type="checkbox" name="overlapHandling"></div>
@@ -230,6 +235,7 @@
 				if (elt.id === "check_preddata_{{charter_img_id}}"){
 					elt.checked=false;
 					elt.onchange = () => { 
+						console.log("check_preddata_{{charter_img_id}}.onchange()")
 						if (elt.checked){
 							guiTool.eraseMask();
 							importData( '{{archive_id}}', '{{charter_img_id}}', 'pred' ) ;
@@ -240,6 +246,7 @@
 					}
 				} else { elt.disabled = true; }
 			}
+
 			
 			readFlags( '{{archive_id}}', '{{charter_img_id}}' )
 			.then( flags => {
@@ -266,6 +273,16 @@
 						if (elt.name==='overlapHandling') { 
 							document.getElementById("overlap-scope").disabled = !this.checked
 							document.getElementById("overlap-buffer").disabled = !this.checked
+						}
+					} else if (this.type === 'radio' && this.name==='data-type-radio'){
+						if (this.checked){
+							if (this.id === 'radio-gt-data'){
+								setting['dataType']='gt';
+							} else if (this.id === 'radio-pred-data'){
+								setting['dataType']='pred';
+							} else {
+								setting['dataType']='none'
+							}
 						}
 					}
 					// store server-side
@@ -295,6 +312,7 @@
 				document.getElementById("preview-off").style.display="block";
 			}
 
+			
 		})()
 
 		paper.install(window);
@@ -318,6 +336,12 @@
 						elt.value=conf[elt.name];
 						if (elt.name==='overlapScope' || elt.name==='overlapBuffer'){ elt.disabled = !conf['overlapHandling'] }
 					}
+				}
+				document.querySelector('#radio-' + conf['dataType'] + '-data').checked=true;
+				if (conf['dataType'] !== 'none'){
+					guiTool.eraseMask();
+					importData( '{{archive_id}}', '{{charter_img_id}}', conf['dataType'] ) ;
+					document.getElementById('check_'+conf['dataType']+'data_{{charter_img_id}}').checked=true
 				}
 			})
 		}

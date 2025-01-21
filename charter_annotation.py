@@ -29,6 +29,8 @@ app.config.update(
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
     crop=False,
     gui_tool_smoothing=False,
+    gui_tool_dataType='gt',
+    gui_tool_strokeWidth=6,
     gui_tool_overlapHandling=True,
     gui_tool_overlapBuffer=2,
     gui_tool_overlapScope=3,

@@ -54,6 +54,8 @@
  *
  * TODO:
  * 	- stats about line thickness
+ * 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
+ * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path
  */
 
 //paper.install(window);
@@ -93,6 +95,7 @@ function annotateLines(){
 	annotationLayer.activate()
 	var paths = new Group();
 
+	var joinPath = null;
 	var currentPath = null;
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
@@ -271,7 +274,7 @@ function annotateLines(){
 
 	/* User interface */
 	view.onDoubleClick = (ev) => {
-		
+		if (joinPath!==null){ joinPath.remove(); joinPath=null }
 		if (mode === Modes.pathDrawing){
 			mode=Modes.normal;
 			var p = paths.children.at(-1);
@@ -303,8 +306,8 @@ function annotateLines(){
 		if (mode===Modes.preview){ previewMaskOn( false ) }
 		if (mode===Modes.joinPath){
 			mode=Modes.normal;
-			currentPath.remove();
-			currentPath = null;
+			joinPath.remove();
+			//currentPath = null;
 			mergedPath = null;
 			return;
 		}
@@ -422,9 +425,9 @@ function annotateLines(){
 		// moving selection for joining paths
 		if (ev.modifiers.alt && ev.modifiers.shift){
 			mode = Modes.joinPath;
-			currentPath = new Path( [ ev.point ]);
-			currentPath.strokeWidth=30;
-			currentPath.strokeColor = settings.highlighterColor;
+			joinPath = new Path( [ ev.point ]);
+			joinPath.strokeWidth=30;
+			joinPath.strokeColor = settings.highlighterColor;
 			return
 		}
 
@@ -458,8 +461,8 @@ function annotateLines(){
 	view.onMouseDrag = (ev) => { 
 		eraseSegmentHandle();	
 		if (mode===Modes.joinPath){
-			var lastPt = currentPath.lastSegment.point
-			currentPath.addSegment( lastPt.x+ev.delta.x, lastPt.y+ev.delta.y)
+			var lastPt = joinPath.lastSegment.point
+			joinPath.addSegment( lastPt.x+ev.delta.x, lastPt.y+ev.delta.y)
 			var hitResult = getHitPath( ev.point)
 			if (hitResult !== null && hitResult.item !== mergedPath){
 				if (mergedPath === null){ mergedPath = hitResult.item }
