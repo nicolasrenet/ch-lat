@@ -132,6 +132,7 @@ function annotateLines(){
 			for (const p of paths.children){ p.baselineOffset=0 }
 			previewMaskOn( false );
 		}
+		console.log(settings)
 	}
 
 	function getSetting( key ){ return settings[key] }

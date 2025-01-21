@@ -127,6 +127,27 @@ dl {
 	width: 50%
 }
 label {
-	padding-left: 10px;
+	padding-left: 30px;
 	padding-right: 10px;
+}
+
+.label-first-in-line {
+	padding-left: 0px;
+}
+
+
+.help .helptext {
+	visibility: hidden;
+	position: absolute;
+	z-index:10;
+	background-color: white;
+	color: #000;
+	text-align: left;
+	border-radius: 1px;
+	border: 1px solid;
+	padding: 5px;
+}
+
+.help:hover .helptext {
+	visibility: visible;
 }
