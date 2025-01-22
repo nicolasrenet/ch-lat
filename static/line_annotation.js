@@ -83,6 +83,7 @@ function annotateLines(){
 		baselineColor: new Color(.48,.04,0.08),
 		issueColor:  new Color(1,0,0,0.6),
 		previewColor:  new Color(0.5,0.5,0.5,0.5),
+		fadedPreviewColor:  new Color(0.5,0.5,0.5,0.3),
 		smoothing: false,
 		overlapHandling: false,
 		overlapScope: 3,
@@ -222,19 +223,25 @@ function annotateLines(){
 			}
 			checkContours.at(-1).visible=false;
 			copiedPaths[p].remove();
-			var contourDictionary ;
+			var contourDictionary;
 			if (coreLines){
-				contour_dictionary = exportLineAlt(p, sortedPaths[p])
+				contourDictionary = exportLineAlt(p, sortedPaths[p])
 			} else {
-				contour_dictionary = exportLine(p, sortedPaths[p])
+				contourDictionary = exportLine(p, sortedPaths[p])
 			}
-			var [ct, ect] = [contour_dictionary.contourPath, contour_dictionary.extContourPath];
+			var ct = contourDictionary.contourPath;
 			ct.selected = true
 			sortedPaths[p].selected=true
-			contours.push( ct ); 
+
+			var ect = null;
+			if (coreLines){
+				ect = contourDictionary.extContourPath;
+				ect.selected=true
+				ect.fillColor=settings.fadedPreviewColor;
+			}
 		}
-		for (var p=0; p<contours.length-1; p++){
-			for (var nghbr=p+1; nghbr<contours.length && nghbr<=p+settings.overlapScope; nghbr++){
+		for (var p=0; p<checkContours.length-1; p++){
+			for (var nghbr=p+1; nghbr<checkContours.length && nghbr<=p+settings.overlapScope; nghbr++){
 				if (checkContours[p].intersects( checkContours[nghbr]) && settings.overlapHandling){
 					console.log(`Polygons ${p} and ${nghbr} are ${settings.overlapBuffer} pixels apart.`)
 					// when increasing line thickness: automatic deselection
