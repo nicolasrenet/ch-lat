@@ -56,7 +56,6 @@
  * 	- stats about line thickness
  * 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
  * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path.
- * 	- bug: pre-import of a segmentation file (at page loading) has random scaling error (due to browser caching?)
  */
 
 //paper.install(window);
@@ -499,6 +498,7 @@ function annotateLines(){
 			if (mode !== Modes.noPathCopy){
 				for (const p of paths.children.filter((elt)=> elt.isSelected)){
 					pc = p.clone();
+					pc.baselineOffset=p.baselineOffset;
 					selectPath(p, false);
 					selectPath(pc, true );
 					clones.push(pc);
