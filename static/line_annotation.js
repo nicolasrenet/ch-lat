@@ -214,21 +214,21 @@ function annotateLines(){
 		var checkContours = [] // just for checking: hidden
 		var contours = []
 		for (var p=0; p<copiedPaths.length; p++){ 
-			// draw contours, but not the baseline!
 			if (coreLines){
-				checkContours.push( contourAlt(p, copiedPaths[p]).contourPath);
+				checkContours.push( exportLineAlt(p, copiedPaths[p]).contourPath);
 			} else {
-				checkContours.push( contour(p, copiedPaths[p], false ).contourPath);
+				// draw contours, but not the baseline!
+				checkContours.push( exportLine(p, copiedPaths[p], false ).contourPath);
 			}
 			checkContours.at(-1).visible=false;
 			copiedPaths[p].remove();
 			var contourDictionary ;
 			if (coreLines){
-				contour_dictionary = contourAlt(p, sortedPaths[p])
+				contour_dictionary = exportLineAlt(p, sortedPaths[p])
 			} else {
-				contour_dictionary = contour(p, sortedPaths[p])
+				contour_dictionary = exportLine(p, sortedPaths[p])
 			}
-			var ct = contour_dictionary.contourPath;
+			var [ct, ect] = [contour_dictionary.contourPath, contour_dictionary.extContourPath];
 			ct.selected = true
 			sortedPaths[p].selected=true
 			contours.push( ct ); 
@@ -630,66 +630,10 @@ function annotateLines(){
 		return pt_arr
 	}
 
-	var contour = function (id, p, baseline=true){
+	var exportLine = function (id, p, baseline=true){
 
-		if (p.segments.length < 2){ return null }
-		var pointsNorth = [];
-		var pointsSouth = [];
-		var contourPath = new Path();
-		var baselinePath = new Path();
-		//contourPath.strokeColor='#000000'
-		//contourPath.strokeWidth=2;
 
-		var pt1 = p.segments[0].point;
-		var pt2 = p.segments[1].point;       
-		var vect = (pt2.subtract(pt1)).normalize( p.strokeWidth/2);
-		var endPt1 = pt1;//.subtract(vect.divide(2));
-		var normalVect = vect.rotate(90);
-		
-		var vertebraLS = pt1.add(normalVect);
-		//Marker( vertebraLS, 6, 'red' )
-		var vertebraLN = pt1.subtract(normalVect);
-		//Marker( vertebraLN, 6, 'green' )
-		contourPath.add( vertebraLN );
-		contourPath.insert(0, vertebraLS);
-
-		//baselinePath.add( vertebraLS );
-
-		var pt3 = p.segments.at(-2).point;
-		var pt4 = p.segments.at(-1).point;       
-		var vectEnd = (pt4.subtract(pt3)).normalize( p.strokeWidth/2);
-		var endPt2 = pt4;//.add(vectEnd.divide(2));
-		var normalVectEnd = vectEnd.rotate(90);
-
-		if (p.segments.length > 2){
-
-			for (var i=1; i<p.segments.length-1; i++){
-				var pt = p.segments[i].point;
-				var ptL = p.segments[i-1].point;
-				var ptR = p.segments[i+1].point;
-				var vectL = (ptL.subtract(pt)).normalize(p.strokeWidth/2);
-				var vectR = (ptR.subtract(pt)).normalize(p.strokeWidth/2);
-				var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
-				var vertebraN = pt.add(normalVect);
-				//Marker( vertebraN, 6, 'green' );
-				var vertebraS = pt.subtract(normalVect);
-				//Marker( vertebraS, 6, 'red' );
-				contourPath.insert(0, vertebraS );
-				contourPath.add( vertebraN );
-
-				//baselinePath.add( vertebraS );
-			}
-		}
-		var vertebraRS = pt4.add(normalVectEnd);
-		var vertebraRN = pt4.subtract(normalVectEnd);
-		//Marker( vertebraRS, 6, 'red' );
-		//Marker( vertebraRN, 6, 'green' );
-		contourPath.add( vertebraRN );
-		contourPath.insert(0, vertebraRS );
-		//baselinePath.add( vertebraRS );
-		contourPath.insert( contourPath.segments.length/2, endPt1);
-		contourPath.add( endPt2 );
-		contourPath.closed = true;
+		var contourPath = buildContour(p); 
 		if (settings.smoothing) contourPath.smooth({type: 'geometric'});
 	    
 		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
@@ -735,7 +679,7 @@ function annotateLines(){
 	 * - the extended polygon is stored explicitly
 	 *
 	 */
-	var contourAlt = function (id, p){
+	var exportLineAlt = function (id, p){
 
 		var corePolygon = buildContour(p) // implicit: contour has same width as p
 		var extendedPolygon = buildContour(p, p.strokeWidth*2) // implicit: contour has same width as p
