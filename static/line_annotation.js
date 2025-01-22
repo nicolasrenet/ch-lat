@@ -77,10 +77,12 @@ function annotateLines(){
 		strokeWidth: 6,
 		groundTruthColor: new Color(0,1,0,0.6),
 		predictionColor: new Color(1,0,0,0.6),
-		selectionColor: new Color(0,0,1,0.7),
+		selectionColor: new Color(0,0,1,0.6),
 		newLineColor: new Color(0,0.5,0.5,0.5),
 		highlighterColor: new Color(1,1,0,0.5),
 		baselineColor: new Color(.48,.04,0.08),
+		issueColor:  new Color(1,0,0,0.6),
+		previewColor:  new Color(0.5,0.5,0.5,0.5),
 		smoothing: false,
 		overlapHandling: false,
 		overlapScope: 3,
@@ -203,6 +205,7 @@ function annotateLines(){
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		var copiedPaths = []
 		for (const p of sortedPaths){
+			p.strokeColor = settings.previewColor;
 			const copy = p.clone(insert=false);
 			copy.strokeWidth += settings.overlapBuffer;
 			copiedPaths.push( copy );
@@ -225,10 +228,24 @@ function annotateLines(){
 		for (var p=0; p<contours.length-1; p++){
 			for (var nghbr=p+1; nghbr<contours.length && nghbr<=p+settings.overlapScope; nghbr++){
 				if (checkContours[p].intersects( checkContours[nghbr]) && settings.overlapHandling){
-					console.log(`Polygons ${p} and ${nghbr} intersect.`)
-					selectPath(sortedPaths[p], selectFlag);
-					selectPath(sortedPaths[nghbr], selectFlag);
+					console.log(`Polygons ${p} and ${nghbr} are ${settings.overlapBuffer} pixels apart.`)
+					// when increasing line thickness: automatic deselection
+					// of lines that are about to intersect
+					if (! selectFlag){
+						selectPath(sortedPaths[p], selectFlag);
+						selectPath(sortedPaths[nghbr], selectFlag);
+					// otherwise: simply highlight the lines
+					} else { 
+						sortedPaths[p].strokeColor=settings.issueColor;
+						sortedPaths[p+1].strokeColor=settings.issueColor;
+					}
 				}
+			}
+		}
+		for (var p=0; p<sortedPaths.length;p++){
+			if (settings.baselineOffsets && sortedPaths[p].baselineOffset===0){
+				console.log(`Path ${p} has no baseline offset: double-check.`)
+				sortedPaths[p].strokeColor=settings.issueColor;
 			}
 		}
 	}
