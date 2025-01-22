@@ -54,7 +54,12 @@
 							<input id="radio-gt-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">GT</label> 
 						</div>
 						<div class="flex-row"><label class="config-label">Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
-						<div class="flex-row"><label class="config-label">Baseline offsets</label><input id="baseline-check" type="checkbox" name="baselineOffsets"></div>
+						<div class="flex-row"><label class="config-label">Annotation flavour:</label> 
+							<input id="radio-plain-flavour" type="radio" name="flavour-radio"> <label class="right-positioned-label">Plain</label> 
+							<input id="radio-core-flavour" type="radio" name="flavour-radio"> <label class="right-positioned-label">Core lines</label> 
+							<input id="radio-offset-flavour" type="radio" name="flavour-radio"> <label class="right-positioned-label">Offset baselines</label> 
+						</div>
+
 						<div class="flex-row"><label class="config-label">Collision prevention</label><input id="overlap-check" type="checkbox" name="overlapHandling"></div>
 						<div class="flex-row">
 							<label class="config-label">Overlap buffer (px)
@@ -274,24 +279,33 @@
 							document.getElementById("overlap-scope").disabled = !this.checked
 							document.getElementById("overlap-buffer").disabled = !this.checked
 						}
-					} else if (this.type === 'radio' && this.name==='data-type-radio'){
-						if (this.checked){
-							if (this.id === 'radio-gt-data'){
-								setting['dataType']='gt';
-							} else if (this.id === 'radio-pred-data'){
-								setting['dataType']='pred';
-							} else {
-								setting['dataType']='none'
+					} else if (this.type === 'radio'){
+						if (this.name==='data-type-radio'){
+							if (this.checked){
+								if (this.id === 'radio-gt-data'){
+									setting['dataType']='gt';
+								} else if (this.id === 'radio-pred-data'){
+									setting['dataType']='pred';
+								} else {
+									setting['dataType']='none'
+								}
+							}
+						} else if (this.name==='flavour-radio'){
+							if (this.checked){
+								if (this.id === 'radio-plain-flavour'){
+									setting['annotationFlavour']=AnnotationFlavours.plain;
+								} else if (this.id==='radio-core-flavour'){
+									setting['annotationFlavour']=AnnotationFlavours.coreLines;
+								} else { setting['annotationFlavour']=AnnotationFlavours.baselineOffsets }
 							}
 						}
-					}
+					} 
 					// store server-side
 					writeAppConfig( setting )
 					// tell the canvas tool
 					guiTool.applySettings( setting )
 				}
 			}
-
 
 			document.getElementById("preview-on").onclick=function(){
 				guiTool.previewMaskOn( true );
@@ -303,15 +317,17 @@
 				this.style.display = "none";
 				document.getElementById("preview-on").style.display="block"
 			}
-			// working on the canvas immediately switches the preview off
-			//cnv.onclick = () => { document.getElementById("preview-off").onclick() }
-
+			
+			document.getElementById("canvas-box").onclick = () => {
+				document.getElementById("preview-off").style.display='none';
+				document.getElementById("preview-on").style.display="block";
+			}
+				
 			document.getElementById("export-button").onclick=function(){
 				exportData('{{archive_id}}', '{{charter_img_id}}');
 				document.getElementById("preview-on").style.display="none";
 				document.getElementById("preview-off").style.display="block";
 			}
-
 			
 		})()
 
@@ -343,8 +359,19 @@
 					importData( '{{archive_id}}', '{{charter_img_id}}', conf['dataType'] ) ;
 					document.getElementById('check_'+conf['dataType']+'data_{{charter_img_id}}').checked=true
 				}
+				switch( conf['annotationFlavour']){
+					case AnnotationFlavours.plain:
+						document.getElementById("radio-plain-flavour").checked=true;
+						break;
+					case AnnotationFlavours.coreLines:
+						document.getElementById("radio-core-flavour").checked=true;
+						break;
+					default:
+						document.getElementById("radio-offset-flavour").checked=true;
+				}
 			})
 		}
+
 		
 	</script>
 

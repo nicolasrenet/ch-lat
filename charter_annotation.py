@@ -34,7 +34,7 @@ app.config.update(
     gui_tool_overlapHandling=True,
     gui_tool_overlapBuffer=2,
     gui_tool_overlapScope=3,
-    gui_tool_baselineOffsets=True,
+    gui_tool_annotationFlavour=0,
 )
 
 app.config.from_prefixed_env()

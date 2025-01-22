@@ -31,12 +31,12 @@
 
 #stat-box {
 	/*border-bottom: 1px solid;*/
-	flex: 2 1
+	flex: 1 4 auto;
 }
 
 #settings-box {
 	border: 1px solid;
-	flex: 1 1
+	flex: 1 1;
 }
 
 .inside {

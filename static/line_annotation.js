@@ -63,6 +63,11 @@
 
 
 //window.onload = function(){
+const AnnotationFlavours = Object.freeze({
+	plain: 0,
+	coreLines: 1,
+	baselineOffsets: 2,
+})
 
 function annotateLines(){
 
@@ -81,15 +86,14 @@ function annotateLines(){
 		newLineColor: new Color(0,0.5,0.5,0.5),
 		highlighterColor: new Color(1,1,0,0.5),
 		baselineColor: new Color(.48,.04,0.08),
-		issueColor:  new Color(1,0,0,0.6),
-		previewColor:  new Color(0.5,0.5,0.5,0.5),
-		fadedPreviewColor:  new Color(0.5,0.5,0.5,0.3),
+		issueColor: new Color(1,0,0,0.6),
+		previewColor: new Color(0.5,0.5,0.5,0.5),
+		fadedPreviewColor: new Color(0.5,0.5,0.5,0.3),
 		smoothing: false,
 		overlapHandling: false,
 		overlapScope: 3,
 		overlapBuffer: 2,
-		baselineOffsets: false,
-		coreLines: true,
+		annotationFlavour: AnnotationFlavours.plain,
 	}
 
 	var charter = null;
@@ -105,7 +109,6 @@ function annotateLines(){
 	var currentSegmentIndex = -1;
 	var currentSegmentHandle = null;
 	var mergedPath = null;
-
 
 	const Modes = Object.freeze({
 		normal: 0,
@@ -136,7 +139,7 @@ function annotateLines(){
 
 	function applySettings( settingDoc ){ 
 		settings = { ...settings, ...settingDoc } ;
-		if (! settings.baselineOffsets){
+		if (! settings.annotationFlavour===AnnotationFlavours.baselineOffsets){
 			for (const p of paths.children){ p.baselineOffset=0 }
 			previewMaskOn( false );
 		}
@@ -159,6 +162,7 @@ function annotateLines(){
 			`\npathDrawingMode=${mode==Modes.pathDrawing}` +
 			`\nsegmentEditMode=${mode===Modes.segmentEdit}` +
 			`\npreviewMode=${mode===Modes.preview}` +
+			`\nannotationFlavour=${settings.annotationFlavour}` +
 			`\nCopyOn=${mode!==Modes.noPathCopy}` +
 			`\ncurrentSegmentIndex=${currentSegmentIndex}` +
 			`\ncurrentSegmentHandle=${currentSegmentHandle}` +
@@ -179,7 +183,7 @@ function annotateLines(){
 			if (type === 'gt'){
 				var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
 				p.baselineOffset = 0 ; 
-				if (settings.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
+				if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
 				paths.addChild( p );
 				strokeWidth = line['strokeWidth'];
 			} else if (type==='pred'){
@@ -197,13 +201,10 @@ function annotateLines(){
 
 
 
-	/*
-	 * Removes all existing paths from the canvas.
-	 */
 	var eraseMask = () => { paths.removeChildren(); }
 
 
-	var checkOverlaps = (paths, selectFlag=true, coreLines=false) => {
+	var previewVisualsAndOverlapCheck = (paths, selectFlag=true, coreLines=false) => {
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		var copiedPaths = []
 		for (const p of sortedPaths){
@@ -215,26 +216,26 @@ function annotateLines(){
 		var checkContours = [] // just for checking: hidden
 		var contours = []
 		for (var p=0; p<copiedPaths.length; p++){ 
-			if (coreLines){
-				checkContours.push( exportLineAlt(p, copiedPaths[p]).contourPath);
+			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
+				checkContours.push( exportCoreLine(p, copiedPaths[p]).contourPath);
 			} else {
 				// draw contours, but not the baseline!
-				checkContours.push( exportLine(p, copiedPaths[p], false ).contourPath);
+				checkContours.push( exportFlexLine(p, copiedPaths[p], false ).contourPath);
 			}
 			checkContours.at(-1).visible=false;
 			copiedPaths[p].remove();
 			var contourDictionary;
-			if (coreLines){
-				contourDictionary = exportLineAlt(p, sortedPaths[p])
+			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
+				contourDictionary = exportCoreLine(p, sortedPaths[p])
 			} else {
-				contourDictionary = exportLine(p, sortedPaths[p])
+				contourDictionary = exportFlexLine(p, sortedPaths[p])
 			}
 			var ct = contourDictionary.contourPath;
 			ct.selected = true
 			sortedPaths[p].selected=true
 
 			var ect = null;
-			if (coreLines){
+			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
 				ect = contourDictionary.extContourPath;
 				ect.selected=true
 				ect.fillColor=settings.fadedPreviewColor;
@@ -258,7 +259,7 @@ function annotateLines(){
 			}
 		}
 		for (var p=0; p<sortedPaths.length;p++){
-			if (settings.baselineOffsets && sortedPaths[p].baselineOffset===0){
+			if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && sortedPaths[p].baselineOffset===0){
 				console.log(`Path ${p} has no baseline offset: double-check.`)
 				sortedPaths[p].strokeColor=settings.issueColor;
 			}
@@ -273,7 +274,7 @@ function annotateLines(){
 			if (mode===Modes.preview){ return } else { mode=Modes.preview }
 			deselectAll();
 			contourLayer.activate();
-			checkOverlaps( paths, true, settings.coreLines ); // true = overlapping paths are highlighted
+			previewVisualsAndOverlapCheck( paths, true, settings.annotationFlavour===AnnotationFlavours.coreLines ); // true = overlapping paths are highlighted
 			contourLayer.visible = true;	
 			annotationLayer.activate();
 		} else if (mode===Modes.preview) { 
@@ -327,7 +328,7 @@ function annotateLines(){
 			path.strokeColor = settings.newLineColor;
 			path.strokeWidth = settings.strokeWidth;
 			//path.strokeCap = 'round';
-			path.strokeJoin = 'round';
+			//path.strokeJoin = 'round';
 			path.baselineOffset = 0; // not used unless baselineOffset enabled
 			selectPath(path, false);
 			paths.addChild( path );
@@ -395,7 +396,7 @@ function annotateLines(){
 			if (settings.overlapHandling){
 				contourLayer.activate();
 				contourLayer.visible=false;
-				checkOverlaps( paths, false, settings.coreLines );
+				previewVisualsAndOverlapCheck( paths, false, settings.annotationFlavour===AnnotationFlavours.coreLines );
 				contourLayer.removeChildren();
 			}
 			annotationLayer.activate();
@@ -410,14 +411,14 @@ function annotateLines(){
 			eraseSegmentHandle();
 			for (const p of paths.children){ 
 				p.translate( new Point(0, -2*p.isSelected)); 
-				p.baselineOffset += (2*p.isSelected*settings.baselineOffsets) 
+				p.baselineOffset += (2*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets)) 
 			} 
 		} else if (Key.isDown('down')){
 			ev.preventDefault()
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			for (const p of paths.children){ 
 				p.translate( new Point(0, 2*p.isSelected)) ; 
-				p.baselineOffset -= (2*p.isSelected*settings.baselineOffsets)
+				p.baselineOffset -= (2*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets))
 			} 
 		} else if (Key.isDown('m') || Key.isDown('f') || Key.isDown('v')){
 			mergePaths( paths.children.filter( (elt) => elt.isSelected ));
@@ -457,7 +458,8 @@ function annotateLines(){
 	}
 	
 	view.onMouseDown = (ev) => {
-		console.log("MouseDown:");
+		previewMaskOn( false );	
+
 		var pathHitResult = getHitPath( ev.point );
 		// moving selection for joining paths
 		if (ev.modifiers.alt && ev.modifiers.shift){
@@ -637,7 +639,7 @@ function annotateLines(){
 		return pt_arr
 	}
 
-	var exportLine = function (id, p, baseline=true){
+	var exportFlexLine = function (id, p, baseline=true){
 
 
 		var contourPath = buildContour(p); 
@@ -659,7 +661,7 @@ function annotateLines(){
 
 		var baselinePath = null;
 		var baselineArray = [];
-		if (baseline && settings.baselineOffsets) {	
+		if (baseline && settings.annotationFlavour===AnnotationFlavours.baselineOffsets) {	
 			baselinePath = new Path( p.segments.map( s => s.point.add(new Point(0, p.baselineOffset))));
 			baselinePath.strokeColor=settings.baselineColor;
 			baselinePath.strokeWidth=2;
@@ -686,7 +688,7 @@ function annotateLines(){
 	 * - the extended polygon is stored explicitly
 	 *
 	 */
-	var exportLineAlt = function (id, p){
+	var exportCoreLine = function (id, p){
 
 		var corePolygon = buildContour(p) // implicit: contour has same width as p
 		var extendedPolygon = buildContour(p, p.strokeWidth*2) // implicit: contour has same width as p
@@ -739,7 +741,9 @@ function annotateLines(){
 				var ptR = p.segments[i+1].point;
 				var vectL = (ptL.subtract(pt)).normalize(width/2);
 				var vectR = (ptR.subtract(pt)).normalize(width/2);
-				var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
+				var alpha = vectL.getAngleInRadians(vectR)
+				//console.log(`alpha=${alpha}, width=${width/2}`);
+				var normalVect = vectL.subtract(vectR).normalize(width/(2*Math.sin(alpha/2))).rotate(90);
 				var vertebraN = pt.add(normalVect);
 				//Marker( vertebraN, 6, 'green' );
 				var vertebraS = pt.subtract(normalVect);
