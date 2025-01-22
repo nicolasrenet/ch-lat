@@ -56,6 +56,7 @@
  * 	- stats about line thickness
  * 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
  * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path.
+ * 	- feature: storing centerline+baseline+upperline+thickness+extended_thickness
  */
 
 //paper.install(window);
@@ -87,6 +88,7 @@ function annotateLines(){
 		overlapScope: 3,
 		overlapBuffer: 2,
 		baselineOffsets: false,
+		coreLines: true,
 	}
 
 	var charter = null;
@@ -200,7 +202,7 @@ function annotateLines(){
 	var eraseMask = () => { paths.removeChildren(); }
 
 
-	var checkOverlaps = (paths, selectFlag=true) => {
+	var checkOverlaps = (paths, selectFlag=true, coreLines=false) => {
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		var copiedPaths = []
 		for (const p of sortedPaths){
@@ -211,18 +213,25 @@ function annotateLines(){
 		}
 		var checkContours = [] // just for checking: hidden
 		var contours = []
-		var baselines = []
 		for (var p=0; p<copiedPaths.length; p++){ 
 			// draw contours, but not the baseline!
-			checkContours.push( contour(p, copiedPaths[p], false ).contourPath);
+			if (coreLines){
+				checkContours.push( contourAlt(p, copiedPaths[p]).contourPath);
+			} else {
+				checkContours.push( contour(p, copiedPaths[p], false ).contourPath);
+			}
 			checkContours.at(-1).visible=false;
 			copiedPaths[p].remove();
-			contour_dictionary = contour(p, sortedPaths[p])
-			var [ct, bl] = ['contourPath', 'baselinePath'].map( k => contour_dictionary[k] );
+			var contourDictionary ;
+			if (coreLines){
+				contour_dictionary = contourAlt(p, sortedPaths[p])
+			} else {
+				contour_dictionary = contour(p, sortedPaths[p])
+			}
+			var ct = contour_dictionary.contourPath;
 			ct.selected = true
 			sortedPaths[p].selected=true
 			contours.push( ct ); 
-			baselines.push( bl );
 		}
 		for (var p=0; p<contours.length-1; p++){
 			for (var nghbr=p+1; nghbr<contours.length && nghbr<=p+settings.overlapScope; nghbr++){
@@ -249,12 +258,15 @@ function annotateLines(){
 		}
 	}
 
+
+
+
 	var previewMaskOn = ( on ) => {
 		if (on){
 			if (mode===Modes.preview){ return } else { mode=Modes.preview }
 			deselectAll();
 			contourLayer.activate();
-			checkOverlaps( paths, true ); // true = overlapping paths are highlighted
+			checkOverlaps( paths, true, settings.coreLines ); // true = overlapping paths are highlighted
 			contourLayer.visible = true;	
 			annotationLayer.activate();
 		} else if (mode===Modes.preview) { 
@@ -376,7 +388,7 @@ function annotateLines(){
 			if (settings.overlapHandling){
 				contourLayer.activate();
 				contourLayer.visible=false;
-				checkOverlaps( paths, false );
+				checkOverlaps( paths, false, settings.coreLines );
 				contourLayer.removeChildren();
 			}
 			annotationLayer.activate();
@@ -705,6 +717,101 @@ function annotateLines(){
 		}
 
 		return { 'contourPath': contourPath, 'baselinePath': baselinePath, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth, 'baselineOffset': p.baselineOffset } }
+
+	}
+
+
+	/*
+	 * Alternative, where we write
+	 * - a path running on the centerline (no offset)
+	 * - a thickness
+	 * - a baseline
+	 * - a 'core' polygon
+	 * - a extended polygon that may overlap with other lines' polygons
+	 * Note:
+	 * - as with the other method, only the path's centerline and thickness 
+	 *   are necessary when importing; the baseline and the polygon can be computed from both
+	 * - there are no baseline offsets
+	 * - the extended polygon is stored explicitly
+	 *
+	 */
+	var contourAlt = function (id, p){
+
+		var corePolygon = buildContour(p) // implicit: contour has same width as p
+		var extendedPolygon = buildContour(p, p.strokeWidth*2) // implicit: contour has same width as p
+		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
+		var boundaryArray = corePolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
+		boundaryArray = boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height));
+		var baselineArray = p.segments.map( s => toIntXY(s.point.subtract( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
+		baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
+		var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
+		extBoundaryArray = extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height));
+
+		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'extBoundary': extBoundaryArray, 'strokeWidth': p.strokeWidth }}
+
+	}
+
+
+	function buildContour(p, width=null){
+		if (p.segments.length < 2){ return null }
+		if (width===null) width=p.strokeWidth;
+
+		var pointsNorth = [];
+		var pointsSouth = [];
+		var contourPath = new Path();
+		var baselinePath = new Path();
+
+		var pt1 = p.segments[0].point;
+		var pt2 = p.segments[1].point;       
+		var vect = (pt2.subtract(pt1)).normalize( width/2);
+		var endPt1 = pt1;//.subtract(vect.divide(2));
+		var normalVect = vect.rotate(90);
+		
+		var vertebraLS = pt1.add(normalVect);
+		//Marker( vertebraLS, 6, 'red' )
+		var vertebraLN = pt1.subtract(normalVect);
+		//Marker( vertebraLN, 6, 'green' )
+		contourPath.add( vertebraLN );
+		contourPath.insert(0, vertebraLS);
+
+		var pt3 = p.segments.at(-2).point;
+		var pt4 = p.segments.at(-1).point;       
+		var vectEnd = (pt4.subtract(pt3)).normalize( width/2);
+		var endPt2 = pt4;//.add(vectEnd.divide(2));
+		var normalVectEnd = vectEnd.rotate(90);
+
+		if (p.segments.length > 2){
+
+			for (var i=1; i<p.segments.length-1; i++){
+				var pt = p.segments[i].point;
+				var ptL = p.segments[i-1].point;
+				var ptR = p.segments[i+1].point;
+				var vectL = (ptL.subtract(pt)).normalize(width/2);
+				var vectR = (ptR.subtract(pt)).normalize(width/2);
+				var normalVect = vectL.subtract(vectR).divide(2).rotate(90);
+				var vertebraN = pt.add(normalVect);
+				//Marker( vertebraN, 6, 'green' );
+				var vertebraS = pt.subtract(normalVect);
+				//Marker( vertebraS, 6, 'red' );
+				contourPath.insert(0, vertebraS );
+				contourPath.add( vertebraN );
+
+				//baselinePath.add( vertebraS );
+			}
+		}
+		var vertebraRS = pt4.add(normalVectEnd);
+		var vertebraRN = pt4.subtract(normalVectEnd);
+		//Marker( vertebraRS, 6, 'red' );
+		//Marker( vertebraRN, 6, 'green' );
+		contourPath.add( vertebraRN );
+		contourPath.insert(0, vertebraRS );
+		//baselinePath.add( vertebraRS );
+		contourPath.insert( contourPath.segments.length/2, endPt1);
+		contourPath.add( endPt2 );
+		contourPath.closed = true;
+		if (settings.smoothing) contourPath.smooth({type: 'geometric'});
+
+		return contourPath;
 	}
 
 	function historySave( op ){
