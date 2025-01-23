@@ -191,7 +191,7 @@
 		function importData( archive_id, charter_img_id, dataType ){
 			const url = "/segdata/{{archive_id}}/{{charter_img_id}}?" + new URLSearchParams({segtype: dataType}).toString()
 			console.log(url)
-			fetch(url, { method: "GET" })
+			return fetch(url, { method: "GET" })
 			.then( resp => resp.json())
 			.then( data => guiTool.importMask( data, dataType ) )
 		}
@@ -356,8 +356,9 @@
 				document.querySelector('#radio-' + conf['dataType'] + '-data').checked=true;
 				if (conf['dataType'] !== 'none'){
 					guiTool.eraseMask();
-					importData( '{{archive_id}}', '{{charter_img_id}}', conf['dataType'] ) ;
-					document.getElementById('check_'+conf['dataType']+'data_{{charter_img_id}}').checked=true
+					importData( '{{archive_id}}', '{{charter_img_id}}', conf['dataType'] ) 
+					var checkDataElt = document.getElementById('check_'+conf['dataType']+'data_{{charter_img_id}}')
+					if (checkDataElt!==null){ checkDataElt.checked=true }
 				}
 				switch( conf['annotationFlavour']){
 					case AnnotationFlavours.plain:

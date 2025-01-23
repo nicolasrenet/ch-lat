@@ -56,7 +56,7 @@
  * 	- stats about line thickness
  * 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
  * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path.
- * 	- feature: storing centerline+baseline+upperline+thickness+extended_thickness
+ * 	- rounded contours
  */
 
 //paper.install(window);
@@ -200,30 +200,35 @@ function annotateLines(){
 	}
 
 
-
 	var eraseMask = () => { paths.removeChildren(); }
 
 
 	var previewVisualsAndOverlapCheck = (paths, selectFlag=true) => {
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		var copiedPaths = []
-		for (const p of sortedPaths){
-			p.strokeColor = settings.previewColor;
-			const copy = p.clone(insert=false);
-			copy.strokeWidth += settings.overlapBuffer;
-			copiedPaths.push( copy );
+
+		if (settings.overlapHandling){
+			for (const p of sortedPaths){
+				p.strokeColor = settings.previewColor;
+				const copy = p.clone(insert=false);
+				copy.strokeWidth += settings.overlapBuffer;
+				copiedPaths.push( copy );
+			}
 		}
 		var checkContours = [] // just for checking: hidden
 		var contours = []
 		for (var p=0; p<copiedPaths.length; p++){ 
-			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
-				checkContours.push( exportCoreLine(p, copiedPaths[p]).contourPath);
-			} else {
-				// draw contours, but not the baseline!
-				checkContours.push( exportFlexLine(p, copiedPaths[p], false ).contourPath);
+
+			if (settings.overlapHandling){
+				if (settings.annotationFlavour===AnnotationFlavours.coreLines){
+					checkContours.push( exportCoreLine(p, copiedPaths[p]).contourPath);
+				} else {
+					// draw contours, but not the baseline!
+					checkContours.push( exportFlexLine(p, copiedPaths[p], false ).contourPath);
+				}
+				checkContours.at(-1).visible=false;
+				copiedPaths[p].remove();
 			}
-			checkContours.at(-1).visible=false;
-			copiedPaths[p].remove();
 			var contourDictionary;
 			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
 				contourDictionary = exportCoreLine(p, sortedPaths[p])
@@ -234,26 +239,27 @@ function annotateLines(){
 			ct.selected = true
 			sortedPaths[p].selected=true
 
-			var ect = null;
 			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
-				ect = contourDictionary.extContourPath;
+				var ect = contourDictionary.extContourPath;
 				ect.selected=true
 				ect.fillColor=settings.fadedPreviewColor;
 			}
 		}
-		for (var p=0; p<checkContours.length-1; p++){
-			for (var nghbr=p+1; nghbr<checkContours.length && nghbr<=p+settings.overlapScope; nghbr++){
-				if (checkContours[p].intersects( checkContours[nghbr]) && settings.overlapHandling){
-					console.log(`Polygons ${p} and ${nghbr} are ${settings.overlapBuffer} pixels apart.`)
-					// when increasing line thickness: automatic deselection
-					// of lines that are about to intersect
-					if (! selectFlag){
-						selectPath(sortedPaths[p], selectFlag);
-						selectPath(sortedPaths[nghbr], selectFlag);
-					// otherwise: simply highlight the lines
-					} else { 
-						sortedPaths[p].strokeColor=settings.issueColor;
-						sortedPaths[p+1].strokeColor=settings.issueColor;
+		if (settings.overlapHandling){
+			for (var p=0; p<checkContours.length-1; p++){
+				for (var nghbr=p+1; nghbr<checkContours.length && nghbr<=p+settings.overlapScope; nghbr++){
+					if (checkContours[p].intersects( checkContours[nghbr])){
+						console.log(`Polygons ${p} and ${nghbr} are ${settings.overlapBuffer} pixels apart.`)
+						// when increasing line thickness: automatic deselection
+						// of lines that are about to intersect
+						if (! selectFlag){
+							selectPath(sortedPaths[p], selectFlag);
+							selectPath(sortedPaths[nghbr], selectFlag);
+						// otherwise: simply highlight the lines
+						} else { 
+							sortedPaths[p].strokeColor=settings.issueColor;
+							sortedPaths[p+1].strokeColor=settings.issueColor;
+						}
 					}
 				}
 			}
@@ -265,8 +271,6 @@ function annotateLines(){
 			}
 		}
 	}
-
-
 
 
 	var previewMaskOn = ( on ) => {
@@ -307,7 +311,6 @@ function annotateLines(){
 
 		if (lineData.length > 0){
 			pageData['lines']=lineData;
-			//console.log(pageData)
 			return pageData;
 		}
 		return {}
@@ -780,9 +783,9 @@ function annotateLines(){
 
 	function historyRestore(){
 		console.log("historyRestore(): history.length = " + history.filter( (h) => h !== null ).length );
-		thisOpIndex = (historyCount-1) % HISTLENGTH;
-		previousOpIndex = (thisOpIndex - 1 + HISTLENGTH) % HISTLENGTH;
-		previousOp = history[previousOpIndex];
+		var thisOpIndex = (historyCount-1) % HISTLENGTH;
+		var previousOpIndex = (thisOpIndex - 1 + HISTLENGTH) % HISTLENGTH;
+		var previousOp = history[previousOpIndex];
 		if (previousOp !== null){
 			//paper.project.importSVG( previousOp.svg );
 			history[thisOpIndex]=null;
