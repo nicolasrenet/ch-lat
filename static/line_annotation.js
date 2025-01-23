@@ -204,7 +204,7 @@ function annotateLines(){
 	var eraseMask = () => { paths.removeChildren(); }
 
 
-	var previewVisualsAndOverlapCheck = (paths, selectFlag=true, coreLines=false) => {
+	var previewVisualsAndOverlapCheck = (paths, selectFlag=true) => {
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		var copiedPaths = []
 		for (const p of sortedPaths){
@@ -274,7 +274,7 @@ function annotateLines(){
 			if (mode===Modes.preview){ return } else { mode=Modes.preview }
 			deselectAll();
 			contourLayer.activate();
-			previewVisualsAndOverlapCheck( paths, true, settings.annotationFlavour===AnnotationFlavours.coreLines ); // true = overlapping paths are highlighted
+			previewVisualsAndOverlapCheck( paths, true); // true = overlapping paths are highlighted
 			contourLayer.visible = true;	
 			annotationLayer.activate();
 		} else if (mode===Modes.preview) { 
@@ -293,8 +293,12 @@ function annotateLines(){
 		console.log("export()" + sortedPaths)
 		contourLayer.activate()
 		for (var p=0; p<sortedPaths.length; p++){ 
-			contour_dictionary = contour(p, sortedPaths[p])
-			var [ct,data] = ['contourPath', 'data'].map( k => contour_dictionary[k] );
+			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
+				contourDictionary = exportCoreLine(p, sortedPaths[p])
+			} else {
+				contourDictionary = exportFlexLine(p, sortedPaths[p])
+			}
+			var [ct,data] = ['contourPath', 'data'].map( k => contourDictionary[k] );
 			ct.selected=true;
 			if (data !== null){ lineData.push( data ) }
 		}
