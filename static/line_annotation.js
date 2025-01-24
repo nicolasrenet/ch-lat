@@ -761,17 +761,29 @@ function annotateLines(){
 				console.log(normalVect)
 				if (smoothing) {
 					const radius = p.strokeWidth/2;
-					var normalVectS = normalVect.normalize( normalVect.length - radius + radius/Math.sin(alpha_rad))
-					var normalVectSLong = normalVectS.normalize(normalVect.length + radius - radius/Math.sin(alpha_rad))
-					var vertebraInner = pt.add( normalVectS);
-					var vertebraOuter = pt.subtract( normalVectSLong )
+
+					// var normalVectS = normalVect.normalize( normalVect.length - radius + radius/Math.sin(alpha_rad))
+					// var normalVectSLong = normalVectS.normalize(normalVect.length + radius - radius/Math.sin(alpha_rad)) 
+					var normalVectS = normalVect.normalize( radius );
+					var normalVectSLong = normalVect.normalize(p.strokeWidth/Math.sin(alpha_rad)-radius)
+					var vertebraInner = pt.add( normalVectSLong);
+					var vertebraOuter = pt.subtract( normalVectS )
 					console.log(sign)
 					if (sign < 0){ 
-						vertebraInner = pt.subtract(normalVectS)
-						vertebraOuter = pt.add(normalVectSLong)
+						vertebraInner = pt.subtract(normalVectSLong)
+						vertebraOuter = pt.add(normalVectS)
 					}
+					var vertebraOuterW = pt.add( normalVectS.rotate(90-alpha_deg/2))
+					var vertebraOuterE = pt.add( normalVectS.rotate(alpha_deg/2-90))
+					if (sign > 0){
+						vertebraOuterW = pt.subtract( normalVectS.rotate(alpha_deg/2))
+						vertebraOuterE = pt.subtract( normalVectS.rotate(-alpha_deg/2))
+					}
+
 					Marker(vertebraInner, 4, "blue")
 					Marker(vertebraOuter, 4, "yellow")
+					Marker(vertebraOuterW, 4, "red")
+					Marker(vertebraOuterE, 4, "red")
 		
 				}
 
