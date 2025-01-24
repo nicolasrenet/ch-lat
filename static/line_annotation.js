@@ -80,13 +80,14 @@ function annotateLines(){
 
 	var settings = {
 		strokeWidth: 6,
-		groundTruthColor: new Color(0,1,0,0.6),
-		predictionColor: new Color(1,0,0,0.6),
-		selectionColor: new Color(0,0,1,0.6),
+		alpha: 0.5,
+		groundTruthColor: new Color(0,1,0,0.5),
+		predictionColor: new Color(1,0,0,0.5),
+		selectionColor: new Color(0,0,1,0.5),
 		newLineColor: new Color(0,0.5,0.5,0.5),
 		highlighterColor: new Color(1,1,0,0.5),
 		baselineColor: new Color(.48,.04,0.08),
-		issueColor: new Color(1,0,0,0.6),
+		issueColor: new Color(1,0,0,0.5),
 		previewColor: new Color(0.5,0.5,0.5,0.5),
 		fadedPreviewColor: new Color(0.5,0.5,0.5,0.3),
 		smoothing: false,
@@ -139,6 +140,9 @@ function annotateLines(){
 
 	function applySettings( settingDoc ){ 
 		settings = { ...settings, ...settingDoc } ;
+		for (const col of [ 'groundTruthColor', 'predictionColor', 'selectionColor', 'newLineColor', 'highlighterColor', 'issueColor', 'previewColor' ]){
+			settings[col].alpha = settings.alpha;
+		}
 		if (! settings.annotationFlavour===AnnotationFlavours.baselineOffsets){
 			for (const p of paths.children){ p.baselineOffset=0 }
 			previewMaskOn( false );
@@ -204,12 +208,14 @@ function annotateLines(){
 
 
 	var previewVisualsAndOverlapCheck = (paths, selectFlag=true) => {
+		console.log("previewVisual()")
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
-		var copiedPaths = []
+		var copiedPaths = sortedPaths;
 		var lineExportFunc = exportFlexLine;
 		if (settings.annotationFlavour===AnnotationFlavours.coreLines){ lineExportFunc = exportCoreLine }
 
 		if (settings.overlapHandling){
+			copiedPaths = [];
 			for (const p of sortedPaths){
 				p.strokeColor = settings.previewColor;
 				const copy = p.clone(insert=false);
@@ -222,13 +228,14 @@ function annotateLines(){
 		for (var p=0; p<copiedPaths.length; p++){ 
 			if (settings.overlapHandling){
 				checkContours.push( lineExportFunc(p, copiedPaths[p], false).contourPath);
-				checkContours.at(-1).visible=true;
-				checkContours.at(-1).fillColor = settings.previewColor;
+				checkContours.at(-1).visible=false;
+				//checkContours.at(-1).fillColor = settings.previewColor;
 				copiedPaths[p].remove();
 			}
 			var contourDictionary = lineExportFunc(p, sortedPaths[p])
 			var ct = contourDictionary.contourPath;
 			ct.selected = true
+			ct.fillColor = settings.previewColor;
 			sortedPaths[p].selected=true
 
 			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
@@ -284,6 +291,7 @@ function annotateLines(){
 
 		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
 		var lineData = [];
+		var lineExportFunc = exportFlexLine;
 		// sorting paths according to their vertical position
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		console.log("export()" + sortedPaths)
@@ -406,8 +414,8 @@ function annotateLines(){
 			ev.preventDefault()
 			eraseSegmentHandle();
 			for (const p of paths.children){ 
-				p.translate( new Point(0, -2*p.isSelected)); 
-				p.baselineOffset += (2*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets)) 
+				p.translate( new Point(0, -1*p.isSelected)); 
+				p.baselineOffset += (1*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets)) 
 			} 
 		} else if (Key.isDown('down')){
 			ev.preventDefault()
@@ -740,7 +748,7 @@ function annotateLines(){
 
 				var alpha_rad_dir = alpha_deg * Math.PI / 360.0
 				var sign = Math.abs(alpha_rad_dir)/alpha_rad_dir
-				console.log(`alpha=${alpha_deg}, width=${width/2}`);
+				//console.log(`alpha=${alpha_deg}, width=${width/2}`);
 				alpha_rad /= 2;
 
 				var normalVect = vectL.subtract(vectR).normalize(width/(2*Math.sin(alpha_rad))).rotate(90);
@@ -780,7 +788,7 @@ function annotateLines(){
 
 				console.log(normalVect)
 				var vertebraN = pt.add(normalVect);
-				Marker(vertebraN, 6, 'green')
+				//Marker(vertebraN, 6, 'green')
 				var vertebraS = pt.subtract(normalVect);
 				contourPath.insert(0, vertebraS );
 				contourPath.add( vertebraN );

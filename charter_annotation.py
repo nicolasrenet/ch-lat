@@ -30,6 +30,7 @@ app.config.update(
     crop=False,
     gui_tool_smoothing=False,
     gui_tool_dataType='gt',
+    gui_tool_alpha = 0.5,
     gui_tool_strokeWidth=6,
     gui_tool_overlapHandling=True,
     gui_tool_overlapBuffer=2,
