@@ -739,7 +739,7 @@ function annotateLines(){
 		var vectEnd = (pt4.subtract(pt3)).normalize( width/2);
 		var endPt2 = pt4;//.add(vectEnd.divide(2));
 		var normalVectEnd = vectEnd.rotate(90);
-
+		
 		if (p.segments.length > 2){
 
 			for (var i=1; i<p.segments.length-1; i++){
@@ -748,17 +748,40 @@ function annotateLines(){
 				var ptR = p.segments[i+1].point;
 				var vectL = (ptL.subtract(pt)).normalize(width/2);
 				var vectR = (ptR.subtract(pt)).normalize(width/2);
-				var alpha = vectL.getAngleInRadians(vectR)
-				//console.log(`alpha=${alpha}, width=${width/2}`);
-				var normalVect = vectL.subtract(vectR).normalize(width/(2*Math.sin(alpha/2))).rotate(90);
+				var alpha_rad = vectL.getAngleInRadians(vectR)
+				var alpha_deg = vectL.getDirectedAngle(vectR)
+				alpha_rad_dir = alpha_deg * Math.PI / 360.0
+				sign = Math.abs(alpha_rad_dir)/alpha_rad_dir
+				console.log(`alpha=${alpha_deg}, width=${width/2}`);
+				alpha_rad /= 2;
+
+				smoothing=true
+
+				var normalVect = vectL.subtract(vectR).normalize(width/(2*Math.sin(alpha_rad))).rotate(90);
+				console.log(normalVect)
+				if (smoothing) {
+					const radius = p.strokeWidth/2;
+					var normalVectS = normalVect.normalize( normalVect.length - radius + radius/Math.sin(alpha_rad))
+					var normalVectSLong = normalVectS.normalize(normalVect.length + radius - radius/Math.sin(alpha_rad))
+					var vertebraInner = pt.add( normalVectS);
+					var vertebraOuter = pt.subtract( normalVectSLong )
+					console.log(sign)
+					if (sign < 0){ 
+						vertebraInner = pt.subtract(normalVectS)
+						vertebraOuter = pt.add(normalVectSLong)
+					}
+					Marker(vertebraInner, 4, "blue")
+					Marker(vertebraOuter, 4, "yellow")
+		
+				}
+
+				console.log(normalVect)
 				var vertebraN = pt.add(normalVect);
-				//Marker( vertebraN, 6, 'green' );
+
+				Marker(vertebraN, 6, 'green')
 				var vertebraS = pt.subtract(normalVect);
-				//Marker( vertebraS, 6, 'red' );
 				contourPath.insert(0, vertebraS );
 				contourPath.add( vertebraN );
-
-				//baselinePath.add( vertebraS );
 			}
 		}
 		var vertebraRS = pt4.add(normalVectEnd);
