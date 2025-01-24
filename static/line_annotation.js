@@ -194,7 +194,7 @@ function annotateLines(){
 			}
 			currentPath = paths.children.at(-1);
 			currentPath.strokeWidth=strokeWidth;
-			if (settings.smoothing) currentPath.smooth({type: 'geometric'});
+			if (settings.smoothing) currentPath.strokeJoin='round'
 		} 
 		deselectAll();
 	}
@@ -206,6 +206,8 @@ function annotateLines(){
 	var previewVisualsAndOverlapCheck = (paths, selectFlag=true) => {
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		var copiedPaths = []
+		var lineExportFunc = exportFlexLine;
+		if (settings.annotationFlavour===AnnotationFlavours.coreLines){ lineExportFunc = exportCoreLine }
 
 		if (settings.overlapHandling){
 			for (const p of sortedPaths){
@@ -218,23 +220,13 @@ function annotateLines(){
 		var checkContours = [] // just for checking: hidden
 		var contours = []
 		for (var p=0; p<copiedPaths.length; p++){ 
-
 			if (settings.overlapHandling){
-				if (settings.annotationFlavour===AnnotationFlavours.coreLines){
-					checkContours.push( exportCoreLine(p, copiedPaths[p]).contourPath);
-				} else {
-					// draw contours, but not the baseline!
-					checkContours.push( exportFlexLine(p, copiedPaths[p], false ).contourPath);
-				}
-				checkContours.at(-1).visible=false;
+				checkContours.push( lineExportFunc(p, copiedPaths[p], false).contourPath);
+				checkContours.at(-1).visible=true;
+				checkContours.at(-1).fillColor = settings.previewColor;
 				copiedPaths[p].remove();
 			}
-			var contourDictionary;
-			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
-				contourDictionary = exportCoreLine(p, sortedPaths[p])
-			} else {
-				contourDictionary = exportFlexLine(p, sortedPaths[p])
-			}
+			var contourDictionary = lineExportFunc(p, sortedPaths[p])
 			var ct = contourDictionary.contourPath;
 			ct.selected = true
 			sortedPaths[p].selected=true
@@ -296,12 +288,9 @@ function annotateLines(){
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		console.log("export()" + sortedPaths)
 		contourLayer.activate()
+		if (settings.annotationFlavour===AnnotationFlavours.coreLines){ lineExportFunc = exportCoreLine }
 		for (var p=0; p<sortedPaths.length; p++){ 
-			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
-				contourDictionary = exportCoreLine(p, sortedPaths[p])
-			} else {
-				contourDictionary = exportFlexLine(p, sortedPaths[p])
-			}
+			contourDictionary = lineExportFunc(p, sortedPaths[p])
 			var [ct,data] = ['contourPath', 'data'].map( k => contourDictionary[k] );
 			ct.selected=true;
 			if (data !== null){ lineData.push( data ) }
@@ -325,7 +314,7 @@ function annotateLines(){
 			var pIdx = paths.children.length-1;
 			if (p.segments.length===1){ paths.removeChildren( pIdx, pIdx+1 );}
 			else {
-				if (settings.smoothing) p.smooth({type: 'geometric'});
+				//if (settings.smoothing) p.smooth({type: 'geometric'});
 				selectPath(p, false);
 			}
 			//historySave();
@@ -334,8 +323,8 @@ function annotateLines(){
 			var path = new Path() ;
 			path.strokeColor = settings.newLineColor;
 			path.strokeWidth = settings.strokeWidth;
-			//path.strokeCap = 'round';
-			//path.strokeJoin = 'round';
+			//if (settings.smoothing) path.strokeCap = 'round';
+			path.strokeJoin = 'round';
 			path.baselineOffset = 0; // not used unless baselineOffset enabled
 			selectPath(path, false);
 			paths.addChild( path );
@@ -359,7 +348,7 @@ function annotateLines(){
 		if (mode===Modes.pathDrawing && paths.children.length > 0){
 			var p = paths.children.at(-1);
 			p.add(ev.point);
-			if (settings.smoothing) p.smooth();
+			//if (settings.smoothing) p.smooth();
 			return;
 		}
 		// after dragging/moving a node 
@@ -497,10 +486,7 @@ function annotateLines(){
 				currentSegmentIndex = pathHitResult.location.curve.segment2.index;
 				currentPath.insert( currentSegmentIndex, ev.point );
 				//historySave();
-			}/* else if ( pathHitResult.type === 'stroke' && ev.modifiers.shift ){
-				currentPath = currentPath.clone();
-				paths.addChild( currentPath );
-			}*/
+			}
 		}
 	}	
 
@@ -545,7 +531,7 @@ function annotateLines(){
 			//if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			currentPath.removeSegment( currentSegmentIndex );
 			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
-			if (settings.smoothing) currentPath.smooth({type: 'geometric'});
+			//if (settings.smoothing) currentPath.smooth({type: 'geometric'});
 		} else if (currentPath !== null){
 			currentPath.translate( ev.delta );
 		}
@@ -650,7 +636,7 @@ function annotateLines(){
 
 
 		var contourPath = buildContour(p); 
-		if (settings.smoothing) contourPath.smooth({type: 'geometric'});
+		//if (settings.smoothing) contourPath.smooth({type: 'geometric'});
 	    
 		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
 		var boundaryArray = [];
@@ -695,7 +681,7 @@ function annotateLines(){
 	 * - the extended polygon is stored explicitly
 	 *
 	 */
-	var exportCoreLine = function (id, p){
+	var exportCoreLine = function (id, p, flag=false){
 
 		var corePolygon = buildContour(p) // implicit: contour has same width as p
 		var extendedPolygon = buildContour(p, p.strokeWidth*2) // implicit: contour has same width as p
@@ -750,50 +736,55 @@ function annotateLines(){
 				var vectR = (ptR.subtract(pt)).normalize(width/2);
 				var alpha_rad = vectL.getAngleInRadians(vectR)
 				var alpha_deg = vectL.getDirectedAngle(vectR)
-				alpha_rad_dir = alpha_deg * Math.PI / 360.0
-				sign = Math.abs(alpha_rad_dir)/alpha_rad_dir
+
+
+				var alpha_rad_dir = alpha_deg * Math.PI / 360.0
+				var sign = Math.abs(alpha_rad_dir)/alpha_rad_dir
 				console.log(`alpha=${alpha_deg}, width=${width/2}`);
 				alpha_rad /= 2;
 
-				smoothing=true
-
 				var normalVect = vectL.subtract(vectR).normalize(width/(2*Math.sin(alpha_rad))).rotate(90);
-				console.log(normalVect)
-				if (smoothing) {
-					const radius = p.strokeWidth/2;
 
-					// var normalVectS = normalVect.normalize( normalVect.length - radius + radius/Math.sin(alpha_rad))
-					// var normalVectSLong = normalVectS.normalize(normalVect.length + radius - radius/Math.sin(alpha_rad)) 
+				if (settings.smoothing) {
+					const radius = width/2;
+
+					var d = width/Math.sin(alpha_rad)
 					var normalVectS = normalVect.normalize( radius );
-					var normalVectSLong = normalVect.normalize(p.strokeWidth/Math.sin(alpha_rad)-radius)
-					var vertebraInner = pt.add( normalVectSLong);
-					var vertebraOuter = pt.subtract( normalVectS )
-					console.log(sign)
-					if (sign < 0){ 
-						vertebraInner = pt.subtract(normalVectSLong)
-						vertebraOuter = pt.add(normalVectS)
-					}
-					var vertebraOuterW = pt.add( normalVectS.rotate(90-alpha_deg/2))
-					var vertebraOuterE = pt.add( normalVectS.rotate(alpha_deg/2-90))
-					if (sign > 0){
-						vertebraOuterW = pt.subtract( normalVectS.rotate(alpha_deg/2))
-						vertebraOuterE = pt.subtract( normalVectS.rotate(-alpha_deg/2))
-					}
+					var vertebraOuter = pt.subtract( normalVectS.multiply(sign) )
+					var vertebraInner = vertebraOuter.add( normalVectS.normalize(d).multiply(sign))
+					var vertebraOuterW = pt.subtract( normalVectS.rotate(90-alpha_deg/2))
+					var vertebraOuterE = pt.subtract( normalVectS.rotate(alpha_deg/2-90))
+					var vertebraInnerW = vertebraOuterW.add( normalVectS.normalize(d).multiply(sign))
+					var vertebraInnerE = vertebraOuterE.add( normalVectS.normalize(d).multiply(sign))
 
-					Marker(vertebraInner, 4, "blue")
-					Marker(vertebraOuter, 4, "yellow")
-					Marker(vertebraOuterW, 4, "red")
-					Marker(vertebraOuterE, 4, "red")
+//					Marker(vertebraInner, 4, "blue")
+//					Marker(vertebraOuter, 4, "yellow")
+//					Marker(vertebraOuterW, 4, "red")
+//					Marker(vertebraOuterE, 4, "red")
+//					Marker(vertebraInnerW, 4, "green")
+//					Marker(vertebraInnerE, 4, "green")
+
+					var vertebraesS = []
+					var vertebraesN = []
+					for (const v of [ vertebraOuterW, vertebraOuter, vertebraOuterE ]){ vertebraesS.push( v ) }
+					for (const v of [ vertebraInnerW, vertebraInner, vertebraInnerE ]){ vertebraesN.push( v ) }
+					if (sign < 0){	
+						var tmp = vertebraesS;
+						vertebraesS = vertebraesN;
+						vertebraesN = tmp;
+					}
+					for (const v of vertebraesS) contourPath.insert(0, v);
+					for (const v of vertebraesN) contourPath.add(v);
 		
-				}
+				} else {
 
 				console.log(normalVect)
 				var vertebraN = pt.add(normalVect);
-
 				Marker(vertebraN, 6, 'green')
 				var vertebraS = pt.subtract(normalVect);
 				contourPath.insert(0, vertebraS );
 				contourPath.add( vertebraN );
+				}
 			}
 		}
 		var vertebraRS = pt4.add(normalVectEnd);
@@ -806,7 +797,7 @@ function annotateLines(){
 		contourPath.insert( contourPath.segments.length/2, endPt1);
 		contourPath.add( endPt2 );
 		contourPath.closed = true;
-		if (settings.smoothing) contourPath.smooth({type: 'geometric'});
+		//if (settings.smoothing) contourPath.smooth({type: 'geometric'});
 
 		return contourPath;
 	}
