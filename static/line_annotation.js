@@ -348,7 +348,6 @@ function annotateLines(){
 		if (mode===Modes.joinPath){
 			mode=Modes.normal;
 			joinPath.remove();
-			//currentPath = null;
 			mergedPath = null;
 			return;
 		}
@@ -383,7 +382,6 @@ function annotateLines(){
 			if (! ev.modifiers.control ){
 				for (const op of paths.children.filter((elt) => elt !== p )){ selectPath( op, false ) }
 			}
-			logState()
 		// or nothing
 		} else {
 			eraseSegmentHandle();
@@ -507,8 +505,9 @@ function annotateLines(){
 			if (hitResult !== null && hitResult.item !== mergedPath){
 				if (mergedPath === null){ mergedPath = hitResult.item }
 				else {
-					mergedPath.addSegments( hitResult.item.segments )
-					mergedPath.segments.sort( (s1,s2 ) => s1.point.x - s2.point.x ); 
+					var allSegments = mergedPath.segments.concat(hitResult.item.segments).sort((s1,s2 ) => s1.point.x - s2.point.x );
+					mergedPath.removeSegments();
+					mergedPath.addSegments(allSegments);
 					deletePath( hitResult.item )
 				}
 			}
