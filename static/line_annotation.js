@@ -427,6 +427,10 @@ function annotateLines(){
 			deselectAll();
 		} else if (Key.isDown('s')){
 			selectPaths( p => p.length <= currentPath.length );
+		} else if (Key.isDown('t')){
+			for (const cp of paths.children.filter( p => p.stokeWidth !== currentPath.strokeWidth)){
+				cp.strokeWidth = currentPath.strokeWidth;
+			}
 		} else if (Key.isDown('escape')){
 			mode = Modes.normal;
 			deselectAll();
