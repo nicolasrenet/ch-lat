@@ -650,6 +650,7 @@ function annotateLines(){
 		//if (settings.smoothing) contourPath.smooth({type: 'geometric'});
 	    
 		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
+		centerlineArray = centerlineArray.map( pt => truncate_point( pt, charter.width, charter.height))
 		var boundaryArray = [];
 		for (const c of contourPath.curves){
 			boundaryArray.push( c.point1 );
@@ -697,14 +698,15 @@ function annotateLines(){
 		var corePolygon = buildContour(p) // implicit: contour has same width as p
 		var extendedPolygon = buildContour(p, p.strokeWidth*2) // implicit: contour has same width as p
 		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
+		centerlineArray = centerlineArray.map( pt => truncate_point( pt, charter.width, charter.height))
 		var boundaryArray = corePolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
-		boundaryArray = boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height));
+		boundaryArray = boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height))
 		var baselineArray = p.segments.map( s => toIntXY(s.point.subtract( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
 		baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
 		var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
-		extBoundaryArray = extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height));
+		extBoundaryArray = extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height))
 
-		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'extBoundary': extBoundaryArray, 'strokeWidth': p.strokeWidth }}
+		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coreBoundary': boundaryArray, 'boundary': extBoundaryArray, 'strokeWidth': p.strokeWidth }}
 
 	}
 
@@ -753,10 +755,10 @@ function annotateLines(){
 				var sign = Math.abs(alpha_rad_dir)/alpha_rad_dir
 				//console.log(`alpha=${alpha_deg}, width=${width/2}`);
 				alpha_rad /= 2;
-
-				var normalVect = vectL.subtract(vectR).normalize(width/(2*Math.sin(alpha_rad))).rotate(90);
-
-				if (settings.smoothing) {
+				
+				var normalVect = vectL.subtract(vectR).normalize(width/2).rotate(90)
+				if (settings.smoothing && ! isNaN(alpha_rad)){
+					normalVect = vectL.subtract(vectR).normalize(width/(2*Math.sin(alpha_rad))).rotate(90);
 					const radius = width/2;
 
 					var d = width/Math.sin(alpha_rad)
@@ -789,12 +791,12 @@ function annotateLines(){
 		
 				} else {
 
-				console.log(normalVect)
-				var vertebraN = pt.add(normalVect);
-				//Marker(vertebraN, 6, 'green')
-				var vertebraS = pt.subtract(normalVect);
-				contourPath.insert(0, vertebraS );
-				contourPath.add( vertebraN );
+					console.log(normalVect)
+					var vertebraN = pt.add(normalVect);
+					//Marker(vertebraN, 6, 'green')
+					var vertebraS = pt.subtract(normalVect);
+					contourPath.insert(0, vertebraS );
+					contourPath.add( vertebraN );
 				}
 			}
 		}
