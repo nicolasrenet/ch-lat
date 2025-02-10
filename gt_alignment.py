@@ -10,13 +10,16 @@ import sys
 import re
 import itertools
 import numpy as np
+import json
+from tqdm import tqdm
 
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import ToTensor, Compose
 from torchvision.datasets import VisionDataset
+import fargv
 
-sys.path.append('..')
+
 from libs import list_utils as lu
 from libs import transforms as tsf
 from libs import seglib, charters_htr, metrics
@@ -31,8 +34,12 @@ import torch
 # * performance measure: complete, with confusion matrix and F1, on large number of manuscripts
 # * compare results with alignment based on edit distance
 
-# In[3]:
 
+p = {
+        "appname": "gt_alignment",
+        "model_path": "/tmp/default_model.mlmodel",
+        "img_paths": set([]),
+}
 
 class InferenceDataset( VisionDataset ):
 
@@ -53,7 +60,7 @@ class InferenceDataset( VisionDataset ):
         trf = v2.Compose( [v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
         if transform is not None: 
             trf = v2.Compose( [trf, transform] )
-        super().__init__(root, transform=trf )
+        super().__init__('.', transform=trf )
 
         img_path = Path( img_path ) if type(img_path) is str else img_path
         segmentation_data = Path( segmentation_data ) if type(segmentation_data) is str else segmentation_data
@@ -88,85 +95,18 @@ class InferenceDataset( VisionDataset ):
 
     def __getitem__(self, index: int):
         sample = self.data[index].copy()
-        print(f"type(sample['img'])={type(sample['img'])} with shape= {sample['img'].shape}" )
+        #print(f"type(sample['img'])={type(sample['img'])} with shape= {sample['img'].shape}" )
         return self.transform( sample )
 
     def __len__(self):
         return len(self.data)
 
 
-
-# ## Collect data to be aligned
-# 
-# ### Predicted transcription on charter image
-
-root = Path('.')
-
-collection_path = Path('./data')
-img_path = collection_path.joinpath('5411cf6870b06f5a1bb6df520cbdb4b9.Wr_OldText.5.img.jpg')
-segmentation_file_path = collection_path.joinpath('5411cf6870b06f5a1bb6df520cbdb4b9.Wr_OldText.5.lines.gt.json')
-
-dataset = InferenceDataset( img_path, segmentation_file_path,
-                          transform = Compose([ tsf.ResizeToHeight(128,2048), tsf.PadToWidth(2048),]), line_padding_style='median')
-model = HTR_Model.load('/tmp/teklia_fined_tuned_2025.01.30-2.mlmodel')
-
-
-predictions = []
-for line, sample in enumerate(DataLoader(dataset, batch_size=1)):
-    line_id = sample['line_id'][0]
-    predicted_string, _ = model.inference_task( sample['img'], sample['width'])
-    line_dict = { 'id': line_id }
-    line_dict['text'] = predicted_string[0]
-    dataset.update_pagedict_line( line_id, line_dict )
-
-transcriptions_pred = [ line['text'] for line in dataset.pagedict['lines']]
-transcriptions_pred_cat = ''.join( transcriptions_pred )
-
-print(transcriptions_pred_cat)
-
-
-
-# ### Ground truth transcriptions
-
-
-# Get GT transcriptions, 
-tenor_path = img_path.with_suffix('').with_suffix('.revised_tenor.txt')
-transcriptions_gt_cat = ''
-with open(tenor_path, 'r') as tenor_in:
-    transcriptions_gt_cat = tenor_in.read().rstrip()
-print(transcriptions_gt_cat)
-
-
-# ## Computing alignment
-
-# compute positions of line breaks in pred. (it is an offset in the string. Eg. 12 means 'after substring [0..11]
-line_break_offsets_pred = list(itertools.accumulate( len(tr) for tr in transcriptions_pred ))[:-1]
-line_break_offsets_pred
-print("Breaks in predicted strings =", len(line_break_offsets_pred))
-
-
-align_pred, align_gt = metrics.align_lcs( transcriptions_pred_cat, model.alphabet.reduce(transcriptions_gt_cat) )
-#''.join([ transcriptions_pred_cat[i] for i in align_pred ])
-
-
 def closest( tbl, val ):
     for i in range(val):
         if val-i in tbl.keys():
-            #print("Closest=",val-i, end=" ")
             return val-i
-            
-lcs_translation_table = { p:g for (p,g) in zip( align_pred, align_gt ) }
-#transcriptions_gt_segmented = []
-#last_offset = 0
-line_break_offsets_gt_segmented = []
-for offset in line_break_offsets_pred:
-    print(transcriptions_pred_cat[offset], end=' ')
-    # find closest index in LCS-pred. Before or after? Depends on how
-    # likely characters at SOL and EOL respectively are included in the LCS.
-    lcs_i_pred = closest( lcs_translation_table, offset-1)
-    lcs_i_gt = lcs_translation_table[lcs_i_pred]
-    line_break_offsets_gt_segmented.append( lcs_i_gt+1 )
-print("Breaks in segmented GT strings =", len(line_break_offsets_gt_segmented))
+
 
 def split_on_offsets( string, offsets ):
     if not offsets:
@@ -181,27 +121,73 @@ def split_on_offsets( string, offsets ):
     output.append( string[last_offset:] )
     return output
 
+if __name__ == "__main__":
+
+    args, _ = fargv.fargv( p )
+
+    print(args)
+
+    for img_path in tqdm(list( args.img_paths )):
+
+        img_path = Path(img_path)
+        img_path_prefix = img_path.parent.joinpath( str(img_path.name).replace('.img.jpg', ''))
+        segmentation_filepath = Path('{}.{}'.format(img_path_prefix, 'lines.gt.json'))
+        htr_gt_filepath = Path('{}.{}'.format(img_path_prefix, 'htr.gt.json'))
+
+        dataset = InferenceDataset( img_path, segmentation_filepath,
+                              transform = Compose([ tsf.ResizeToHeight(128,2048), tsf.PadToWidth(2048),]), line_padding_style='median')
+        model = HTR_Model.load( args.model_path )
+
+        predictions = []
+        for line, sample in enumerate(DataLoader(dataset, batch_size=1)):
+            line_id = sample['line_id'][0]
+            predicted_string, _ = model.inference_task( sample['img'], sample['width'])
+            line_dict = { 'id': line_id }
+            line_dict['text'] = predicted_string[0]
+            dataset.update_pagedict_line( line_id, line_dict )
+
+        transcriptions_pred = [ line['text'] for line in dataset.pagedict['lines']]
+        transcriptions_pred_cat = ''.join( transcriptions_pred )
+
+        # Get GT transcriptions, 
+        tenor_path = img_path.with_suffix('').with_suffix('.revised_tenor.txt')
+        transcriptions_gt_cat = ''
+        with open(tenor_path, 'r') as tenor_in:
+            transcriptions_gt_cat = tenor_in.read().rstrip()
+
+        # compute positions of line breaks in pred. (it is an offset in the string. Eg. 12 means 'after substring [0..11]
+        line_break_offsets_pred = list(itertools.accumulate( len(tr) for tr in transcriptions_pred ))[:-1]
+
+        align_pred, align_gt = metrics.align_lcs( transcriptions_pred_cat, model.alphabet.reduce(transcriptions_gt_cat) )
+        lcs_translation_table = { p:g for (p,g) in zip( align_pred, align_gt ) }
+        #transcriptions_gt_segmented = []
+        #last_offset = 0
+        line_break_offsets_gt_segmented = []
+        for offset in line_break_offsets_pred:
+            #print(transcriptions_pred_cat[offset], end=' ')
+            # find closest index in LCS-pred. Before or after? Depends on how
+            # likely characters at SOL and EOL respectively are included in the LCS.
+            lcs_i_pred = closest( lcs_translation_table, offset-1)
+            lcs_i_gt = lcs_translation_table[lcs_i_pred]
+            line_break_offsets_gt_segmented.append( lcs_i_gt+1 )
 
 
-'@'.join(transcriptions_pred)
-print("Length:", len( transcriptions_pred))
+        '@'.join(transcriptions_pred)
+        #print("Length:", len( transcriptions_pred))
 
+        gt_segmented = split_on_offsets(transcriptions_gt_cat, line_break_offsets_gt_segmented)
+        '@'.join( gt_segmented )
+        #print("Length:", len( gt_segmented))
+        #print(gt_segmented, "len=", len(gt_segmented))
 
-gt_segmented = split_on_offsets(transcriptions_gt_cat, line_break_offsets_gt_segmented)
-'@'.join( gt_segmented )
-print("Length:", len( gt_segmented))
+        # updating (predicted) page dictionary with GT lines
+        for idx, line in enumerate( gt_segmented ):
+            dataset.pagedict['lines'][idx]['text']=line
+        with open( htr_gt_filepath, 'w') as htr_outfile:
+            json.dump( dataset.pagedict, htr_outfile, indent=4)
+        
 
-
-#''.join([transcriptions_pred_cat[i] for i in align_pred ])
-
-
-# ## Evaluation IoU
-
-
-
-print(gt_segmented, "len=", len(gt_segmented))
-
-sys.exit()
+    sys.exit()
 
 
 # IoU
