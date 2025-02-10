@@ -1,31 +1,26 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-# In[40]:
-
 
 from typing import Tuple, List, Union, Callable
 from pathlib import Path
 import sys
-import re
 import itertools
 import numpy as np
 import json
 from tqdm import tqdm
 
+import torch
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
-from torchvision.transforms.v2 import ToTensor, Compose
+from torchvision.transforms import v2
+from torchvision.transforms.v2 import Compose
 from torchvision.datasets import VisionDataset
 import fargv
 
 
 from libs import list_utils as lu
 from libs import transforms as tsf
-from libs import seglib, charters_htr, metrics
+from libs import seglib, metrics
 from model_htr import HTR_Model
-from torchvision.transforms import v2
-import torch
 
 
 # ## TODO:
@@ -47,15 +42,6 @@ class InferenceDataset( VisionDataset ):
                  segmentation_data: Union[str,Path], 
                  transform: Callable=None,
                  line_padding_style=None) -> None:
-        """ A minimal dataset class for inference on a single charter (no transcription in the sample).
-        Allow for keeping the segmentation meta-data along with the about-to-be generated HTR.
-
-        Args:
-            img_path (Union[Path,str]): charter image path
-            segmentation_data (Union[Path, str]): segmentation metadata (XML or JSON)
-            transform (Callable): Image transform.
-            line_padding_style (str): How to pad the bounding box around the polygons
-        """
 
         trf = v2.Compose( [v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
         if transform is not None: 
@@ -65,7 +51,6 @@ class InferenceDataset( VisionDataset ):
         img_path = Path( img_path ) if type(img_path) is str else img_path
         segmentation_data = Path( segmentation_data ) if type(segmentation_data) is str else segmentation_data
 
-        # extract line images: functions line_images_from_img_* return tuples (<line_img_hwc>: np.ndarray, <mask_hwc>: np.ndarray)
         line_extraction_func = seglib.line_images_from_img_json_files if segmentation_data.suffix == '.json' else seglib.line_images_from_img_xml_files
 
         line_padding_func = lambda x, m, channel_dim=2: x # by default, identity function
@@ -80,7 +65,7 @@ class InferenceDataset( VisionDataset ):
         self.data = []
         for (img_hwc, mask_hwc, linedict) in self.pagedict['lines']:
             mask_hw = mask_hwc[:,:,0]
-            self.data.append( { 'img': line_padding_func( img_hwc, mask_hw, channel_dim=2 ), #tsf.bbox_median_pad( img_hwc, mask_hw, channel_dim=2 ), 
+            self.data.append( { 'img': line_padding_func( img_hwc, mask_hw, channel_dim=2 ), 
                                 'height':img_hwc.shape[0],
                                 'width': img_hwc.shape[1],
                                 'line_id': str(linedict['id']),
@@ -95,7 +80,6 @@ class InferenceDataset( VisionDataset ):
 
     def __getitem__(self, index: int):
         sample = self.data[index].copy()
-        #print(f"type(sample['img'])={type(sample['img'])} with shape= {sample['img'].shape}" )
         return self.transform( sample )
 
     def __len__(self):
@@ -106,7 +90,6 @@ def closest( tbl, val ):
     for i in range(val):
         if val-i in tbl.keys():
             return val-i
-
 
 def split_on_offsets( string, offsets ):
     if not offsets:
@@ -124,8 +107,6 @@ def split_on_offsets( string, offsets ):
 if __name__ == "__main__":
 
     args, _ = fargv.fargv( p )
-
-    print(args)
 
     for img_path in tqdm(list( args.img_paths )):
 
@@ -160,25 +141,14 @@ if __name__ == "__main__":
 
         align_pred, align_gt = metrics.align_lcs( transcriptions_pred_cat, model.alphabet.reduce(transcriptions_gt_cat) )
         lcs_translation_table = { p:g for (p,g) in zip( align_pred, align_gt ) }
-        #transcriptions_gt_segmented = []
-        #last_offset = 0
+    
         line_break_offsets_gt_segmented = []
         for offset in line_break_offsets_pred:
-            #print(transcriptions_pred_cat[offset], end=' ')
-            # find closest index in LCS-pred. Before or after? Depends on how
-            # likely characters at SOL and EOL respectively are included in the LCS.
             lcs_i_pred = closest( lcs_translation_table, offset-1)
             lcs_i_gt = lcs_translation_table[lcs_i_pred]
             line_break_offsets_gt_segmented.append( lcs_i_gt+1 )
 
-
-        '@'.join(transcriptions_pred)
-        #print("Length:", len( transcriptions_pred))
-
         gt_segmented = split_on_offsets(transcriptions_gt_cat, line_break_offsets_gt_segmented)
-        '@'.join( gt_segmented )
-        #print("Length:", len( gt_segmented))
-        #print(gt_segmented, "len=", len(gt_segmented))
 
         # updating (predicted) page dictionary with GT lines
         for idx, line in enumerate( gt_segmented ):
@@ -189,7 +159,7 @@ if __name__ == "__main__":
 
     sys.exit()
 
-
+###################### UNREACHABLE ########
 # IoU
 line_break_offsets_gt = list(itertools.accumulate( len(tr) for tr in transcriptions_gt ))[:-1]
 positions = list(range(len(transcriptions_gt_cat)))
