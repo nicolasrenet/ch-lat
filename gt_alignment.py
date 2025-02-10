@@ -16,8 +16,6 @@ from torchvision.transforms.v2 import Compose
 from torchvision.datasets import VisionDataset
 import fargv
 
-
-from libs import list_utils as lu
 from libs import transforms as tsf
 from libs import seglib, metrics
 from model_htr import HTR_Model
