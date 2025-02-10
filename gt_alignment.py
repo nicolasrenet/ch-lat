@@ -102,7 +102,7 @@ class InferenceDataset( VisionDataset ):
 
 root = Path('.')
 
-collection_path = Path('.')
+collection_path = Path('./data')
 img_path = collection_path.joinpath('5411cf6870b06f5a1bb6df520cbdb4b9.Wr_OldText.5.img.jpg')
 segmentation_file_path = collection_path.joinpath('5411cf6870b06f5a1bb6df520cbdb4b9.Wr_OldText.5.lines.gt.json')
 
