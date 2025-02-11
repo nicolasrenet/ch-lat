@@ -9,7 +9,7 @@ A JS+Flask GUI for annotating charter lines, that runs on top of a FSDB-like tre
 ### How to use
 
 ```bash
-FLASK_crops=1 flask --app charter_annotation run
+FLASK_crop=1 flask --app charter_annotation run
 ```
 See `charter_annotation.py` for setting the root of the FSDB tree.
 

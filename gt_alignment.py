@@ -7,6 +7,7 @@ import itertools
 import numpy as np
 import json
 from tqdm import tqdm
+import logging
 
 import torch
 from torch.utils.data.dataset import Dataset
@@ -21,12 +22,15 @@ from libs import seglib, metrics
 from model_htr import HTR_Model
 
 
+
 # ## TODO:
 # 
 # * ensure that lines are concatenated in reading order (write a utility that may detect discrepancy between line ids and reading order)
 # * performance measure: complete, with confusion matrix and F1, on large number of manuscripts
 # * compare results with alignment based on edit distance
 
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s - %(funcName)s: %(message)s", force=True)
+logger = logging.getLogger(__name__)
 
 p = {
         "appname": "gt_alignment",
@@ -106,8 +110,9 @@ if __name__ == "__main__":
 
     args, _ = fargv.fargv( p )
 
-    for img_path in tqdm(list( args.img_paths )):
+    for img_path in tqdm(list( args.img_paths )[555:]):
 
+        logger.debug(img_path)
         img_path = Path(img_path)
         img_path_prefix = img_path.parent.joinpath( str(img_path.name).replace('.img.jpg', ''))
         segmentation_filepath = Path('{}.{}'.format(img_path_prefix, 'lines.gt.json'))
@@ -126,6 +131,7 @@ if __name__ == "__main__":
             dataset.update_pagedict_line( line_id, line_dict )
 
         transcriptions_pred = [ line['text'] for line in dataset.pagedict['lines']]
+        logger.debug(transcriptions_pred)
         transcriptions_pred_cat = ''.join( transcriptions_pred )
 
         # Get GT transcriptions, 
@@ -136,17 +142,31 @@ if __name__ == "__main__":
 
         # compute positions of line breaks in pred. (it is an offset in the string. Eg. 12 means 'after substring [0..11]
         line_break_offsets_pred = list(itertools.accumulate( len(tr) for tr in transcriptions_pred ))[:-1]
+        logger.debug(line_break_offsets_pred)
 
-        align_pred, align_gt = metrics.align_lcs( transcriptions_pred_cat, model.alphabet.reduce(transcriptions_gt_cat) )
-        lcs_translation_table = { p:g for (p,g) in zip( align_pred, align_gt ) }
-    
-        line_break_offsets_gt_segmented = []
-        for offset in line_break_offsets_pred:
-            lcs_i_pred = closest( lcs_translation_table, offset-1)
-            lcs_i_gt = lcs_translation_table[lcs_i_pred]
-            line_break_offsets_gt_segmented.append( lcs_i_gt+1 )
+        gt_segmented = [transcriptions_gt_cat]
+        
+        if len(line_break_offsets_pred) > 0:
 
-        gt_segmented = split_on_offsets(transcriptions_gt_cat, line_break_offsets_gt_segmented)
+            align_pred, align_gt = metrics.align_lcs( transcriptions_pred_cat, model.alphabet.reduce(transcriptions_gt_cat) )
+            
+            # compute map of aligned characters: pred_idx --> gt_idx
+            lcs_translation_table = { p:g for (p,g) in zip( align_pred, align_gt ) }
+            logger.debug(lcs_translation_table)
+        
+            line_break_offsets_gt_segmented = []
+            for offset in line_break_offsets_pred:
+                # in map of aligned pred chars, find closest one
+                logger.debug(f"Closest({offset}, range={offset})")
+                lcs_i_pred = closest( lcs_translation_table, offset)
+                logger.debug("Found closest index in GT string ={}".format(lcs_i_pred))
+                assert lcs_i_pred in lcs_translation_table
+                lcs_i_gt = lcs_translation_table[lcs_i_pred]
+                line_break_offsets_gt_segmented.append( lcs_i_gt )
+
+            gt_segmented = split_on_offsets(transcriptions_gt_cat, line_break_offsets_gt_segmented)
+
+        logger.debug(gt_segmented)
 
         # updating (predicted) page dictionary with GT lines
         for idx, line in enumerate( gt_segmented ):
