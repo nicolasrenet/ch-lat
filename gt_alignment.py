@@ -8,6 +8,7 @@ import numpy as np
 import json
 from tqdm import tqdm
 import logging
+import re
 
 import torch
 from torch.utils.data.dataset import Dataset
@@ -36,6 +37,7 @@ p = {
         "appname": "gt_alignment",
         "model_path": "/tmp/default_model.mlmodel",
         "img_paths": set([]),
+        "heuristics_on": 1,
 }
 
 class InferenceDataset( VisionDataset ):
@@ -110,7 +112,7 @@ if __name__ == "__main__":
 
     args, _ = fargv.fargv( p )
 
-    for img_path in tqdm(list( args.img_paths )[555:]):
+    for img_path in tqdm(list( args.img_paths )):
 
         logger.debug(img_path)
         img_path = Path(img_path)
@@ -165,6 +167,13 @@ if __name__ == "__main__":
                 line_break_offsets_gt_segmented.append( lcs_i_gt )
 
             gt_segmented = split_on_offsets(transcriptions_gt_cat, line_break_offsets_gt_segmented)
+            
+            # heuristic: isolated letters heading a line should be put back at end of preceding line
+            if args.heuristics_on:
+                for idx, gtl in enumerate(gt_segmented):
+                    if idx > 0 and re.match( r'^[a-z] ', gtl):
+                        gt_segmented[idx-1] += gtl[0]
+                        gt_segmented[idx] = gtl[1:]
 
         logger.debug(gt_segmented)
 
