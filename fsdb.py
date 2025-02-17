@@ -1,0 +1,248 @@
+from pathlib import Path
+import re
+import json
+import itertools
+import base64
+from PIL import Image, ImagePath
+from typing import List, Tuple
+import sys 
+import io
+
+
+def lemmatize( p:Path, suffix='', replacement=''):
+    if suffix:
+        return re.sub(r'(.+).{}$'.format(suffix), r'\1.{}'.format( replacement ) if replacement else r'\1', str(p))
+    return re.sub(r'\..+', f'.{replacement}' if replacement else '' ,  str(p))
+
+
+class Fsdb:
+
+    def __init__(self, conf ):
+        self.config = conf
+
+
+    def stats(self, ):
+        """ A few stats about this database."""
+        
+        img_suff, gt_suff, pred_suff = [ self.config[k] for k in ('charter_img_suffix', 'gt_seg_suffix', 'pred_seg_suffix') ]
+        all_charters = list(Path(self.config['fsdb_root']).glob('*/*/*/CH.cei.xml'))
+        
+        if self.config['crop']:
+            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.seals.crops/*.{}'.format(img_suff)))
+        else:
+            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.{}'.format(img_suff)))
+
+        current_state = [ (True, Path(lemmatize(p, suffix=img_suff, replacement=pred_suff )).exists(), Path(lemmatize(p, suffix=img_suff, replacement=gt_suff )).exists()  ) for p in charter_img_paths ]
+        report = { "total_charters": len(all_charters), "total_images": len(current_state), "pred_count": len(list(itertools.filterfalse(lambda t: not t[1], current_state))), "gt_count": len(list(itertools.filterfalse(lambda t: not t[2], current_state))) }
+        report['pred_ratio']=round(float(report['pred_count']/report['total_images']),2)
+        report['gt_ratio']=round(float(report['gt_count']/report['total_images']),2)
+
+        return report
+
+
+    def search(self,  archive_id:str='*', charter_img_id:str='*', suffix:str=None) -> List[Path]:
+        if suffix is None:
+            suffix = self.config['charter_img_suffix']
+        if self.config['crop']:
+            file_paths=list(Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, suffix)))
+        else:
+            file_paths=list(Path(self.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, suffix)))
+        if not file_paths:
+            return None
+        return file_paths
+
+    def write_img_metadata(self, data:dict, archive_id:str, charter_img_id:str, suffix=None):
+        if suffix is None or suffix==self.config['charter_img_suffix']:
+            return {}
+        output_filename = self.search( archive_id, charter_img_id )
+        if output_filename is None:
+            return {}
+        output_filename = lemmatize( output_filename[0], suffix=self.config['charter_img_suffix'], replacement=suffix)
+        returnValue, outputfile = {}, None
+        try:
+            outputfile = open(output_filename, 'w')
+            print( json.dumps(data, indent=4), file=outputfile)
+            outputfile.close()
+            returnValue = {'filename': output_filename, 'size': Path(output_filename).stat().st_size }
+        except (IOError) as e:
+            outputfile.close()
+        return returnValue
+
+    def read_img_metadata(self, archive_id:str, charter_img_id:str, suffix=None):
+        if suffix is None:
+            return {}
+
+        infile, returnValue = None, {}
+        data_path = self.search( archive_id, charter_img_id, suffix=suffix)
+        if data_path is None:
+            return {}
+        try:
+            infile = open(data_path[0], 'r') 
+            returnValue = json.load( infile );
+        except (IOError, FileNotFoundError) as e:
+            pass
+        finally:
+            if infile is not None:
+                infile.close();
+        return returnValue;
+
+
+    def write_flags(self,  flag_data:dict, archive_id:str, charter_img_id:str):
+        return self.write_img_metadata( flag_data, archive_id, charter_img_id, suffix='flags.json')
+
+    def update_flags(self, updates:dict, archive_id:str, charter_img_id:str):
+        flag_data = self.read_img_metadata( archive_id, charter_img_id, suffix='flags.json')
+        flag_data.update( updates )
+        print(f"fsdb_update_flags({updates}) -> {flag_data}")
+        return self.write_img_metadata( flag_data, archive_id, charter_img_id, suffix='flags.json')
+
+
+    def read_flags(self,  archive_id:str, charter_img_id:str):
+        return self.read_img_metadata( archive_id, charter_img_id, suffix='flags.json')
+
+    def write_segmentation_file(self,  page_data: dict, archive_id:str, charter_img_id: str)->dict:
+        """
+        Write segmentation data into a JSON file.
+
+        Args:
+            archive_id (str): archive name
+            charter_img_id (str): charter atom id
+            page_data (dict): a dictionary
+                {'page_wh': [<width>, <height>],
+                 'lines': [{'centerline': [[x1,y1], ...], 'boundary': [[x1,y1], ...]}, ...] }
+            charter_img_id: Image atom id.
+        Returns:
+            dict: if successful, an object with filename and size; otherwise an empty dictionary.
+
+        """
+        page_data.update( {
+            "type": "centerlines",
+            "text_direction": "horizontal-lr",
+        })
+        return self.write_img_metadata( page_data, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
+
+
+    def read_segmentation_file(self, archive_id:str, charter_img_id: str, suffix: str ) -> dict:
+        """
+        Args:
+            archive_id (str): archive name
+            charter_img_id (str): charter atom id
+            suffix (str): 'lines.gt.json' (GT) or 'lines.pred.json' (prediction).
+        Returns:
+            dict: a segmentation dictionary.
+        """
+        return self.read_img_metadata(archive_id, charter_img_id, suffix)
+
+    def get_archives(self, ) -> List[str]:
+        """
+        Get a list of all archive directories.
+
+        Returns:
+            List[str]: a list of archive names.
+        """
+        archives = list([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() and re.match(r'[A-Z]{2}-[A-Za-z]+', p.name)])
+        archives.append('COLLECTIONS')
+        return sorted(archives)
+
+
+    def get_charter_images(self, archive_id:str='') -> Tuple[str,dict]:
+        """
+        For given archive, get a map of all images, with their attributes.
+
+        Args:
+            archive_id (str): the name of an archive directory; if empty, the first archive in the list is used.
+        Returns:
+            Tuple[str,dict]: a pair with the archive id passed to the function, as well as a dictionary
+                with image ids as keys and a dictionary of image attributes (filename, segmentation data, ...)
+                as value. 
+        """
+        if not archive_id:
+            archive_id = sorted([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() ])[0]
+        charter_images = []
+        if self.config['crop']:
+            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix'])) ]
+        else:
+            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, self.config['charter_img_suffix'])) ]
+
+        for number, ch_img in enumerate(charter_images, start=1):
+            filepath_stem = lemmatize( Path(ch_img['filename']), suffix=self.config['charter_img_suffix'] )
+            ch_img['number']=number
+            if self.config['crop']:
+                ch_img['charter']=Path(ch_img['filename']).parent.parent.name
+            else:
+                ch_img['charter']=Path(ch_img['filename']).parent.name
+
+            gt_seg_filename = '{}.{}'.format( filepath_stem, self.config['gt_seg_suffix'])
+            if Path( gt_seg_filename ).exists():
+                ch_img['hasGTData']=True
+            pred_seg_filename = '{}.{}'.format( filepath_stem, self.config['pred_seg_suffix'] )
+            
+            if Path( pred_seg_filename ).exists():
+                ch_img['hasPredData']=True
+        
+        return archive_id, charter_images
+
+
+    def get_image(self, archive_id: str, charter_img_id:str):
+        """
+        Find an image from the given archive, given its id.
+
+        Args:
+            archive_id (str): the name of an archive directory.
+            charter_img_id (str): the image id.
+        Returns:
+            bytes: an array of bytes.
+        """
+        charter_img_path = self.search( archive_id, charter_img_id )
+        if charter_img_path is None:
+            return None
+        try:
+            data = open( charter_img_path[0], 'rb' ).read()
+            return data
+        except (IOError) as e:
+            print("Could not open {}".format( charter_img_path[0]))
+            return None
+
+
+    def read_lines(self, charter_img_id:str):
+        charter_img_path = self.search( '*', charter_img_id )
+        charter_htr_path = self.search( '*', charter_img_id, suffix=self.config['pregt_htr_suffix'])
+        if charter_img_path is None or charter_htr_path is None:
+            return None
+        try:
+            page_img = Image.open( charter_img_path[0], 'r')
+            page_dict = json.load( open(charter_htr_path[0], 'r') )
+            line_tuples = []
+            max_width = 0
+            for tl in page_dict['lines']:
+                polygon_coordinates = [ tuple(pair) for pair in tl['boundary']]
+                textline_bbox = ImagePath.Path( polygon_coordinates ).getbbox()
+                bbox_width = textline_bbox[2]-textline_bbox[0]
+                if bbox_width > max_width: 
+                    max_width = bbox_width
+                imgByteArr = io.BytesIO()
+                page_img.crop( textline_bbox ).save( imgByteArr, format='PNG')
+                line_tuples.append( [tl['id'], tl['text'], base64.b64encode(imgByteArr.getvalue()).decode(), bbox_width ])
+
+            return (line_tuples, max_width) #json.dumps(line_tuples)
+        except (IOError) as e:
+            print("Could not open{}".format( charter_img_path[0]))
+            return ([], -1)
+
+                
+
+    def write_line_transcriptions(self, line_transcriptions, charter_img_id ):
+        # read htr/segmentation file
+        page_htr_dict = self.read_img_metadata('*', charter_img_id, self.config['pregt_htr_suffix'])
+        new_lines = [] 
+        for idx, line in enumerate( page_htr_dict['lines']):
+            if line_transcriptions[idx]=='--<discard>--':
+                continue
+            new_lines.append( page_htr_dict['lines'][idx] )
+            if line_transcriptions[idx] is not None:
+                new_lines[-1]['text']=line_transcriptions[idx]
+        page_htr_dict['lines']=new_lines 
+        return self.write_img_metadata( page_htr_dict, '*', charter_img_id, suffix=self.config['gt_htr_suffix'])
+
+
+
