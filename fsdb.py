@@ -176,7 +176,6 @@ class Fsdb:
             if Path( gt_seg_filename ).exists():
                 ch_img['hasGTData']=True
             pred_seg_filename = '{}.{}'.format( filepath_stem, self.config['pred_seg_suffix'] )
-            
             if Path( pred_seg_filename ).exists():
                 ch_img['hasPredData']=True
         
@@ -204,14 +203,20 @@ class Fsdb:
             return None
 
 
-    def read_lines(self, charter_img_id:str):
+    def read_lines(self, charter_img_id:str, data_type='pregt'):
+
+        suffix = self.config['gt_htr_suffix'] if data_type=='gt' else self.config['pregt_htr_suffix']
         charter_img_path = self.search( '*', charter_img_id )
-        charter_htr_path = self.search( '*', charter_img_id, suffix=self.config['pregt_htr_suffix'])
+        charter_htr_path = self.search( '*', charter_img_id, suffix=suffix)
+        print("charter_htr_path=", charter_htr_path)
         if charter_img_path is None or charter_htr_path is None:
             return None
+        else:
+            charter_img_path = charter_img_path[0]
+            charter_htr_path = charter_htr_path[0]
         try:
-            page_img = Image.open( charter_img_path[0], 'r')
-            page_dict = json.load( open(charter_htr_path[0], 'r') )
+            page_img = Image.open( charter_img_path, 'r')
+            page_dict = json.load( open(charter_htr_path, 'r') )
             line_tuples = []
             max_width = 0
             for tl in page_dict['lines']:
@@ -226,7 +231,7 @@ class Fsdb:
 
             return (line_tuples, max_width) #json.dumps(line_tuples)
         except (IOError) as e:
-            print("Could not open{}".format( charter_img_path[0]))
+            print("Could not open{}".format( charter_img_path))
             return ([], -1)
 
                 

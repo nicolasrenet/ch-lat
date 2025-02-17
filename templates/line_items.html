@@ -1,0 +1,12 @@
+{% block line_items %}
+			{% for line_tuple in line_data %}
+			<div class="line">
+				<img class="line-img" width="{{line_tuple[4]}}" src="data:img/png;base64, {{line_tuple[2]}}" alt="Charter {{charter_img_id}}: line {{line_tuple[0]}}"/>
+				<div class="line-transcription" id="line-{{line_tuple[0]}}">
+					<input class="hidden-transcription" disabled value='{{line_tuple[1]}}'> 
+					<span class="medfontsize">{{line_tuple[0]}}. </span><input class="line-input" type="text" value="{{line_tuple[1]}}" >
+					<input type="checkbox" id="line-flag-{{line_tuple[0]}}" name="line-flag" value="discard">
+				</div>
+			</div>
+			{% endfor %}
+{% endblock %}

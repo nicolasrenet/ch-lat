@@ -25,7 +25,7 @@ app = Flask(__name__)
 # SETTINGS
 app.config.update(
     scaling_factor= .7,
-    max_width=1800,
+    max_width=1750,
     charter_img_suffix='img.jpg',
     gt_seg_suffix='lines.gt.json',
     gt_htr_suffix='htr.gt.json',
@@ -169,26 +169,32 @@ def get_flags( archive_id:str, charter_img_id:str):
     return make_response( flag_data )
 
 
-
-
-
-@app.get('/lines/<charter_img_id>')
-def get_lines( charter_img_id:str):
-    # retrieve line data for this charter
-    line_data, line_max_width = fsdb.read_lines( charter_img_id )
-    print(line_data)
-    if not line_data:
-        abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))
-    line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for ldt in line_data ]
-    
+@app.get('/alignment')
+def all_lines():
     # retrieve all existing charter ids (for browsing)
     charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'])
     if not charter_htr_gts:
         abort(404, description="Failed to retrieve charters ids.")
-    charter_ids = [ (nbr, lemmatize(img_id.name, suffix=app.config['pregt_htr_suffix'])) for nbr, img_id in enumerate(charter_htr_gts)]
+    ch_id = lemmatize( charter_htr_gts[0].name, suffix=app.config['pregt_htr_suffix'] )
+    return redirect(f'/alignment/{ch_id}')
 
-    item_of_interest_idx= [ chid for (idx, chid) in charter_ids].index(charter_img_id)
-    charter_ids = [ {'number': nbr, 'id': ch_id } for nbr, ch_id in charter_ids[item_of_interest_idx:]+charter_ids[:item_of_interest_idx] ]
+
+
+
+@app.get('/alignment/<charter_img_id>')
+def get_lines( charter_img_id:str):
+    
+    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'])
+    if not charter_htr_gts:
+        abort(404, description="Failed to retrieve charters ids.")
+    charter_ids = [ {'number': nbr, 
+                     'id': lemmatize(img_id.name, suffix=app.config['pregt_htr_suffix']),
+                     'hasGTData': Path( lemmatize( img_id, suffix=app.config['pregt_htr_suffix'], replacement=app.config['gt_htr_suffix'])).exists(),
+                     } for nbr, img_id in enumerate(charter_htr_gts)]
+
+    print( [ ch for ch in charter_ids if ch['hasGTData']])
+    item_of_interest_idx=[ ch['id'] for ch in charter_ids ].index(charter_img_id)
+    charter_ids = charter_ids[item_of_interest_idx:]+charter_ids[:item_of_interest_idx] 
     if not charter_ids:
         abort(404, description="No charter images found for archive '{}'".format( archive_id ))
 
@@ -196,22 +202,27 @@ def get_lines( charter_img_id:str):
         abort(404, description="No charter image found with id='{}'".format( charter_img_id ))
 
     return render_template(
-            "lines.html", 
-            line_data=line_data,
+            "alignment.html", 
             fsdb_stats=fsdb.stats(),
             charter_img_id=charter_img_id,
             charter_ids=charter_ids,
             )
 
-
-@app.get('/lines')
-def all_lines():
-    # retrieve all existing charter ids (for browsing)
-    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'])
-    if not charter_htr_gts:
-        abort(404, description="Failed to retrieve charters ids.")
-    ch_id = lemmatize( charter_htr_gts[0].name, suffix=app.config['pregt_htr_suffix'] )
-    return redirect(f'/lines/{ch_id}')
+@app.get('/lines/<charter_img_id>')
+def get_line_items( charter_img_id:str):
+    data_type = request.args.get('dataType') if 'dataType' in request.args else 'pregt'
+    print("data_type=", data_type)
+    line_data, line_max_width = fsdb.read_lines( charter_img_id, data_type)
+    if not line_data:
+        abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))
+    line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for ldt in line_data ]
+    print("line_data=",[ld[1] for ld in line_data])
+    
+    return render_template(
+            "line_items.html", 
+            charter_img_id=charter_img_id,
+            line_data=line_data,
+            )
 
 
 @app.post('/lines/<charter_img_id>')

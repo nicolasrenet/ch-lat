@@ -8,16 +8,6 @@
 <body>
 	<div id="app-box" class="box">
 		<div id="lines-box">
-			{% for line_tuple in line_data %}
-			<div class="line">
-				<img class="line-img" width="{{line_tuple[4]}}" src="data:img/png;base64, {{line_tuple[2]}}" alt="Charter {{charter_id}}: line {{line_tuple[0]}}"/>
-				<div class="line-transcription" id="line-{{line_tuple[0]}}">
-					<input class="hidden-transcription" disabled value='{{line_tuple[1]}}'> 
-					<span class="medfontsize">{{line_tuple[0]}}. </span><input class="line-input" type="text" value="{{line_tuple[1]}}" >
-					<input type="checkbox" id="line-flag-{{line_tuple[0]}}" name="line-flag" value="discard">
-				</div>
-			</div>
-			{% endfor %}
 		</div>
 
 		<div id="control-box" class="box flex-col">
@@ -42,20 +32,22 @@
 					<div class="table-header-cell header-cell-first">
 						/*/*/Charter
 					</div>
-					<div class="table-header-cell">Image</div> 
+					<div class="table-header-cell">GT</div> 
 				</div>
 				<div class="table-body">
 					{% for ch_id in charter_ids %}
 						
 					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
-						<div class="table-cell-first table-cell">
-							{{ch_id.number}}. {{ch_id.id}}
-						</div>
 						<div class="table-cell">
 							{% if ch_id.id != charter_img_id %}
-							<a href="/lines/{{ch_id.id}}">{{ch_id.id}}</a>
+							{{ch_id.number}}. <a href="/alignment/{{ch_id.id}}">{{ch_id.id}}</a>
 							{% else %}
-								{{ch_id.id}}
+								{{ch_id.number}}. {{ch_id.id}}
+							{% endif %}
+						</div>
+						<div class="table-cell">
+							{% if ch_id.hasGTData %} 
+								<input class="tablechck" type="checkbox" id="check_gtdata_{{ch_id.id}}" name="check_gtdata" value="false">
 							{% endif %}
 						</div>
 					</div>
@@ -70,7 +62,19 @@
 		
 				
 	window.onload=() => {
-			console.log('onload')
+			console.log('onload');
+
+
+			function importData( charter_img_id, dataType ){
+				const url = "/lines/{{charter_img_id}}?" + new URLSearchParams({dataType: dataType}).toString()
+                         	console.log(url)
+                         	return fetch(url, { method: "GET" })
+	                       	.then( resp => resp.text() )
+				.then( data => document.getElementById('lines-box').innerHTML = data )
+			}
+
+			importData( '{{charter_img_id}}', 'pregt');
+
 	     		function exportData(charter_img_id){
 
 				let transcriptions = []
@@ -94,13 +98,31 @@
 				if (transcriptions.length === 0){ console.log("exportData() - abort: empty transcription data!"); return }
 				const url = "/lines/"+charter_img_id;
 				fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( transcriptions ) })
-				.then( resp => { console.log(resp.json()) } )
+				.then( resp => { 
+					console.log(resp.json());
+					document.getElementById("check_gtdata_{{charter_img_id}}").checked = true;
+				} )
 			}
 
 			(function controlBoxInit(){
 				for (const flagElt of document.getElementsByName("line-flag")){
 					flagElt.checked=false;
 				}
+
+				const gt_data_checks = document.getElementsByName("check_gtdata")
+				for(const elt of gt_data_checks){
+					if (elt.id === "check_gtdata_{{charter_img_id}}"){
+						elt.checked=false;
+						elt.onchange = () => {
+							let dataType = 'pregt';
+							if (elt.checked){ dataType='gt'; }
+							console.log("dataType=" + dataType)
+							importData('{{charter_img_id}}', dataType) 
+						}
+					} else { elt.disabled=true; }
+
+				} 
+
 			
 				document.getElementById("export-button").onclick=function(){
 					exportData('{{charter_img_id}}');
