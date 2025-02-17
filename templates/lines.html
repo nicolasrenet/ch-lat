@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+	
+</head>
+<body>
+	<div id="app-box" class="box">
+		<div id="lines-box">
+			{% for line_tuple in line_data %}
+			<div class="line">
+				<img class="line-img" width="{{line_tuple[4]}}" src="data:img/png;base64, {{line_tuple[2]}}" alt="Charter {{charter_id}}: line {{line_tuple[0]}}"/>
+				<div class="line-transcription" id="line-{{line_tuple[0]}}">
+					<input class="hidden-transcription" disabled value='{{line_tuple[1]}}'> 
+					<span class="medfontsize">{{line_tuple[0]}}. </span><input class="line-input" type="text" value="{{line_tuple[1]}}" >
+					<input type="checkbox" id="line-flag-{{line_tuple[0]}}" name="line-flag" value="discard">
+				</div>
+			</div>
+			{% endfor %}
+		</div>
+
+		<div id="control-box" class="box flex-col">
+			<div id="app-wide-properties" class="box flex-row">
+				<div id="stat-box" class="box">
+					<dl class="inside">
+						<span class="list-head">FSDB:</span>
+						<li>Charter count: {{fsdb_stats['total_charters']}}</li>
+						<li>Image count: {{fsdb_stats['total_images']}}</li>
+						<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100|round}}%)</li>
+						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{(fsdb_stats['gt_ratio']*100)|round(1)}}%)</li>
+					</dl>
+
+				</div>
+
+			</div>
+			<div id="export-box">
+				<button id="export-button"> Export</button>
+			</div>
+			<div id="charter-table">
+				<div class="table-header">
+					<div class="table-header-cell header-cell-first">
+						/*/*/Charter
+					</div>
+					<div class="table-header-cell">Image</div> 
+				</div>
+				<div class="table-body">
+					{% for ch_id in charter_ids %}
+						
+					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
+						<div class="table-cell-first table-cell">
+							{{ch_id.number}}. {{ch_id.id}}
+						</div>
+						<div class="table-cell">
+							{% if ch_id.id != charter_img_id %}
+							<a href="/lines/{{ch_id.id}}">{{ch_id.id}}</a>
+							{% else %}
+								{{ch_id.id}}
+							{% endif %}
+						</div>
+					</div>
+					{% endfor %}
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+      	<script type="text/javascript">
+		
+				
+	window.onload=() => {
+			console.log('onload')
+	     		function exportData(charter_img_id){
+
+				let transcriptions = []
+				let transcriptionElts = document.querySelectorAll(".line-transcription")
+				console.log(transcriptionElts)
+				for (let tidx=0; tidx<transcriptionElts.length; tidx++){
+					transcription = transcriptionElts[tidx].querySelector(".line-input").value;
+					flag = transcriptionElts[tidx].querySelector("input[name='line-flag']");
+					console.log(flag)
+					original = transcriptionElts[tidx].querySelector(".hidden-transcription").value;
+					if (flag.checked){
+						transcriptions.push( '--<discard>--' );
+					} else if ( transcription !== original ){
+						transcriptions.push( transcription );
+					} else {
+						transcriptions.push( null );
+					}
+				}
+				console.log(transcriptions)
+
+				if (transcriptions.length === 0){ console.log("exportData() - abort: empty transcription data!"); return }
+				const url = "/lines/"+charter_img_id;
+				fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( transcriptions ) })
+				.then( resp => { console.log(resp.json()) } )
+			}
+
+			(function controlBoxInit(){
+				for (const flagElt of document.getElementsByName("line-flag")){
+					flagElt.checked=false;
+				}
+			
+				document.getElementById("export-button").onclick=function(){
+					exportData('{{charter_img_id}}');
+				}
+			
+			})()
+
+		}
+	</script>
+
+</body>
+
+</html>

@@ -38,6 +38,9 @@ p = {
         "model_path": "/tmp/default_model.mlmodel",
         "img_paths": set([]),
         "heuristics_on": 1,
+        "gt_seg_suffix": 'lines.gt.json',
+        "pregt_htr_suffix": 'htr.pregt.json',
+        "tenor_suffix": "revised_tenor.txt",
 }
 
 class InferenceDataset( VisionDataset ):
@@ -117,8 +120,8 @@ if __name__ == "__main__":
         logger.debug(img_path)
         img_path = Path(img_path)
         img_path_prefix = img_path.parent.joinpath( str(img_path.name).replace('.img.jpg', ''))
-        segmentation_filepath = Path('{}.{}'.format(img_path_prefix, 'lines.gt.json'))
-        htr_gt_filepath = Path('{}.{}'.format(img_path_prefix, 'htr.gt.json'))
+        segmentation_filepath = Path('{}.{}'.format(img_path_prefix, args.gt_seg_suffix))
+        htr_gt_filepath = Path('{}.{}'.format(img_path_prefix, args.pregt_htr_suffix ))
 
         dataset = InferenceDataset( img_path, segmentation_filepath,
                               transform = Compose([ tsf.ResizeToHeight(128,2048), tsf.PadToWidth(2048),]), line_padding_style='median')
@@ -137,7 +140,7 @@ if __name__ == "__main__":
         transcriptions_pred_cat = ''.join( transcriptions_pred )
 
         # Get GT transcriptions, 
-        tenor_path = img_path.with_suffix('').with_suffix('.revised_tenor.txt')
+        tenor_path = img_path.with_suffix('').with_suffix(f'.{args.tenor_suffix}')
         transcriptions_gt_cat = ''
         with open(tenor_path, 'r') as tenor_in:
             transcriptions_gt_cat = tenor_in.read().rstrip()

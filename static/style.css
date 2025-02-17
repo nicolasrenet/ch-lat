@@ -151,3 +151,31 @@ label {
 .help:hover .helptext {
 	visibility: visible;
 }
+
+
+/*#lines-box {
+	display: flex;
+	flex-direction: column;
+}
+
+.line{
+	flex: 1 1 auto
+}
+*/
+
+.medfontsize {
+	font-size: 18pt;
+}
+
+.line-input {
+	width: 100%;
+	font-size: 18pt;
+}
+
+.line-transcription {
+	display: flex;
+}
+
+.hidden-transcription{
+	display: none;
+}
