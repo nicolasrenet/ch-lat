@@ -38,7 +38,7 @@
 					{% for ch_id in charter_ids %}
 						
 					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
-						<div class="table-cell">
+						<div class="table-cell-first table-cell">
 							{% if ch_id.id != charter_img_id %}
 							{{ch_id.number}}. <a href="/alignment/{{ch_id.id}}">{{ch_id.id}}</a>
 							{% else %}

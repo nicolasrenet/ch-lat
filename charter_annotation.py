@@ -25,7 +25,7 @@ app = Flask(__name__)
 # SETTINGS
 app.config.update(
     scaling_factor= .7,
-    max_width=1750,
+    max_width=1600,
     charter_img_suffix='img.jpg',
     gt_seg_suffix='lines.gt.json',
     gt_htr_suffix='htr.gt.json',
