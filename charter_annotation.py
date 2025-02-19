@@ -194,7 +194,6 @@ def get_lines( charter_img_id:str):
                      'hasGTData': Path( lemmatize( img_id, suffix=app.config['pregt_htr_suffix'], replacement=app.config['gt_htr_suffix'])).exists(),
                      } for nbr, img_id in enumerate(charter_htr_gts)]
 
-    print( [ ch for ch in charter_ids if ch['hasGTData']])
     item_of_interest_idx=[ ch['id'] for ch in charter_ids ].index(charter_img_id)
     charter_ids = charter_ids[item_of_interest_idx:]+charter_ids[:item_of_interest_idx] 
     if not charter_ids:
@@ -213,7 +212,6 @@ def get_lines( charter_img_id:str):
 @app.get('/lines/<charter_img_id>')
 def get_line_items( charter_img_id:str):
     data_type = request.args.get('dataType') if 'dataType' in request.args else 'pregt'
-    print("data_type=", data_type)
     line_data, line_max_width = fsdb.read_lines( charter_img_id, data_type)
     text_avg_length = statistics.mean( [ len(ld[1]) for ld in line_data] )
     text_size='medium'
@@ -223,7 +221,6 @@ def get_line_items( charter_img_id:str):
     if not line_data:
         abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))
     line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for ldt in line_data ]
-    print("line_data=",[ld[1] for ld in line_data])
     
     return render_template(
             "line_items.html", 
@@ -236,7 +233,6 @@ def get_line_items( charter_img_id:str):
 @app.post('/lines/<charter_img_id>')
 def write_line_transcriptions( charter_img_id: str):
     line_transcriptions = request.get_json()
-    print("line_transcriptions=", line_transcriptions)
     ok=fsdb.write_line_transcriptions( line_transcriptions, charter_img_id )
     resp = make_response( ok )
     return resp
