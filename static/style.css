@@ -167,9 +167,14 @@ label {
 	font-size: 18pt;
 }
 
-.line-input {
+.line-input-medium {
 	width: 100%;
 	font-size: 14pt;
+}
+
+.line-input-small {
+	width: 100%;
+	font-size: 12pt;
 }
 
 .line-transcription {

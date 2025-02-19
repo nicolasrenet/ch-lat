@@ -171,12 +171,12 @@ if __name__ == "__main__":
 
             gt_segmented = split_on_offsets(transcriptions_gt_cat, line_break_offsets_gt_segmented)
             
-            # heuristic: isolated letters heading a line should be put back at end of preceding line
             if args.heuristics_on:
                 for idx, gtl in enumerate(gt_segmented):
-                    if idx > 0 and re.match( r'^[a-z] ', gtl):
-                        gt_segmented[idx-1] += gtl[0]
-                        gt_segmented[idx] = gtl[1:]
+                    # isolated letters heading a line should be put back at end of preceding line
+                    if idx > 0 and re.match( r'^[a-z][., ]', gtl):
+                        gt_segmented[idx-1] += gtl[:2]
+                        gt_segmented[idx] = gtl[2:]
 
         logger.debug(gt_segmented)
 

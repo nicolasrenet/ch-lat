@@ -11,9 +11,11 @@ import base64
 from PIL import Image
 from typing import List, Tuple
 import sys
+import statistics
 
 # TODO:
-#
+# - adapt font-size to length of transcription
+# - 
 
 sys.path.append('.')
 from fsdb import Fsdb, lemmatize
@@ -213,6 +215,11 @@ def get_line_items( charter_img_id:str):
     data_type = request.args.get('dataType') if 'dataType' in request.args else 'pregt'
     print("data_type=", data_type)
     line_data, line_max_width = fsdb.read_lines( charter_img_id, data_type)
+    text_avg_length = statistics.mean( [ len(ld[1]) for ld in line_data] )
+    text_size='medium'
+    if text_avg_length > 180:
+        text_size='small'
+
     if not line_data:
         abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))
     line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for ldt in line_data ]
@@ -222,6 +229,7 @@ def get_line_items( charter_img_id:str):
             "line_items.html", 
             charter_img_id=charter_img_id,
             line_data=line_data,
+            text_size=text_size,
             )
 
 

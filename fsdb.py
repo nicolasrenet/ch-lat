@@ -208,7 +208,6 @@ class Fsdb:
         suffix = self.config['gt_htr_suffix'] if data_type=='gt' else self.config['pregt_htr_suffix']
         charter_img_path = self.search( '*', charter_img_id )
         charter_htr_path = self.search( '*', charter_img_id, suffix=suffix)
-        print("charter_htr_path=", charter_htr_path)
         if charter_img_path is None or charter_htr_path is None:
             return None
         else:

@@ -70,7 +70,7 @@
                          	console.log(url)
                          	return fetch(url, { method: "GET" })
 	                       	.then( resp => resp.text() )
-				.then( data => document.getElementById('lines-box').innerHTML = data )
+				.then( data => { document.getElementById('lines-box').innerHTML = data; } )
 			}
 
 			importData( '{{charter_img_id}}', 'pregt');
@@ -100,7 +100,10 @@
 				fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( transcriptions ) })
 				.then( resp => { 
 					console.log(resp.json());
-					document.getElementById("check_gtdata_{{charter_img_id}}").checked = true;
+					let dataCheckElt = document.getElementById("check_gtdata_{{charter_img_id}}")
+					if (dataCheckElt !== null){
+						dataCheckElt.checked = true;
+					}
 				} )
 			}
 
