@@ -5,7 +5,9 @@
 				<div class="line-transcription" id="line-{{line_tuple[0]}}">
 					<input class="hidden-transcription" disabled value='{{line_tuple[1]}}'> 
 					<span class="medfontsize">{{line_tuple[0]}}. </span>
-					{% if text_size == 'small' %}
+					{% if text_size == 'xsmall' %}
+						<input class="line-input line-input-xsmall" type="text" value="{{line_tuple[1]}}" >
+					{% elif text_size == 'small' %}
 						<input class="line-input line-input-small" type="text" value="{{line_tuple[1]}}" >
 					{% else %}
 						<input class="line-input line-input-medium" type="text" value="{{line_tuple[1]}}" >

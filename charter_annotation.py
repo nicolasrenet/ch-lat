@@ -218,7 +218,7 @@ def get_line_items( charter_img_id:str):
     text_avg_length = statistics.mean( [ len(ld[1]) for ld in line_data] )
     text_size='medium'
     if text_avg_length > 180:
-        text_size='small'
+        text_size='xsmall' if text_avg_length > 210 else 'small'
 
     if not line_data:
         abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))

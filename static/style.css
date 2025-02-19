@@ -174,7 +174,12 @@ label {
 
 .line-input-small {
 	width: 100%;
-	font-size: 12pt;
+	font-size: 10pt;
+}
+
+.line-input-xsmall {
+	width: 100%;
+	font-size: 9pt;
 }
 
 .line-transcription {
