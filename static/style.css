@@ -157,11 +157,11 @@ label {
 	display: flex;
 	flex-direction: column;
 }
-
+*/
 .line{
 	flex: 1 1 auto
 }
-*/
+
 
 .medfontsize {
 	font-size: 18pt;
