@@ -24,7 +24,9 @@ class Fsdb:
     def stats(self, ):
         """ A few stats about this database."""
         
-        img_suff, gt_suff, pred_suff = [ self.config[k] for k in ('charter_img_suffix', 'gt_seg_suffix', 'pred_seg_suffix') ]
+        img_suff, lines_gt_suff, lines_pred_suff, htr_pregt_suff, htr_gt_suff = [ self.config[k] for k in ('charter_img_suffix', 
+                                    'gt_seg_suffix', 'pred_seg_suffix', 
+                                    'pregt_htr_suffix', 'gt_htr_suffix') ]
         all_charters = list(Path(self.config['fsdb_root']).glob('*/*/*/CH.cei.xml'))
         
         if self.config['crop']:
@@ -32,10 +34,17 @@ class Fsdb:
         else:
             charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.{}'.format(img_suff)))
 
-        current_state = [ (True, Path(lemmatize(p, suffix=img_suff, replacement=pred_suff )).exists(), Path(lemmatize(p, suffix=img_suff, replacement=gt_suff )).exists()  ) for p in charter_img_paths ]
-        report = { "total_charters": len(all_charters), "total_images": len(current_state), "pred_count": len(list(itertools.filterfalse(lambda t: not t[1], current_state))), "gt_count": len(list(itertools.filterfalse(lambda t: not t[2], current_state))) }
-        report['pred_ratio']=round(float(report['pred_count']/report['total_images']),2)
-        report['gt_ratio']=round(float(report['gt_count']/report['total_images']),2)
+        current_state = [ 
+                ( Path(lemmatize(p, suffix=img_suff, replacement=lines_pred_suff )).exists(), Path(lemmatize(p, suffix=img_suff, replacement=lines_gt_suff )).exists(),
+                  Path(lemmatize(p, suffix=img_suff, replacement=htr_pregt_suff )).exists(), Path(lemmatize(p, suffix=img_suff, replacement=htr_gt_suff )).exists()) for p in charter_img_paths ]
+        report = { "total_charters": len(all_charters), "total_images": len(current_state), 
+                "lines_pred_count": len(list(itertools.filterfalse(lambda t: not t[0], current_state))), "lines_gt_count": len(list(itertools.filterfalse(lambda t: not t[1], current_state))),
+                "htr_pregt_count": len(list(itertools.filterfalse(lambda t: not t[2], current_state))), "htr_gt_count": len(list(itertools.filterfalse(lambda t: not t[3], current_state)))
+                }
+        report['lines_pred_ratio']=round(float(report['lines_pred_count']/report['total_images']),2)
+        report['lines_gt_ratio']=round(float(report['lines_gt_count']/report['total_images']),2)
+        report['htr_pregt_ratio']=round(float(report['htr_pregt_count']/report['total_images']),2)
+        report['htr_gt_ratio']=round(float(report['htr_gt_count']/report['total_images']),2)
 
         return report
 

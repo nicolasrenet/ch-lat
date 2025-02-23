@@ -17,8 +17,8 @@
 						<span class="list-head">FSDB:</span>
 						<li>Charter count: {{fsdb_stats['total_charters']}}</li>
 						<li>Image count: {{fsdb_stats['total_images']}}</li>
-						<li>Line prediction files: {{fsdb_stats['pred_count']}} ({{fsdb_stats['pred_ratio']*100|round}}%)</li>
-						<li>Line GT files: {{fsdb_stats['gt_count']}} ({{(fsdb_stats['gt_ratio']*100)|round(1)}}%)</li>
+						<li>HTR prealigned files: {{fsdb_stats['htr_pregt_count']}} ({{fsdb_stats['htr_pregt_ratio']*100|round}}%)</li>
+						<li>HTR GT files: {{fsdb_stats['htr_gt_count']}} ({{(fsdb_stats['htr_gt_ratio']*100)|round(1)}}%)</li>
 					</dl>
 
 				</div>
@@ -45,7 +45,7 @@
 								{{ch_id.number}}. {{ch_id.id}}
 							{% endif %}
 						</div>
-						<div class="table-cell">
+						<div class="table-cell" >
 							{% if ch_id.hasGTData %} 
 								<input class="tablechck" type="checkbox" id="check_gtdata_{{ch_id.id}}" name="check_gtdata" value="false">
 							{% endif %}

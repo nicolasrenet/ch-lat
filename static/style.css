@@ -121,8 +121,13 @@ dl {
 .table-cell {
 	display: table-cell;
 	padding: 8px;
+	width: 1%;
+}
 	/*text-align: center;*/
 }
+
+
+
 .header-cell-first {
 	width: 50%
 }
