@@ -16,7 +16,9 @@ See `charter_annotation.py` for setting the root of the FSDB tree.
 
 ```
 http://localhost:5000
+
 ```
+![](segmentation_screenshot.png)
 
 ### Correct a line-based transcription
 
