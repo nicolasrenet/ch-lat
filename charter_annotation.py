@@ -47,6 +47,9 @@ app.config.update(
 
 app.config.from_prefixed_env()
 
+print(app.config)
+
+
 fsdb = Fsdb( app.config )
 
 
