@@ -15,19 +15,19 @@ See `charter_annotation.py` for setting the root of the FSDB tree.
 ### Create or correct a line segmentation
 
 ```
-http://localhost:5000
+http://localhost:5000/segmentation
 
 ```
-![](segmentation_screenshot.png)
+![](doc/segmentation_screenshot.png)
 
 ### Correct a line-based transcription
 
 
 ```
-http://localhost:5000/alignment
+http://localhost:5000
 ```
 
-![](alignment_screenshot.png)
+![](doc/alignment_screenshot.png)
 
 
 ## Alignment script
