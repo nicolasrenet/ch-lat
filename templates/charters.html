@@ -135,7 +135,7 @@
 			</div>
 			<div id="charter-table">
 				<div class="table-header">
-					<div class="table-header-cell header-cell-first">
+					<div class="table-header-cell width-50">
 						<select id="archive_selection" onchange="window.location.replace('/archive/'+this.value)">
 							{% for arch in archives %}
 								{% if arch==archive_id %}
@@ -151,11 +151,10 @@
 					<div class="table-header-cell">GT.</div> 
 					<div class="table-header-cell">Pred.</div> 
 				</div>
-				<div class="table-body">
-					{% for ch_img in charter_images %}
+				{% for ch_img in charter_images %}
 						
 					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
-						<div class="table-cell-first table-cell">
+						<div class="table-cell width-50">
 							<!--{{ch_img.number}}. {{ch_img.archive if ch_img.archive!='COLLECTIONS' else 'COLL'}}//{{ch_img.charter}}-->
 							{{ch_img.number}}. {{ch_img.charter}}
 						</div>
@@ -177,9 +176,8 @@
 							{% endif %}
 						</div>
 					</div>
-					{% endfor %}
+				{% endfor %}
 
-				</div>
 			</div>
 		</div>
 	</div>

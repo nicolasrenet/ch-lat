@@ -97,16 +97,11 @@ dl {
 	display: table-header-group;
 	font-weight: bold;
 }
-.table-header-cell{
-	display: table-cell;
-	/*text-align: center;*/
-	border-bottom: 1px solid;
-	padding-left: 20px;
-	padding-right: 20px;
+
+.table-row {
+	display: table-row;
 }
-.table-body {
-	display: table-row-group;
-}
+
 .table-row > * {
 	border-bottom: 1px solid;
 }
@@ -116,22 +111,36 @@ dl {
 	font-weight: bold;
 }
 
-.table-row {
-	display: table-row;
+
+.table-header-cell{
+	display: table-cell;
+	/*text-align: center;*/
+	border-bottom: 1px solid;
+	padding-left: 20px;
+	padding-right: 20px;
 }
+
 .table-cell {
-	flex: 1 1;
+	/*flex: 1 1;*/
 	display: table-cell;
 	padding: 8px;
-	width: 1%;
 }
 	/*text-align: center;*/
 
 
-
-.header-cell-first {
-	width: 50%
+.width-50 {
+	width: 50%;
 }
+
+.width-70 {
+	width: 70%;
+}
+
+.width-90 {
+	width: 90%;
+}
+
+
 label {
 	padding-left: 30px;
 	padding-right: 10px;

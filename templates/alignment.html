@@ -27,18 +27,17 @@
 			<div id="export-box">
 				<button id="export-button"> Export</button>
 			</div>
-						<div id="charter-table">
-				<div class="table-header">
-					<div class="table-header-cell header-cell-first">
+			<div id="charter-table">
+				<div class="table-row">
+					<div class="table-header-cell width-90">
 						/*/*/Charter
 					</div>
 					<div class="table-header-cell">GT</div>
 				</div>
-				<div class="table-body">
-					{% for ch_id in charter_ids %}
+				{% for ch_id in charter_ids %}
 
 					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
-						<div class="table-cell-first table-cell">
+					 	<div class="table-cell width-90">
 							{% if ch_id.id != charter_img_id %}
 							{{ch_id.number}}. <a href="/alignment/{{ch_id.id}}">{{ch_id.id}}</a>
 							{% else %}
@@ -51,9 +50,8 @@
 							{% endif %}
 						</div>
 					</div>
-					{% endfor %}
+				{% endfor %}
 
-				</div>
 			</div>
 
 		</div>
