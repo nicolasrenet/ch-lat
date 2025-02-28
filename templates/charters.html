@@ -188,37 +188,39 @@
 		<!-- read from line_annotation.js -->
 
 		var guiTool = null
+		const charter_images = {{ charter_images | tojson }};
 		const cnv = document.getElementById("myCanvas");
-		const img_file = "{{charter_images[0].filename}}"; 
-		const img_id = '{{charter_img_id}}';
-		const img_url = '/img/{{charter_images[0].archive}}/'+ img_id;
+		const img_file = charter_images[0].filename; 
+		const archive_id = {{ archive_id | tojson }};
+		const img_id = {{ charter_img_id | tojson  }};
+		const img_url = `/img/${charter_images[0].archive}/${img_id}`;
 
 		cnv.display_size = {{display_size}};
 
-	     	function exportData(archive_id, charter_img_id){
+	     	function exportData(archive_id, ch_img_id){
 			const segdata =  guiTool.exportMask();
-			if (Object.keys(segdata).length === 0){ console.log("exportData() - abort: empty segmentation data!"); return }
-			const url = "/segdata/{{archive_id}}/{{charter_img_id}}";
+			if (Object.keys(segdata).length === 0){ console.log("exportData() - abort: empty segmentation data!"); return };
+			const url = `/segdata/${archive_id}/${ch_img_id}`;
 			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( segdata ) })
 			.then( resp => { console.log(resp.json()) } )
 		}
 
-		function importData( archive_id, charter_img_id, dataType ){
-			const url = "/segdata/{{archive_id}}/{{charter_img_id}}?" + new URLSearchParams({segtype: dataType}).toString()
+		function importData( archive_id, ch_img_id, dataType ){
+			const url = `/segdata/${archive_id}/${ch_img_id}?` + new URLSearchParams({segtype: dataType}).toString()
 			console.log(url)
 			return fetch(url, { method: "GET" })
 			.then( resp => resp.json())
 			.then( data => guiTool.importMask( data, dataType ) )
 		}
 
-		function writeFlags( flagData, archive_id, charter_img_id ){
-			const url = "/flags/{{archive_id}}/{{charter_img_id}}";
+		function writeFlags( flagData, archive_id, ch_img_id ){
+			const url = `/flags/${archive_id}/${ch_img_id}`;
 			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( flagData )})
 			.then( resp => {console.log(resp.json())} )
 		}
 
-		function readFlags( archive_id, charter_img_id ){
-			const url = "/flags/{{archive_id}}/{{charter_img_id}}"
+		function readFlags( archive_id, ch_img_id ){
+			const url = `/flags/${archive_id}/${ch_img_id}`
 			return fetch(url, { method: "GET" }) .then( resp => resp.json() ) 
 		}
 
@@ -239,27 +241,27 @@
 			const flag_box_form = document.getElementById('flag-form');
 
 			for (const elt of gt_data_checks){
-				if (elt.id === "check_gtdata_{{charter_img_id}}"){
+				if (elt.id === `check_gtdata_${img_id}`){
 					elt.checked=false;
 					elt.onchange = () => { 
 						if (elt.checked){
 							guiTool.eraseMask();
-							importData('{{archive_id}}', '{{charter_img_id}}', 'gt' ) ;
-							check_preddata_elt = document.getElementById('check_preddata_{{charter_img_id}}');
+							importData( archive_id, img_id, 'gt' ) ;
+							check_preddata_elt = document.getElementById(`check_preddata_${img_id}`);
 							if (check_preddata_elt !== null){ check_preddata_elt.checked=false;}
 						} else { guiTool.eraseMask() ; }
 					}
 				} else { elt.disabled = true; }
 			}
 			for (const elt of pred_data_checks){
-				if (elt.id === "check_preddata_{{charter_img_id}}"){
+				if (elt.id === `check_preddata_${img_id}`){
 					elt.checked=false;
 					elt.onchange = () => { 
-						console.log("check_preddata_{{charter_img_id}}.onchange()")
+						console.log(`check_preddata_${img_id}.onchange()`)
 						if (elt.checked){
 							guiTool.eraseMask();
-							importData( '{{archive_id}}', '{{charter_img_id}}', 'pred' ) ;
-							check_gtdata_elt = document.getElementById('check_gtdata_{{charter_img_id}}');
+							importData( archive_id, img_id, 'pred' ) ;
+							check_gtdata_elt = document.getElementById(`check_gtdata_${img_id}`);
 							if (check_gtdata_elt !== null){ check_gtdata_elt.checked=false; }
 							gt_data_status = false;
 						} else { guiTool.eraseMask() ; }
@@ -268,7 +270,7 @@
 			}
 
 			
-			readFlags( '{{archive_id}}', '{{charter_img_id}}' )
+			readFlags( archive_id, img_id )
 			.then( flags => {
 				for (const elt of flag_box_checks){
 					elt.checked = flags[elt.value];
@@ -277,7 +279,7 @@
 						for (const elt of flag_box_checks){
 			if (elt.checked){ flagData[elt.value]=true } else { flagData[elt.value]=false }
 						}
-						writeFlags( flagData, '{{archive_id}}', '{{charter_img_id}}' ); 		
+						writeFlags( flagData, archive_id, img_id ); 		
 					}
 				}
 			});
@@ -340,7 +342,7 @@
 			}
 				
 			document.getElementById("export-button").onclick=function(){
-				exportData('{{archive_id}}', '{{charter_img_id}}');
+				exportData(archive_id, img_id);
 				document.getElementById("preview-on").style.display="none";
 				document.getElementById("preview-off").style.display="block";
 			}
@@ -372,8 +374,8 @@
 				document.querySelector('#radio-' + conf['dataType'] + '-data').checked=true;
 				if (conf['dataType'] !== 'none'){
 					guiTool.eraseMask();
-					importData( '{{archive_id}}', '{{charter_img_id}}', conf['dataType'] ) 
-					var checkDataElt = document.getElementById('check_'+conf['dataType']+'data_{{charter_img_id}}')
+					importData( archive_id, img_id, conf['dataType'] ) 
+					var checkDataElt = document.getElementById(`check_${conf['dataType']}data_${img_id}`)
 					if (checkDataElt!==null){ checkDataElt.checked=true }
 				}
 				switch( conf['annotationFlavour']){

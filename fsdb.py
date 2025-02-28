@@ -213,12 +213,17 @@ class Fsdb:
 
 
     def read_lines(self, charter_img_id:str, data_type='pregt'):
+        """ Read line items. 
+        Output:
+            Tuple[List[list],int}]: a list of line descriptors, as well as the maximum
+                width of a line (character length).
+        """
 
         suffix = self.config['gt_htr_suffix'] if data_type=='gt' else self.config['pregt_htr_suffix']
         charter_img_path = self.search( '*', charter_img_id )
         charter_htr_path = self.search( '*', charter_img_id, suffix=suffix)
         if charter_img_path is None or charter_htr_path is None:
-            return None
+            return ([], -1)
         else:
             charter_img_path = charter_img_path[0]
             charter_htr_path = charter_htr_path[0]

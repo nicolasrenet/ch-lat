@@ -27,16 +27,16 @@
 			<div id="export-box">
 				<button id="export-button"> Export</button>
 			</div>
-			<div id="charter-table">
+						<div id="charter-table">
 				<div class="table-header">
 					<div class="table-header-cell header-cell-first">
 						/*/*/Charter
 					</div>
-					<div class="table-header-cell">GT</div> 
+					<div class="table-header-cell">GT</div>
 				</div>
 				<div class="table-body">
 					{% for ch_id in charter_ids %}
-						
+
 					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
 						<div class="table-cell-first table-cell">
 							{% if ch_id.id != charter_img_id %}
@@ -46,7 +46,7 @@
 							{% endif %}
 						</div>
 						<div class="table-cell" >
-							{% if ch_id.hasGTData %} 
+							{% if ch_id.hasGTData %}
 								<input class="tablechck" type="checkbox" id="check_gtdata_{{ch_id.id}}" name="check_gtdata" value="false">
 							{% endif %}
 						</div>
@@ -55,6 +55,7 @@
 
 				</div>
 			</div>
+
 		</div>
 	</div>
 
@@ -62,18 +63,28 @@
 		
 				
 	window.onload=() => {
-			console.log('onload');
 
+				
+			var charter_img_id = {{ charter_img_id | tojson }};
+			var charter_ids = {{ charter_ids | tojson }};
 
-			function importData( charter_img_id, dataType ){
-				const url = "/lines/{{charter_img_id}}?" + new URLSearchParams({dataType: dataType}).toString()
-                         	console.log(url)
+			function importData( img_id, dataType ){
+				const url = `/lines/${img_id}?` + new URLSearchParams({dataType: dataType}).toString()
                          	return fetch(url, { method: "GET" })
 	                       	.then( resp => resp.text() )
 				.then( data => { document.getElementById('lines-box').innerHTML = data; } )
 			}
 
-			importData( '{{charter_img_id}}', 'pregt');
+			// by default, import GT data, if it exists
+			if (charter_ids.find( (ch) => ch.id === charter_img_id ).hasGTData){
+				importData( charter_img_id, 'gt');
+				let elt = document.getElementById(`check_gtdata_${charter_img_id}`);
+				console.log(elt);
+				elt.checked=true;
+			} else {
+				importData( charter_img_id, 'pregt');
+			}
+
 
 	     		function exportData(charter_img_id){
 
@@ -96,11 +107,11 @@
 				console.log(transcriptions)
 
 				if (transcriptions.length === 0){ console.log("exportData() - abort: empty transcription data!"); return }
-				const url = "/lines/"+charter_img_id;
+				const url = `/lines/${charter_img_id}`;
 				fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( transcriptions ) })
 				.then( resp => { 
 					console.log(resp.json());
-					let dataCheckElt = document.getElementById("check_gtdata_{{charter_img_id}}")
+					let dataCheckElt = document.getElementById(`check_gtdata_${charter_img_id}`)
 					if (dataCheckElt !== null){
 						dataCheckElt.checked = true;
 					}
@@ -114,21 +125,19 @@
 
 				const gt_data_checks = document.getElementsByName("check_gtdata")
 				for(const elt of gt_data_checks){
-					if (elt.id === "check_gtdata_{{charter_img_id}}"){
-						elt.checked=false;
+					if (elt.id === `check_gtdata_${charter_img_id}`){
+						//elt.checked=false;
 						elt.onchange = () => {
 							let dataType = 'pregt';
 							if (elt.checked){ dataType='gt'; }
-							console.log("dataType=" + dataType)
-							importData('{{charter_img_id}}', dataType) 
+							importData(charter_img_id, dataType) 
 						}
 					} else { elt.disabled=true; }
 
 				} 
-
 			
 				document.getElementById("export-button").onclick=function(){
-					exportData('{{charter_img_id}}');
+					exportData(charter_img_id);
 				}
 			
 			})()

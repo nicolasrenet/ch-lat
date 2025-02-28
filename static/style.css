@@ -85,9 +85,10 @@ dl {
 .box > * {
 	padding: 10px;
 }
+
 #charter-table {
 	padding-top: 20px;
-	table-layout: fixed;
+	/*table-layout: fixed;*/
 	display: table;
 	/*flex: 1 1 auto;*/
 }
@@ -119,12 +120,12 @@ dl {
 	display: table-row;
 }
 .table-cell {
+	flex: 1 1;
 	display: table-cell;
 	padding: 8px;
 	width: 1%;
 }
 	/*text-align: center;*/
-}
 
 
 

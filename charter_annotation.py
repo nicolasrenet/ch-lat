@@ -27,7 +27,7 @@ app = Flask(__name__)
 # SETTINGS
 app.config.update(
     scaling_factor= .7,
-    max_width=1600,
+    max_width=1200,
     charter_img_suffix='img.jpg',
     gt_seg_suffix='lines.gt.json',
     gt_htr_suffix='htr.gt.json',
@@ -61,7 +61,7 @@ def resource_not_found(e):
 
 
 
-@app.route('/')
+@app.route('/segmentation')
 def charters_choice():
     """ Display first charter of first archive
     """
@@ -71,6 +71,11 @@ def charters_choice():
         abort(404, description="No charter images found for archive '{}'".format( archive_id ))
     charter_img_id = charter_images[0]['id']
     return redirect(f'/{archive_id}/{charter_img_id}')
+
+@app.route('/')
+def align_choice():
+    return redirect(f'/alignment')
+
 
 @app.get('/archive')
 def all_archives():
@@ -216,13 +221,15 @@ def get_lines( charter_img_id:str):
 def get_line_items( charter_img_id:str):
     data_type = request.args.get('dataType') if 'dataType' in request.args else 'pregt'
     line_data, line_max_width = fsdb.read_lines( charter_img_id, data_type)
+
+    if not line_data:
+        abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))
+
     text_avg_length = statistics.mean( [ len(ld[1]) for ld in line_data] )
     text_size='medium'
     if text_avg_length > 180:
         text_size='xsmall' if text_avg_length > 210 else 'small'
 
-    if not line_data:
-        abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))
     line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for ldt in line_data ]
     
     return render_template(
