@@ -80,12 +80,12 @@ Resulting `*.htr.gt.json` file can be reviewed and corrected with the line trans
 Build the container:
 
 ```bash
-sudo docker image rm ch-lat;  sudo docker build --tag ch-kat .
+sudo docker image rm ch-lat;  sudo docker build --tag ch-lat .
 ```
 
 Run:
 
 ```bash
-sudo docker run -v /tmp/fsdb_full_text_sample_100:/fsdb_root --network host --rm -it --env-file ./.env ch-lat
+sudo docker run -v /tmp/fsdb_full_text_sample_100:/fsdb_root --rm -it --env-file ./env ch-lat
 ```
 

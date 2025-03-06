@@ -14,4 +14,5 @@ RUN ls -l /alignment-flask
 
 EXPOSE 5000
 
-CMD ["python3","-m","flask","--app","charter_annotation","run"]
+CMD ["python3","-m","flask","--app","charter_annotation","run","-h","0.0.0.0"] 
+
