@@ -113,21 +113,27 @@ class Fsdb:
         """
         Write segmentation data into a JSON file.
 
+        TODO: deal with multi-region files.
+
         Args:
             archive_id (str): archive name
             charter_img_id (str): charter atom id
             page_data (dict): a dictionary
-                {'page_wh': [<width>, <height>],
+                {'image_wh': [<width>, <height>],
                  'lines': [{'centerline': [[x1,y1], ...], 'boundary': [[x1,y1], ...]}, ...] }
             charter_img_id: Image atom id.
         Returns:
             dict: if successful, an object with filename and size; otherwise an empty dictionary.
 
         """
+        width, height = page_data['image_wh']
         page_data.update( {
             "type": "centerlines",
             "text_direction": "horizontal-lr",
+            "regions": [ { 'id': 'r0', 'boundary': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
         })
+        for l in page_data['lines']:
+            l['region']='rl0'
         return self.write_img_metadata( page_data, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
 
 

@@ -706,7 +706,7 @@ function annotateLines(){
 		var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
 		extBoundaryArray = extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height))
 
-		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coreBoundary': boundaryArray, 'boundary': extBoundaryArray, 'strokeWidth': p.strokeWidth }}
+		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'extBoundary': extBoundaryArray, 'strokeWidth': p.strokeWidth }}
 
 	}
 
