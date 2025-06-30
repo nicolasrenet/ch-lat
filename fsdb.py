@@ -256,6 +256,12 @@ class Fsdb:
                 
 
     def write_line_transcriptions(self, line_transcriptions, charter_img_id ):
+        """
+        Export the aligned transcriptions:
+        1. Read the line candidate GT file
+        2. Update the segmentation dictionary with the transcription
+        3. Save under a new name ('*.htr.gt.json')
+        """
         # read htr/segmentation file
         page_htr_dict = self.read_img_metadata('*', charter_img_id, self.config['pregt_htr_suffix'])
         new_lines = [] 

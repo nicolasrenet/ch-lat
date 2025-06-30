@@ -6,6 +6,7 @@
  *
  * Selection 
  * 	- click to select a path		✓
+ * 	- select path + 's' selects all paths smaller than current	✓
  * 	- Alt-click anywhere selects all paths  ✓
  * 	- Ctrl-click for multi-selection        ✓
  *	- In both cases, get out of other modes ✓
@@ -22,6 +23,7 @@
  * 		+ drag to move it		✓
  * 		+ 'd' to delete it		✓ 
  * 	- shift-ctrl-click to select a stroke and insert a segment on it ✓
+ * 	- 't' to apply current stroke width of current selection to all segments ✓
  *
  * Path move/copy/merge
  * 	- Move a path or group of paths
