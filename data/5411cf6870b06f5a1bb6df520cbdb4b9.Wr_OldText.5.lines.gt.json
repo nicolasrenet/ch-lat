@@ -51,7 +51,7 @@
                     30
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1790,
                     63
@@ -149,8 +149,8 @@
                     41
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1790,
                     52
@@ -295,7 +295,7 @@
                     67
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1844,
                     100
@@ -393,8 +393,8 @@
                     78
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1844,
                     89
@@ -539,7 +539,7 @@
                     109
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1801,
                     142
@@ -637,8 +637,8 @@
                     120
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1800,
                     131
@@ -775,7 +775,7 @@
                     145
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1837,
                     178
@@ -849,8 +849,8 @@
                     156
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1837,
                     167
@@ -971,7 +971,7 @@
                     186
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1854,
                     219
@@ -1069,8 +1069,8 @@
                     197
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1854,
                     208
@@ -1215,7 +1215,7 @@
                     229
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1830,
                     262
@@ -1313,8 +1313,8 @@
                     240
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1830,
                     251
@@ -1467,7 +1467,7 @@
                     275
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1835,
                     308
@@ -1589,8 +1589,8 @@
                     286
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1835,
                     297
@@ -1759,7 +1759,7 @@
                     314
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1835,
                     347
@@ -1857,8 +1857,8 @@
                     325
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1835,
                     336
@@ -2027,7 +2027,7 @@
                     357
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1841,
                     390
@@ -2197,8 +2197,8 @@
                     368
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1841,
                     379
@@ -2423,7 +2423,7 @@
                     404
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1849,
                     437
@@ -2545,8 +2545,8 @@
                     415
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1849,
                     426
@@ -2707,7 +2707,7 @@
                     440
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1820,
                     473
@@ -2781,8 +2781,8 @@
                     451
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1820,
                     462
@@ -2919,7 +2919,7 @@
                     480
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1805,
                     513
@@ -3065,8 +3065,8 @@
                     491
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1805,
                     502
@@ -3259,7 +3259,7 @@
                     527
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1807,
                     560
@@ -3357,8 +3357,8 @@
                     538
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1807,
                     549
@@ -3519,7 +3519,7 @@
                     562
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1838,
                     595
@@ -3665,8 +3665,8 @@
                     573
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1838,
                     584
@@ -3851,7 +3851,7 @@
                     603
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1814,
                     636
@@ -3925,8 +3925,8 @@
                     614
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1813,
                     625
@@ -4039,7 +4039,7 @@
                     644
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1821,
                     677
@@ -4113,8 +4113,8 @@
                     655
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1821,
                     666
@@ -4227,7 +4227,7 @@
                     685
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1822,
                     718
@@ -4301,8 +4301,8 @@
                     696
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1822,
                     707
@@ -4407,7 +4407,7 @@
                     723
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1817,
                     756
@@ -4457,8 +4457,8 @@
                     734
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1816,
                     745
@@ -4539,7 +4539,7 @@
                     765
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1808,
                     798
@@ -4589,8 +4589,8 @@
                     776
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1807,
                     787
@@ -4671,7 +4671,7 @@
                     806
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1804,
                     839
@@ -4721,8 +4721,8 @@
                     817
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1804,
                     828
@@ -4811,7 +4811,7 @@
                     842
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1832,
                     875
@@ -4885,8 +4885,8 @@
                     853
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1832,
                     864
@@ -5007,7 +5007,7 @@
                     885
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1836,
                     918
@@ -5105,8 +5105,8 @@
                     896
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1835,
                     907
@@ -5251,7 +5251,7 @@
                     926
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1837,
                     959
@@ -5349,8 +5349,8 @@
                     937
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1836,
                     948
@@ -5503,7 +5503,7 @@
                     969
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1833,
                     1002
@@ -5625,8 +5625,8 @@
                     980
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1832,
                     991
@@ -5803,7 +5803,7 @@
                     1011
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1854,
                     1044
@@ -5925,8 +5925,8 @@
                     1022
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1854,
                     1033
@@ -6103,7 +6103,7 @@
                     1059
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1828,
                     1092
@@ -6225,8 +6225,8 @@
                     1070
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1827,
                     1081
@@ -6411,7 +6411,7 @@
                     1105
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1834,
                     1138
@@ -6557,8 +6557,8 @@
                     1116
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1833,
                     1127
@@ -6759,7 +6759,7 @@
                     1148
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1854,
                     1181
@@ -6881,8 +6881,8 @@
                     1159
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1854,
                     1170
@@ -7059,7 +7059,7 @@
                     1188
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1857,
                     1221
@@ -7181,8 +7181,8 @@
                     1199
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1856,
                     1210
@@ -7367,7 +7367,7 @@
                     1234
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1857,
                     1267
@@ -7513,8 +7513,8 @@
                     1245
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1856,
                     1256
@@ -7731,7 +7731,7 @@
                     1273
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1824,
                     1306
@@ -7901,8 +7901,8 @@
                     1284
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1823,
                     1295
@@ -8135,7 +8135,7 @@
                     1316
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1824,
                     1349
@@ -8281,8 +8281,8 @@
                     1327
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1823,
                     1338
@@ -8499,7 +8499,7 @@
                     1358
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1827,
                     1390
@@ -8669,8 +8669,8 @@
                     1369
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1826,
                     1380
@@ -8911,7 +8911,7 @@
                     1399
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1837,
                     1432
@@ -9081,8 +9081,8 @@
                     1410
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1836,
                     1421
@@ -9299,7 +9299,7 @@
                     1442
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1822,
                     1475
@@ -9397,8 +9397,8 @@
                     1453
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1822,
                     1464
@@ -9551,7 +9551,7 @@
                     1486
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1820,
                     1519
@@ -9673,8 +9673,8 @@
                     1497
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1820,
                     1508
@@ -9843,7 +9843,7 @@
                     1527
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1819,
                     1560
@@ -9941,8 +9941,8 @@
                     1538
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1819,
                     1549
@@ -10103,7 +10103,7 @@
                     1572
                 ]
             ],
-            "boundary": [
+            "extBoundary": [
                 [
                     1741,
                     1605
@@ -10249,8 +10249,8 @@
                     1583
                 ]
             ],
-            "strokeWidth": 17,
-            "coreBoundary": [
+            "height": 17,
+            "boundary": [
                 [
                     1740,
                     1594

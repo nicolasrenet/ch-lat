@@ -191,7 +191,7 @@ function annotateLines(){
 				p.baselineOffset = 0 ; 
 				if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
 				paths.addChild( p );
-				strokeWidth = line['strokeWidth'];
+				strokeWidth = line['height'];
 			} else if (type==='pred'){
 				if (line['baseline'].length < 2){ continue }
 				var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))
@@ -676,7 +676,7 @@ function annotateLines(){
 			baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
 		}
 
-		return { 'contourPath': contourPath, 'baselinePath': baselinePath, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'strokeWidth': p.strokeWidth, 'baselineOffset': p.baselineOffset } }
+		return { 'contourPath': contourPath, 'baselinePath': baselinePath, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'height': p.strokeWidth, 'baselineOffset': p.baselineOffset } }
 
 	}
 
@@ -708,7 +708,7 @@ function annotateLines(){
 		var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
 		extBoundaryArray = extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height))
 
-		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'extBoundary': extBoundaryArray, 'strokeWidth': p.strokeWidth }}
+		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'extBoundary': extBoundaryArray, 'height': p.strokeWidth }}
 
 	}
 
