@@ -133,7 +133,7 @@ class Fsdb:
             "regions": [ { 'id': 'r0', 'boundary': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
         })
         for l in page_data['lines']:
-            l['region']='rl0'
+            l['region']='r0'
         return self.write_img_metadata( page_data, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
 
 
