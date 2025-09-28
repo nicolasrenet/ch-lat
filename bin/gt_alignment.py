@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from typing import Tuple, List, Union, Callable
 from pathlib import Path
 import sys
 import itertools

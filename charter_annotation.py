@@ -9,7 +9,6 @@ import json
 import itertools
 import base64
 from PIL import Image
-from typing import List, Tuple
 import sys
 import statistics
 
@@ -39,7 +38,7 @@ app.config.update(
     gui_tool_dataType='gt',
     gui_tool_alpha = 0.5,
     gui_tool_strokeWidth=6,
-    gui_tool_overlapHandling=True,
+    gui_tool_overlapHandling=False,
     gui_tool_overlapBuffer=2,
     gui_tool_overlapScope=3,
     gui_tool_annotationFlavour=1,

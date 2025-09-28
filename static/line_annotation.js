@@ -56,7 +56,7 @@
  *
  * TODO:
  * 	- stats about line thickness
- * 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
+ //* 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
  * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path.
  * 	- rounded contours
  */
@@ -191,7 +191,7 @@ function annotateLines(){
 				p.baselineOffset = 0 ; 
 				if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
 				paths.addChild( p );
-				strokeWidth = line['height'];
+				strokeWidth = Math.round(line['height']*scalingFactor);
 			} else if (type==='pred'){
 				if (line['baseline'].length < 2){ continue }
 				var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))
@@ -291,7 +291,7 @@ function annotateLines(){
 
 	var exportMask = () => {
 
-		var pageData = {'imagename': img_file, 'image_wh': [charter.width, charter.height]} ;
+		var pageData = {'image_filename': img_file, 'image_width': charter.width, 'image_height': charter.height } ;
 		var lineData = [];
 		var lineExportFunc = exportFlexLine;
 		// sorting paths according to their vertical position
@@ -310,6 +310,7 @@ function annotateLines(){
 
 		if (lineData.length > 0){
 			pageData['lines']=lineData;
+			console.log(pageData);
 			return pageData;
 		}
 		return {}
@@ -676,7 +677,7 @@ function annotateLines(){
 			baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
 		}
 
-		return { 'contourPath': contourPath, 'baselinePath': baselinePath, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'height': p.strokeWidth, 'baselineOffset': p.baselineOffset } }
+		return { 'contourPath': contourPath, 'baselinePath': baselinePath, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'height': p.strokeWidth, 'baselineOffset': p.baselineOffset } }
 
 	}
 
@@ -700,18 +701,33 @@ function annotateLines(){
 		var corePolygon = buildContour(p) // implicit: contour has same width as p
 		var extendedPolygon = buildContour(p, p.strokeWidth*2) // implicit: contour has same width as p
 		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
-		centerlineArray = centerlineArray.map( pt => truncate_point( pt, charter.width, charter.height))
+		centerlineArray = removeDuplicates( centerlineArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 		var boundaryArray = corePolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
-		boundaryArray = boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height))
+		boundaryArray = removeDuplicates( boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 		var baselineArray = p.segments.map( s => toIntXY(s.point.subtract( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
-		baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
+		baselineArray = removeDuplicates( baselineArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 		var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
-		extBoundaryArray = extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height))
+		extBoundaryArray = removeDuplicates( extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 
-		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'boundary': boundaryArray, 'extBoundary': extBoundaryArray, 'height': p.strokeWidth }}
+		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'ext_coords': extBoundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
 
 	}
 
+	function removeDuplicates( arrayOfPairs ){
+		var prec = arrayOfPairs[0]
+		var streamlinedArray = [ arrayOfPairs[0] ]
+		for (var i=1; i<arrayOfPairs.length; i++){
+			console.log(prec+" -- [" + arrayOfPairs[i][0] + ", " + arrayOfPairs[i][1] +"]")
+			if (arrayOfPairs[i][0]==prec[0] && arrayOfPairs[i][1]==prec[1]){
+				console.log("Duplicate: ignored");
+				//prec = arrayOfPairs[i];
+				continue;
+			} 
+			streamlinedArray.push( arrayOfPairs[i] );
+			prec = arrayOfPairs[i];
+		}
+		return streamlinedArray
+	}
 
 	function buildContour(p, width=null){
 		if (p.segments.length < 2){ return null }
@@ -812,6 +828,7 @@ function annotateLines(){
 		contourPath.insert( contourPath.segments.length/2, endPt1);
 		contourPath.add( endPt2 );
 		contourPath.closed = true;
+
 		//if (settings.smoothing) contourPath.smooth({type: 'geometric'});
 
 		return contourPath;

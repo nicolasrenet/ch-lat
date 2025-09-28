@@ -1,5 +1,5 @@
 {
-    "imagename": "/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000/AT-StiAR/1cd569169290d1603631e52d71faa7bc/0086248f5bac22d82bdb2183ae886bd7/5411cf6870b06f5a1bb6df520cbdb4b9.seals.crops/5411cf6870b06f5a1bb6df520cbdb4b9.Wr_OldText.5.img.jpg",
+    "image_filename": "/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000/AT-StiAR/1cd569169290d1603631e52d71faa7bc/0086248f5bac22d82bdb2183ae886bd7/5411cf6870b06f5a1bb6df520cbdb4b9.seals.crops/5411cf6870b06f5a1bb6df520cbdb4b9.Wr_OldText.5.img.jpg",
     "image_wh": [
         1863,
         1647
@@ -150,7 +150,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1790,
                     52
@@ -394,7 +394,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1844,
                     89
@@ -638,7 +638,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1800,
                     131
@@ -850,7 +850,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1837,
                     167
@@ -1070,7 +1070,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1854,
                     208
@@ -1314,7 +1314,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1830,
                     251
@@ -1590,7 +1590,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1835,
                     297
@@ -1858,7 +1858,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1835,
                     336
@@ -2198,7 +2198,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1841,
                     379
@@ -2546,7 +2546,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1849,
                     426
@@ -2782,7 +2782,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1820,
                     462
@@ -3066,7 +3066,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1805,
                     502
@@ -3358,7 +3358,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1807,
                     549
@@ -3666,7 +3666,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1838,
                     584
@@ -3926,7 +3926,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1813,
                     625
@@ -4114,7 +4114,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1821,
                     666
@@ -4302,7 +4302,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1822,
                     707
@@ -4458,7 +4458,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1816,
                     745
@@ -4590,7 +4590,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1807,
                     787
@@ -4722,7 +4722,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1804,
                     828
@@ -4886,7 +4886,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1832,
                     864
@@ -5106,7 +5106,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1835,
                     907
@@ -5350,7 +5350,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1836,
                     948
@@ -5626,7 +5626,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1832,
                     991
@@ -5926,7 +5926,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1854,
                     1033
@@ -6226,7 +6226,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1827,
                     1081
@@ -6558,7 +6558,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1833,
                     1127
@@ -6882,7 +6882,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1854,
                     1170
@@ -7182,7 +7182,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1856,
                     1210
@@ -7514,7 +7514,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1856,
                     1256
@@ -7902,7 +7902,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1823,
                     1295
@@ -8282,7 +8282,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1823,
                     1338
@@ -8670,7 +8670,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1826,
                     1380
@@ -9082,7 +9082,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1836,
                     1421
@@ -9398,7 +9398,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1822,
                     1464
@@ -9674,7 +9674,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1820,
                     1508
@@ -9942,7 +9942,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1819,
                     1549
@@ -10250,7 +10250,7 @@
                 ]
             ],
             "height": 17,
-            "boundary": [
+            "coords": [
                 [
                     1740,
                     1594

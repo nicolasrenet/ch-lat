@@ -3,8 +3,8 @@ import re
 import json
 import itertools
 import base64
+from datetime import datetime
 from PIL import Image, ImagePath
-from typing import List, Tuple
 import sys 
 import io
 
@@ -49,7 +49,7 @@ class Fsdb:
         return report
 
 
-    def search(self,  archive_id:str='*', charter_img_id:str='*', suffix:str=None) -> List[Path]:
+    def search(self,  archive_id:str='*', charter_img_id:str='*', suffix:str=None) -> list[Path]:
         if suffix is None:
             suffix = self.config['charter_img_suffix']
         if self.config['crop']:
@@ -119,22 +119,26 @@ class Fsdb:
             archive_id (str): archive name
             charter_img_id (str): charter atom id
             page_data (dict): a dictionary
-                {'image_wh': [<width>, <height>],
-                 'lines': [{'centerline': [[x1,y1], ...], 'boundary': [[x1,y1], ...]}, ...] }
+                {'image_width': <width>
+                 'image_height': <height>,
+                 'lines': [{'centerline': [[x1,y1], ...], 'coords': [[x1,y1], ...]}, ...] }
             charter_img_id: Image atom id.
         Returns:
             dict: if successful, an object with filename and size; otherwise an empty dictionary.
 
         """
-        width, height = page_data['image_wh']
+        width, height = page_data['image_width'], page_data['image_height']
         page_data.update( {
+            'image_filename': Path(page_data['image_filename']).name,
             "type": "centerlines",
             "text_direction": "horizontal-lr",
-            "regions": [ { 'id': 'r0', 'boundary': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
+            "regions": [ { 'id': 'r0', 'coords': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
         })
         for l in page_data['lines']:
             l['region']='r0'
-        return self.write_img_metadata( page_data, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
+        page_header={ 'metadata': { 'created': str(datetime.now()), 'creator': 'ch-lat:{}'.format(Path(__file__).name), 'comments': '' }}
+        page_header.update( page_data )
+        return self.write_img_metadata( page_header, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
 
 
     def read_segmentation_file(self, archive_id:str, charter_img_id: str, suffix: str ) -> dict:
@@ -148,26 +152,26 @@ class Fsdb:
         """
         return self.read_img_metadata(archive_id, charter_img_id, suffix)
 
-    def get_archives(self, ) -> List[str]:
+    def get_archives(self, ) -> list[str]:
         """
         Get a list of all archive directories.
 
         Returns:
-            List[str]: a list of archive names.
+            list[str]: a list of archive names.
         """
         archives = list([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() and re.match(r'[A-Z]{2}-[A-Za-z]+', p.name)])
         archives.append('COLLECTIONS')
         return sorted(archives)
 
 
-    def get_charter_images(self, archive_id:str='') -> Tuple[str,dict]:
+    def get_charter_images(self, archive_id:str='') -> tuple[str,dict]:
         """
         For given archive, get a map of all images, with their attributes.
 
         Args:
             archive_id (str): the name of an archive directory; if empty, the first archive in the list is used.
         Returns:
-            Tuple[str,dict]: a pair with the archive id passed to the function, as well as a dictionary
+            tuple[str,dict]: a pair with the archive id passed to the function, as well as a dictionary
                 with image ids as keys and a dictionary of image attributes (filename, segmentation data, ...)
                 as value. 
         """
@@ -221,7 +225,7 @@ class Fsdb:
     def read_lines(self, charter_img_id:str, data_type='pregt'):
         """ Read line items. 
         Output:
-            Tuple[List[list],int}]: a list of line descriptors, as well as the maximum
+            tuple[list[list],int}]: a list of line descriptors, as well as the maximum
                 width of a line (character length).
         """
 
@@ -239,7 +243,7 @@ class Fsdb:
             line_tuples = []
             max_width = 0
             for tl in page_dict['lines']:
-                polygon_coordinates = [ tuple(pair) for pair in tl['boundary']]
+                polygon_coordinates = [ tuple(pair) for pair in tl['coords']]
                 textline_bbox = ImagePath.Path( polygon_coordinates ).getbbox()
                 bbox_width = textline_bbox[2]-textline_bbox[0]
                 if bbox_width > max_width: 
