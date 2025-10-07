@@ -422,8 +422,8 @@ function annotateLines(){
 			ev.preventDefault()
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			for (const p of paths.children){ 
-				p.translate( new Point(0, 2*p.isSelected)) ; 
-				p.baselineOffset -= (2*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets))
+				p.translate( new Point(0, 1*p.isSelected)) ; 
+				p.baselineOffset -= (1*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets))
 			} 
 		} else if (Key.isDown('m') || Key.isDown('f') || Key.isDown('v')){
 			mergePaths( paths.children.filter( (elt) => elt.isSelected ));

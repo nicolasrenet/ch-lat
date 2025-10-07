@@ -34,6 +34,7 @@ app.config.update(
     pred_seg_suffix='lines.pred.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
     crop=False,
+    polygon_attribute='ext_coords',
     gui_tool_smoothing=True,
     gui_tool_dataType='gt',
     gui_tool_alpha = 0.5,
@@ -219,7 +220,7 @@ def get_lines( charter_img_id:str):
 @app.get('/lines/<charter_img_id>')
 def get_line_items( charter_img_id:str):
     data_type = request.args.get('dataType') if 'dataType' in request.args else 'pregt'
-    line_data, line_max_width = fsdb.read_lines( charter_img_id, data_type)
+    line_data, line_max_width = fsdb.read_lines( charter_img_id, data_type, polygon_key=app.config['polygon_attribute'])
 
     if not line_data:
         abort(404, description="No line metadata found for charter '{}'".format( charter_img_id ))

@@ -222,7 +222,7 @@ class Fsdb:
             return None
 
 
-    def read_lines(self, charter_img_id:str, data_type='pregt'):
+    def read_lines(self, charter_img_id:str, data_type='pregt', polygon_key='coords'):
         """ Read line items. 
         Output:
             tuple[list[list],int}]: a list of line descriptors, as well as the maximum
@@ -243,7 +243,7 @@ class Fsdb:
             line_tuples = []
             max_width = 0
             for tl in page_dict['lines']:
-                polygon_coordinates = [ tuple(pair) for pair in tl['coords']]
+                polygon_coordinates = [ tuple(pair) for pair in tl[polygon_key]]
                 textline_bbox = ImagePath.Path( polygon_coordinates ).getbbox()
                 bbox_width = textline_bbox[2]-textline_bbox[0]
                 if bbox_width > max_width: 
