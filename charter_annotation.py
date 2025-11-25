@@ -34,7 +34,7 @@ app.config.update(
     pred_seg_suffix='lines.pred.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
     crop=False,
-    polygon_attribute='ext_coords',
+    polygon_attribute='coords',
     gui_tool_smoothing=True,
     gui_tool_dataType='gt',
     gui_tool_alpha = 0.5,

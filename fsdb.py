@@ -121,21 +121,22 @@ class Fsdb:
             page_data (dict): a dictionary
                 {'image_width': <width>
                  'image_height': <height>,
-                 'lines': [{'centerline': [[x1,y1], ...], 'coords': [[x1,y1], ...]}, ...] }
+                 'regions': [ 
+                    {'coords': ...,
+                     'lines': [{'centerline': [[x1,y1], ...], 'coords': [[x1,y1], ...]}, ...] }]}
             charter_img_id: Image atom id.
         Returns:
             dict: if successful, an object with filename and size; otherwise an empty dictionary.
 
         """
         width, height = page_data['image_width'], page_data['image_height']
+        # Image-wide pseudo-region: change to simply read actual regions 
         page_data.update( {
             'image_filename': Path(page_data['image_filename']).name,
             "type": "centerlines",
             "text_direction": "horizontal-lr",
-            "regions": [ { 'id': 'r0', 'coords': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
+            #"regions": [ { 'id': 'r0', 'coords': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
         })
-        for l in page_data['lines']:
-            l['region']='r0'
         page_header={ 'metadata': { 'created': str(datetime.now()), 'creator': 'ch-lat:{}'.format(Path(__file__).name), 'comments': '' }}
         page_header.update( page_data )
         return self.write_img_metadata( page_header, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
@@ -242,7 +243,12 @@ class Fsdb:
             page_dict = json.load( open(charter_htr_path, 'r') )
             line_tuples = []
             max_width = 0
-            for tl in page_dict['lines']:
+            # YET TO BE TESTED
+            lines = itertools.chain.from_iterable( [ reg['lines'] for reg in page_dict['regions'] if 'lines' in reg ] )
+            #if reg in page_dict['regions']:
+            #    if 'lines' in reg:
+            #        lines.extend( reg['lines'] )
+            for tl in lines:
                 polygon_coordinates = [ tuple(pair) for pair in tl[polygon_key]]
                 textline_bbox = ImagePath.Path( polygon_coordinates ).getbbox()
                 bbox_width = textline_bbox[2]-textline_bbox[0]

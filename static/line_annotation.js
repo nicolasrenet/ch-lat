@@ -59,6 +59,12 @@
  //* 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
  * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path.
  * 	- rounded contours
+ * 	- region handling:
+ * 		+ loading time: create mapping region boxes to line paths
+ * 		+ export time: use the mapping to extend the region around the lines that is supposed to contain
+ * 		    and structure the dictionary appropriately.
+ * 		+ desired feature we can live without: add or extend region by hand
+ *
  */
 
 //paper.install(window);
@@ -92,6 +98,7 @@ function annotateLines(){
 		issueColor: new Color(1,0,0,0.5),
 		previewColor: new Color(0.5,0.5,0.5,0.5),
 		fadedPreviewColor: new Color(0.5,0.5,0.5,0.3),
+		regionColor: new Color(0.2,0.6,0.2,0.8),
 		smoothing: false,
 		overlapHandling: false,
 		overlapScope: 3,
@@ -106,6 +113,7 @@ function annotateLines(){
 
 	annotationLayer.activate()
 	var paths = new Group();
+	var regionBoxes = new Group();
 
 	var joinPath = null;
 	var currentPath = null;
@@ -182,26 +190,34 @@ function annotateLines(){
 	var importMask = ( pageData, type ) => {
 		
 		logState()
-		if (!('lines' in pageData)){ console.log("Segmentation data empty: abort."); return }
+		console.log(pageData);
+		if (!('regions' in pageData)){ console.log("Segmentation data empty: abort."); return }
 		paths.removeChildren();
-		for (line of pageData['lines']){
-			var strokeWidth = settings.strokeWidth;
-			if (type === 'gt'){
-				var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
-				p.baselineOffset = 0 ; 
-				if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
-				paths.addChild( p );
-				strokeWidth = Math.round(line['height']*scalingFactor);
-			} else if (type==='pred'){
-				if (line['baseline'].length < 2){ continue }
-				var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))
-				p.baselineOffset = 0;
-				paths.addChild( p );
-			}
-			currentPath = paths.children.at(-1);
-			currentPath.strokeWidth=strokeWidth;
-			if (settings.smoothing) currentPath.strokeJoin='round'
-		} 
+		for (region of pageData['regions']){
+			var regionCoords = region['coords'].map( (pt) => new Point(pt).multiply( scalingFactor));
+			var regionPath = new Path.Rectangle( regionCoords[0], regionCoords[2] );
+			regionPath.strokeWidth=10.0;
+			regionPath.strokeColor=settings.regionColor;
+			regionBoxes.addChild( regionPath );
+			for (line of region['lines']){
+				var strokeWidth = settings.strokeWidth;
+				if (type === 'gt'){
+					var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
+					p.baselineOffset = 0 ; 
+					if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
+					paths.addChild( p );
+					strokeWidth = Math.round(line['height']*scalingFactor);
+				} else if (type==='pred'){
+					if (line['baseline'].length < 2){ continue }
+					var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))
+					p.baselineOffset = 0;
+					paths.addChild( p );
+				}
+				currentPath = paths.children.at(-1);
+				currentPath.strokeWidth=strokeWidth;
+				if (settings.smoothing) currentPath.strokeJoin='round'
+			} 
+		}
 		deselectAll();
 	}
 
@@ -706,10 +722,11 @@ function annotateLines(){
 		boundaryArray = removeDuplicates( boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 		var baselineArray = p.segments.map( s => toIntXY(s.point.subtract( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
 		baselineArray = removeDuplicates( baselineArray.map( pt => truncate_point( pt, charter.width, charter.height)))
-		var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
-		extBoundaryArray = removeDuplicates( extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
+		//var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
+		//extBoundaryArray = removeDuplicates( extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 
-		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'ext_coords': extBoundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
+		//return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'ext_coords': extBoundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
+		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
 
 	}
 
