@@ -55,11 +55,6 @@
 							<input id="radio-gt-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">GT</label> 
 						</div>
 						<div class="flex-row"><label class="config-label">Smoothing</label><input id="smooth-check" type="checkbox" name="smoothing"></div>
-						<div class="flex-row"><label class="config-label">Annotation flavour:</label> 
-							<input id="radio-plain-flavour" type="radio" name="flavour-radio"> <label class="right-positioned-label">Plain</label> 
-							<input id="radio-core-flavour" type="radio" name="flavour-radio"> <label class="right-positioned-label">Core lines</label> 
-							<input id="radio-offset-flavour" type="radio" name="flavour-radio"> <label class="right-positioned-label">Offset baselines</label> 
-						</div>
 
 						<div class="flex-row"><label class="config-label">Collision prevention</label><input id="overlap-check" type="checkbox" name="overlapHandling"></div>
 						<div class="flex-row">
@@ -306,15 +301,7 @@
 									setting['dataType']='none'
 								}
 							}
-						} else if (this.name==='flavour-radio'){
-							if (this.checked){
-								if (this.id === 'radio-plain-flavour'){
-									setting['annotationFlavour']=AnnotationFlavours.plain;
-								} else if (this.id==='radio-core-flavour'){
-									setting['annotationFlavour']=AnnotationFlavours.coreLines;
-								} else { setting['annotationFlavour']=AnnotationFlavours.baselineOffsets }
-							}
-						}
+						} 
 					} 
 					// store server-side
 					writeAppConfig( setting )
@@ -375,16 +362,6 @@
 					importData( archive_id, img_id, conf['dataType'] ) 
 					var checkDataElt = document.getElementById(`check_${conf['dataType']}data_${img_id}`)
 					if (checkDataElt!==null){ checkDataElt.checked=true }
-				}
-				switch( conf['annotationFlavour']){
-					case AnnotationFlavours.plain:
-						document.getElementById("radio-plain-flavour").checked=true;
-						break;
-					case AnnotationFlavours.coreLines:
-						document.getElementById("radio-core-flavour").checked=true;
-						break;
-					default:
-						document.getElementById("radio-offset-flavour").checked=true;
 				}
 			})
 		}

@@ -53,29 +53,33 @@
  * 		+ stroke width		✓
  * 		+ polygon               ✓
  * 
+ * Regions:
+ * 	- paths and regions are loosely coupled
+ * 	- no explicit association between a region and its paths except at export time
+ * 	- a region is (almost) a rectangular path, that can be resized by hand
+ * 	- at export time:
+ * 	  - any path that intersects with an existing region is added to the list of lines for this region's serialization
+ * 	  - the region is automatically resized to include the stray segments
+ * 	  - any path that is not within a region is not exported (make that clearer in the interface)
  *
  * TODO:
  * 	- stats about line thickness
  //* 	- #bug: reproduce: start joining lines: when inadverdently passing in drawing mode (double-click), the joining path is not removed from canvas.
  * 	- bug: when joining paths, reorder not only the segments in the added path, but the segments in the resulting merged path.
- * 	- rounded contours
- * 	- region handling:
- * 		+ loading time: create mapping region boxes to line paths
- * 		+ export time: use the mapping to extend the region around the lines that is supposed to contain
- * 		    and structure the dictionary appropriately.
- * 		+ desired feature we can live without: add or extend region by hand
+ * 	- create region from scratch
+ * 	- remove a region
+*	- region-bounded view
+* 		  
  *
  */
 
 //paper.install(window);
 
 
-//window.onload = function(){
-const AnnotationFlavours = Object.freeze({
-	plain: 0,
-	coreLines: 1,
-	baselineOffsets: 2,
-})
+//const AnnotationFlavours = Object.freeze({
+//	plain: 0,
+//	coreLines: 1,
+//})
 
 function annotateLines(){
 
@@ -88,6 +92,7 @@ function annotateLines(){
 
 	var settings = {
 		strokeWidth: 6,
+		regionStrokeWidth: 10,
 		alpha: 0.5,
 		groundTruthColor: new Color(0,1,0,0.5),
 		predictionColor: new Color(1,0,0,0.5),
@@ -98,12 +103,11 @@ function annotateLines(){
 		issueColor: new Color(1,0,0,0.5),
 		previewColor: new Color(0.5,0.5,0.5,0.5),
 		fadedPreviewColor: new Color(0.5,0.5,0.5,0.3),
-		regionColor: new Color(0.2,0.6,0.2,0.8),
+		regionColor: new Color(0.2,0.6,0.2,1.0),
 		smoothing: false,
 		overlapHandling: false,
 		overlapScope: 3,
 		overlapBuffer: 2,
-		annotationFlavour: AnnotationFlavours.plain,
 	}
 
 	var charter = null;
@@ -113,6 +117,8 @@ function annotateLines(){
 
 	annotationLayer.activate()
 	var paths = new Group();
+	// a region box is a Path.Rectangle with an added 'paths' property
+	// that points at the line it contains
 	var regionBoxes = new Group();
 
 	var joinPath = null;
@@ -153,10 +159,7 @@ function annotateLines(){
 		for (const col of [ 'groundTruthColor', 'predictionColor', 'selectionColor', 'newLineColor', 'highlighterColor', 'issueColor', 'previewColor' ]){
 			settings[col].alpha = settings.alpha;
 		}
-		if (! settings.annotationFlavour===AnnotationFlavours.baselineOffsets){
-			for (const p of paths.children){ p.baselineOffset=0 }
-			previewMaskOn( false );
-		}
+		previewMaskOn( false );
 		console.log(settings)
 	}
 
@@ -190,29 +193,20 @@ function annotateLines(){
 	var importMask = ( pageData, type ) => {
 		
 		logState()
-		console.log(pageData);
 		if (!('regions' in pageData)){ console.log("Segmentation data empty: abort."); return }
 		paths.removeChildren();
+		regionBoxes.removeChildren();
 		for (region of pageData['regions']){
 			var regionCoords = region['coords'].map( (pt) => new Point(pt).multiply( scalingFactor));
 			var regionPath = new Path.Rectangle( regionCoords[0], regionCoords[2] );
-			regionPath.strokeWidth=10.0;
+			regionPath.strokeWidth=settings.regionStrokeWidth;
 			regionPath.strokeColor=settings.regionColor;
 			regionBoxes.addChild( regionPath );
 			for (line of region['lines']){
 				var strokeWidth = settings.strokeWidth;
-				if (type === 'gt'){
-					var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
-					p.baselineOffset = 0 ; 
-					if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && 'baselineOffset' in line){ p.baselineOffset = line['baselineOffset'] }
-					paths.addChild( p );
-					strokeWidth = Math.round(line['height']*scalingFactor);
-				} else if (type==='pred'){
-					if (line['baseline'].length < 2){ continue }
-					var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)))
-					p.baselineOffset = 0;
-					paths.addChild( p );
-				}
+				var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
+				paths.addChild( p );
+				strokeWidth = Math.round(line['height']*scalingFactor);
 				currentPath = paths.children.at(-1);
 				currentPath.strokeWidth=strokeWidth;
 				if (settings.smoothing) currentPath.strokeJoin='round'
@@ -229,8 +223,7 @@ function annotateLines(){
 		console.log("previewVisual()")
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
 		var copiedPaths = sortedPaths;
-		var lineExportFunc = exportFlexLine;
-		if (settings.annotationFlavour===AnnotationFlavours.coreLines){ lineExportFunc = exportCoreLine }
+		var lineExportFunc = exportCoreLine 
 
 		if (settings.overlapHandling){
 			copiedPaths = [];
@@ -256,11 +249,9 @@ function annotateLines(){
 			ct.fillColor = settings.previewColor;
 			sortedPaths[p].selected=true
 
-			if (settings.annotationFlavour===AnnotationFlavours.coreLines){
-				var ect = contourDictionary.extContourPath;
-				ect.selected=true
-				ect.fillColor=settings.fadedPreviewColor;
-			}
+			var ect = contourDictionary.extContourPath;
+			ect.selected=true
+			ect.fillColor=settings.fadedPreviewColor;
 		}
 		if (settings.overlapHandling){
 			for (var p=0; p<checkContours.length-1; p++){
@@ -279,12 +270,6 @@ function annotateLines(){
 						}
 					}
 				}
-			}
-		}
-		for (var p=0; p<sortedPaths.length;p++){
-			if (settings.annotationFlavour===AnnotationFlavours.baselineOffsets && sortedPaths[p].baselineOffset===0){
-				console.log(`Path ${p} has no baseline offset: double-check.`)
-				sortedPaths[p].strokeColor=settings.issueColor;
 			}
 		}
 	}
@@ -308,28 +293,46 @@ function annotateLines(){
 	var exportMask = () => {
 
 		var pageData = {'image_filename': img_file, 'image_width': charter.width, 'image_height': charter.height } ;
+		pageData['regions']=[];
 		var lineData = [];
-		var lineExportFunc = exportFlexLine;
+		var lineExportFunc = exportCoreLine;
 		// sorting paths according to their vertical position
 		var sortedPaths = paths.children.filter( p => p.segments.length > 1).toSorted((p1, p2) => p1.segments[0].point.y - p2.segments[0].point.y );
-		console.log("export()" + sortedPaths)
 		contourLayer.activate()
-		if (settings.annotationFlavour===AnnotationFlavours.coreLines){ lineExportFunc = exportCoreLine }
-		for (var p=0; p<sortedPaths.length; p++){ 
-			contourDictionary = lineExportFunc(p, sortedPaths[p])
-			var [ct,data] = ['contourPath', 'data'].map( k => contourDictionary[k] );
-			ct.selected=true;
-			if (data !== null){ lineData.push( data ) }
+		
+		console.log(`Found ${regionBoxes.children.length} region boxes`)
+		for (var r=0;  r<regionBoxes.children.length; r++){
+			regionLines = []
+			regionBox = regionBoxes.children[r];
+			var [regMinX, regMinY, regMaxX, regMaxY] = pathBoundingBox( regionBox )
+			var regionRect = rectangleFromRegionBox( regionBox );
+			for (var p=0; p<sortedPaths.length; p++){
+				var path = sortedPaths[p];
+				var [pathMinX, pathMinY, pathMaxX, pathMaxY] = pathBoundingBox( path )
+				contourDictionary = lineExportFunc(p, path);
+				var [ct,data] = [ contourDictionary['contourPath'], contourDictionary['data']] ; 
+				ct.selected=true;
+				if (data !== null){
+					//lineData.push( data );
+					if (regionRect.intersects( path.segments[0].point ) || regionRect.intersects( path.segments[path.segments.length-1].point )){
+						regionLines.push( data );
+						if (pathMinX < regMinX){ regMinX = pathMinX; }
+						if (pathMinY < regMinY){ regMinY=pathMinY; }
+						if (pathMaxX > regMaxX){ regMaxX=pathMaxX; }
+						if (pathMaxY > regMaxY){ regMaxY=pathMaxY; }
+					}
+				}
+			}
+			regionBox.removeSegments();
+			regionBox.add( new Point( regMinX, regMinY ), new Point( regMaxX, regMinY ), new Point( regMaxX, regMaxY ), new Point( regMinX, regMaxY) );
+			regionData = exportRegionBox(r, regionBox );
+			regionData['lines']=regionLines
+			pageData['regions'].push( regionData );
 		}
 		annotationLayer.activate()
 		mode = Modes.preview
 
-		if (lineData.length > 0){
-			pageData['lines']=lineData;
-			console.log(pageData);
-			return pageData;
-		}
-		return {}
+		return pageData;
 	}
 
 	/* User interface */
@@ -352,7 +355,6 @@ function annotateLines(){
 			path.strokeWidth = settings.strokeWidth;
 			//if (settings.smoothing) path.strokeCap = 'round';
 			path.strokeJoin = 'round';
-			path.baselineOffset = 0; // not used unless baselineOffset enabled
 			selectPath(path, false);
 			paths.addChild( path );
 			paths.children.at(-1).add( ev.point ) ;
@@ -400,12 +402,14 @@ function annotateLines(){
 			// unless ctrl-click, current selection cancels existing ones
 			if (! ev.modifiers.control ){
 				for (const op of paths.children.filter((elt) => elt !== p )){ selectPath( op, false ) }
+				for (const op of regionBoxes.children.filter((elt) => elt !== p )){ selectPath( op, false ) }
 			}
 		// or nothing
 		} else {
 			eraseSegmentHandle();
 			mode=Modes.normal;
 			for (const p of paths.children){ selectPath( p, false ); }
+			for (const r of regionBoxes.children){ selectPath( r, false ); }
 		}
 	}
 
@@ -417,7 +421,7 @@ function annotateLines(){
 			if (settings.overlapHandling){
 				contourLayer.activate();
 				contourLayer.visible=false;
-				previewVisualsAndOverlapCheck( paths, false, settings.annotationFlavour===AnnotationFlavours.coreLines );
+				previewVisualsAndOverlapCheck( paths, true);
 				contourLayer.removeChildren();
 			}
 			annotationLayer.activate();
@@ -432,14 +436,12 @@ function annotateLines(){
 			eraseSegmentHandle();
 			for (const p of paths.children){ 
 				p.translate( new Point(0, -1*p.isSelected)); 
-				p.baselineOffset += (1*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets)) 
 			} 
 		} else if (Key.isDown('down')){
 			ev.preventDefault()
 			if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
 			for (const p of paths.children){ 
 				p.translate( new Point(0, 1*p.isSelected)) ; 
-				p.baselineOffset -= (1*p.isSelected*(settings.annotationFlavour===AnnotationFlavours.baselineOffsets))
 			} 
 		} else if (Key.isDown('m') || Key.isDown('f') || Key.isDown('v')){
 			mergePaths( paths.children.filter( (elt) => elt.isSelected ));
@@ -458,7 +460,6 @@ function annotateLines(){
 				paths.addChild( new Path( currentPath.segments.slice(currentSegmentIndex)));
 				paths.children.at(-1).strokeColor=settings.newLineColor;
 				paths.children.at(-1).strokeWidth=currentPath.strokeWidth;
-				paths.children.at(-1).baselineOffset=currentPath.baselineOffset;
 				currentPath.segments.splice( currentSegmentIndex+1 );
 			}
 		} else if (Key.isDown('d') || Key.isDown('delete')){
@@ -542,7 +543,6 @@ function annotateLines(){
 			if (mode !== Modes.noPathCopy){
 				for (const p of paths.children.filter((elt)=> elt.isSelected)){
 					pc = p.clone();
-					pc.baselineOffset=p.baselineOffset;
 					selectPath(p, false);
 					selectPath(pc, true );
 					clones.push(pc);
@@ -558,9 +558,22 @@ function annotateLines(){
 		} else if (currentSegmentIndex >= 0){
 			mode = Modes.segmentEdit;
 			var segt = currentPath.segments[currentSegmentIndex];
-			//if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
-			currentPath.removeSegment( currentSegmentIndex );
-			currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
+			if ( isRectangle( currentPath )){
+				var movingCorner = segt.point
+				var oppositeCorner = currentPath.segments[(currentSegmentIndex+2)%4].point;
+				//console.log(`Opposite corner has index ${(currentSegmentIndex+2)%4}: x=${oppositeCorner.x} y=${oppositeCorner.y}` );
+				//console.log("movingCorner=" + movingCorner + " oppositeCorner=" + oppositeCorner )
+				deleteBox( currentPath );
+				currentPath = new Path.Rectangle( oppositeCorner,  new Point(movingCorner.x+ev.delta.x, movingCorner.y+ev.delta.y) )
+				currentPath.strokeWidth=settings.regionStrokeWidth;
+				currentPath.strokeColor=settings.regionColor;
+				regionBoxes.addChild( currentPath );
+			} else {
+				//if (currentSegmentHandle !== null){ currentSegmentHandle.remove(); }
+				//console.log(currentPath);
+				currentPath.removeSegment( currentSegmentIndex );
+				currentPath.insert( currentSegmentIndex, segt.point.x+ev.delta.x, segt.point.y+ev.delta.y);
+			}
 			//if (settings.smoothing) currentPath.smooth({type: 'geometric'});
 		} else if (currentPath !== null){
 			currentPath.translate( ev.delta );
@@ -579,7 +592,11 @@ function annotateLines(){
 		} else {
 			p.selected = false;
 			p.isSelected = false;
-			p.strokeColor = settings.predictionColor;
+			if (isRectangle( p )){
+				p.strokeColor = settings.regionColor;
+			} else {
+				p.strokeColor = settings.predictionColor;
+			}
 		}
 	}
 
@@ -593,6 +610,14 @@ function annotateLines(){
 
 	function getHitPath( pt ){
 		var hitResult = null;
+		for (var p=0; p<regionBoxes.children.length; p++){
+			hitResult = regionBoxes.children[p].hitTest( pt );
+			if (hitResult !== null){
+				regionBoxes.children[p].selected = true;
+				console.log(hitResult);
+				return hitResult;
+			}
+		}
 		for (var p=0; p<paths.children.length; p++){
 			hitResult = paths.children[p].hitTest( pt );
 			if (hitResult !== null){
@@ -610,6 +635,10 @@ function annotateLines(){
 		}
 	}
 
+	function isRectangle( path ){
+		return path._closed && path.segments.length==4;
+	}
+
 	function deselectAll(){
 		for (const p of paths.children){ selectPath( p, false); }
 		currentPath = null;
@@ -620,6 +649,12 @@ function annotateLines(){
 		for (var p=0; p< paths.children.length; p++){ if (paths.children[p]===path){ break; } }
 		paths.removeChildren(p, p+1)
 	}
+
+	function deleteBox( box ){
+		for (var b=0; b< regionBoxes.children.length; b++){ if (regionBoxes.children[b]===box){ break; } }
+		regionBoxes.removeChildren(b, b+1)
+	}
+
 
 	function deletePaths( ps ){
 		var indicesToDelete = ps.map((p) => paths.children.findIndex((e) => e===p))
@@ -649,6 +684,13 @@ function annotateLines(){
 		deletePaths( xSortedPaths.slice(1));
 	}
 
+	function pathBoundingBox( path ){
+		var xs = path.segments.map( (s) => s.point.x );
+		var ys = path.segments.map( (s) => s.point.y );
+		//console.log(xs)
+		return [ Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
+	}
+
 
 	var toIntXY = function ( pt ){
 		return [ Math.round(pt.x), Math.round(pt.y)] ;
@@ -660,41 +702,6 @@ function annotateLines(){
 		if (pt_arr[1] < 0){ pt_arr[1] = 0; }
 		else if (pt_arr[1] >= charter.height){ pt_arr[1] = charter.height-1; }
 		return pt_arr
-	}
-
-	var exportFlexLine = function (id, p, baseline=true){
-
-
-		var contourPath = buildContour(p); 
-		//if (settings.smoothing) contourPath.smooth({type: 'geometric'});
-	    
-		var centerlineArray = p.segments.map( (s) => toIntXY(s.point.divide(scalingFactor)));
-		centerlineArray = centerlineArray.map( pt => truncate_point( pt, charter.width, charter.height))
-		var boundaryArray = [];
-		for (const c of contourPath.curves){
-			boundaryArray.push( c.point1 );
-			var midPoint1 = c.getPointAt( c.length/3 );
-			var midPoint2 = c.getPointAt( c.length*2/3 );
-			boundaryArray.push( midPoint1 );
-			boundaryArray.push( midPoint2 );
-			if (c.point2 === contourPath.curves[0].point1){ break }
-			boundaryArray.push( c.point2 );
-		}
-		boundaryArray = boundaryArray.map( (pt) => toIntXY(pt.divide(scalingFactor)));
-		boundaryArray = boundaryArray.map( (pt) => truncate_point( pt, charter.width, charter.height));
-
-		var baselinePath = null;
-		var baselineArray = [];
-		if (baseline && settings.annotationFlavour===AnnotationFlavours.baselineOffsets) {	
-			baselinePath = new Path( p.segments.map( s => s.point.add(new Point(0, p.baselineOffset))));
-			baselinePath.strokeColor=settings.baselineColor;
-			baselinePath.strokeWidth=2;
-			baselineArray = baselinePath.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
-			baselineArray = baselineArray.map( pt => truncate_point( pt, charter.width, charter.height));
-		}
-
-		return { 'contourPath': contourPath, 'baselinePath': baselinePath, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'height': p.strokeWidth, 'baselineOffset': p.baselineOffset } }
-
 	}
 
 
@@ -722,8 +729,6 @@ function annotateLines(){
 		boundaryArray = removeDuplicates( boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 		var baselineArray = p.segments.map( s => toIntXY(s.point.subtract( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
 		baselineArray = removeDuplicates( baselineArray.map( pt => truncate_point( pt, charter.width, charter.height)))
-		//var extBoundaryArray = extendedPolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
-		//extBoundaryArray = removeDuplicates( extBoundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 
 		//return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'ext_coords': extBoundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
 		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
@@ -734,9 +739,9 @@ function annotateLines(){
 		var prec = arrayOfPairs[0]
 		var streamlinedArray = [ arrayOfPairs[0] ]
 		for (var i=1; i<arrayOfPairs.length; i++){
-			console.log(prec+" -- [" + arrayOfPairs[i][0] + ", " + arrayOfPairs[i][1] +"]")
+			//console.log(prec+" -- [" + arrayOfPairs[i][0] + ", " + arrayOfPairs[i][1] +"]")
 			if (arrayOfPairs[i][0]==prec[0] && arrayOfPairs[i][1]==prec[1]){
-				console.log("Duplicate: ignored");
+				//console.log("Duplicate: ignored");
 				//prec = arrayOfPairs[i];
 				continue;
 			} 
@@ -744,6 +749,17 @@ function annotateLines(){
 			prec = arrayOfPairs[i];
 		}
 		return streamlinedArray
+	}
+
+
+	var rectangleFromRegionBox = function( regbox ){
+		return new Rectangle( regbox.segments[0].point, regbox.segments[2].point );
+	}
+
+	var exportRegionBox = function (id, regbox ){
+		var regdata = { 'id': `r${id}`, 'coords': regbox.segments.map( (s) => toIntXY( s.point.divide(scalingFactor))), 'lines': [] };
+		console.log(regdata);
+		return regdata
 	}
 
 	function buildContour(p, width=null){

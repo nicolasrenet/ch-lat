@@ -42,7 +42,6 @@ app.config.update(
     gui_tool_overlapHandling=False,
     gui_tool_overlapBuffer=2,
     gui_tool_overlapScope=3,
-    gui_tool_annotationFlavour=1,
 )
 
 app.config.from_prefixed_env()
@@ -147,7 +146,6 @@ def write_segmentation_data( archive_id:str, charter_img_id:str ):
     """Export segmentation annotation to disk.
     """
     segmentation_data = request.get_json()
-    fsdb.update_flags({'baseline-offset': bool(len(segmentation_data['lines'][0]['baseline']))}, archive_id, charter_img_id)
     ok = fsdb.write_segmentation_file( segmentation_data, archive_id, charter_img_id )
     resp = make_response( ok )
     return resp
