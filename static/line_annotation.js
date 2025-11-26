@@ -301,6 +301,7 @@ function annotateLines(){
 		contourLayer.activate()
 		
 		console.log(`Found ${regionBoxes.children.length} region boxes`)
+		
 		for (var r=0;  r<regionBoxes.children.length; r++){
 			regionLines = []
 			regionBox = regionBoxes.children[r];
@@ -309,12 +310,12 @@ function annotateLines(){
 			for (var p=0; p<sortedPaths.length; p++){
 				var path = sortedPaths[p];
 				var [pathMinX, pathMinY, pathMaxX, pathMaxY] = pathBoundingBox( path )
-				contourDictionary = lineExportFunc(p, path);
-				var [ct,data] = [ contourDictionary['contourPath'], contourDictionary['data']] ; 
-				ct.selected=true;
-				if (data !== null){
+				if (regionRect.intersects( path.segments[0].point ) || regionRect.intersects( path.segments[path.segments.length-1].point )){
+					contourDictionary = lineExportFunc(`r${r}l${p}`, path);
+					var [ct,data] = [ contourDictionary['contourPath'], contourDictionary['data']] ; 
+					ct.selected=true;
+					if (data !== null){
 					//lineData.push( data );
-					if (regionRect.intersects( path.segments[0].point ) || regionRect.intersects( path.segments[path.segments.length-1].point )){
 						regionLines.push( data );
 						if (pathMinX < regMinX){ regMinX = pathMinX; }
 						if (pathMinY < regMinY){ regMinY=pathMinY; }
@@ -727,7 +728,7 @@ function annotateLines(){
 		centerlineArray = removeDuplicates( centerlineArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 		var boundaryArray = corePolygon.segments.map( s => toIntXY(s.point.divide(scalingFactor)));
 		boundaryArray = removeDuplicates( boundaryArray.map( pt => truncate_point( pt, charter.width, charter.height)))
-		var baselineArray = p.segments.map( s => toIntXY(s.point.subtract( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
+		var baselineArray = p.segments.map( s => toIntXY(s.point.add( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
 		baselineArray = removeDuplicates( baselineArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 
 		//return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'ext_coords': extBoundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
