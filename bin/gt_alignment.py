@@ -19,7 +19,7 @@ import fargv
 
 from libs import transforms as tsf
 from libs import seglib, metrics
-from model_htr import HTR_Model
+from libs.htr_model import HTR_Model
 
 
 
