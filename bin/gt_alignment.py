@@ -8,6 +8,7 @@ import json
 from tqdm import tqdm
 import logging
 import re
+import sys
 
 import torch
 from torch.utils.data.dataset import Dataset
@@ -17,6 +18,7 @@ from torchvision.transforms.v2 import Compose
 from torchvision.datasets import VisionDataset
 import fargv
 
+sys.path.append(str(Path(__file__).parents[1]))
 from libs import transforms as tsf
 from libs import seglib, metrics
 from libs.htr_model import HTR_Model

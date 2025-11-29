@@ -73,7 +73,7 @@ def charters_choice():
 
 @app.route('/')
 def align_choice():
-    return redirect(f'/alignment')
+    return redirect(f'/segmentation')
 
 
 @app.get('/archive')

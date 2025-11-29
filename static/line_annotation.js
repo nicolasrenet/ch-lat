@@ -206,7 +206,7 @@ function annotateLines(){
 				var strokeWidth = settings.strokeWidth;
 				var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
 				paths.addChild( p );
-				strokeWidth = Math.round(line['height']*scalingFactor);
+				strokeWidth = Math.round(line['x-height']*scalingFactor);
 				currentPath = paths.children.at(-1);
 				currentPath.strokeWidth=strokeWidth;
 				if (settings.smoothing) currentPath.strokeJoin='round'
@@ -731,8 +731,8 @@ function annotateLines(){
 		var baselineArray = p.segments.map( s => toIntXY(s.point.add( new Point(0,p.strokeWidth/2)).divide(scalingFactor)))
 		baselineArray = removeDuplicates( baselineArray.map( pt => truncate_point( pt, charter.width, charter.height)))
 
-		//return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'ext_coords': extBoundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
-		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'height': Math.round(p.strokeWidth/scalingFactor) }}
+		//return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'ext_coords': extBoundaryArray, 'x-height': Math.round(p.strokeWidth/scalingFactor) }}
+		return { 'contourPath': corePolygon, 'extContourPath': extendedPolygon, data: { 'id': id, 'centerline': centerlineArray, 'baseline': baselineArray, 'coords': boundaryArray, 'x-height': Math.round(p.strokeWidth/scalingFactor) }}
 
 	}
 

@@ -177,7 +177,7 @@ class Fsdb:
                 as value. 
         """
         if not archive_id:
-            archive_id = sorted([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() ])[0]
+            archive_id = sorted([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() and p.name != '.git'])[0]
         charter_images = []
         if self.config['crop']:
             charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix'])) ]
