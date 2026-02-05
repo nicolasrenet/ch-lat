@@ -54,6 +54,9 @@ class Fsdb:
             suffix = self.config['charter_img_suffix']
         if self.config['crop']:
             file_paths=list(Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, suffix)))
+        # flat folder (archive_id ignored)
+        elif self.config['flat']:
+            file_paths=list(Path(self.config['fsdb_root']).glob('{}.{}'.format(charter_img_id, suffix)))
         else:
             file_paths=list(Path(self.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, suffix)))
         if not file_paths:
