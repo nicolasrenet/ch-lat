@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+	
+	<!-- Load the Paper.js library -->
+	<script type="text/javascript" src="/static/paper.js"></script>
+
+	<!-- Annotation GUI -->
+	<script type="text/javascript" src="/static/line_annotation.js"> </script>
+</head>
+<body>
+	<div id="app-box" class="box">
+		<div id="canvas-box">
+			<canvas id="myCanvas" width="{{display_size[0]}}px" height="{{display_size[1]}}px"> </canvas>
+		</div>
+
+		<div id="control-box" class="box flex-col">
+			<div id="app-wide-properties" class="box flex-row">
+				<div id="stat-box" class="box">
+					<dl class="inside">
+						<span class="list-head">Collection:</span>
+						<li>Charter count: {{fsdb_stats['total_charters']}}</li>
+						<li>Image count: {{fsdb_stats['total_images']}}</li>
+						<li>Line prediction files: {{fsdb_stats['lines_pred_count']}} ({{fsdb_stats['lines_pred_ratio']*100|round}}%)</li>
+						<li>Line GT files: {{fsdb_stats['lines_gt_count']}} ({{(fsdb_stats['lines_gt_ratio']*100)|round(1)}}%)</li>
+					</dl>
+				</div>
+				<!-- Settings:
+					- server-side: crop/full
+				 	- client-side: stroke-width
+					- both: overlap handling
+			        -->
+
+				<div id="settings-box" class="box flex-col">
+					<span class="list-head">Settings:</span>
+					<form id="settings-form" action='/{settingswrite}' method='POST'>
+						<div class="flex-row"> <label class="config-label">Stroke width (px)</label><input id="stroke-width" type="number" name="strokeWidth"> </div>
+						<div class="flex-row"> <label class="config-label">Alpha</label><input id="alpha" type="number" name="alpha" step="0.1"> </div>
+						<div class="flex-row"><label class="config-label">Image ZoI:</label> 
+							<input id="radio-full" type="radio" name="image-type-radio"> <label class="right-positioned-label">Full</label> 
+							<input id="radio-crop" type="radio" name="image-type-radio"> <label class="right-positioned-label">OldText</label> 
+						</div>
+						<div class="flex-row"><label class="config-label">Default data:</label> 
+							<input id="radio-none-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">None.</label> 
+							<input id="radio-pred-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">Pred.</label> 
+							<input id="radio-gt-data" type="radio" name="data-type-radio"> <label class="right-positioned-label">GT</label> 
+						</div>
+					</form>
+				</div>
+			</div>
+			<div id="property-box" class="box">
+				<form id='flag-form' action='/flagwrite/{{archive_id}}/{{charter_img_id}}' method="POST">
+				<dl class="inside">
+					<span class="list-head">This file:</span>
+					<li>Image file: {{charter_filename}}</li>
+					<li>Size: {{charter_img_size[0]}} x {{charter_img_size[1]}}</li>
+					<li>
+							<label for="img-flag-bad" class="label-first-in-line" >Low-quality segmentation
+								<span class='help'>
+									&#x1fbc4;
+									<span class='helptext'>Kraken segmentation: missed or disjointed lines.</span>
+								</span>
+							</label>
+							<input id='img-flag-bad' type='checkbox' name='img-flag' value='bad' class='flagchck'>
+							<label for="img-flag-data-issue" >Data issue 
+								<span class='help'>
+									&#x1fbc4;
+									<span class='helptext'>Problems with the data: image unusable or irrelevant.</span>
+								</span>
+							</label>
+							<input id='img-flag-data-issue' type='checkbox' name='img-flag' value='data-issue' class='flagchck'>
+							<label for="img-flag-questions">Review needed
+								<span class='help'>
+									&#x1fbc4;
+									<span class='helptext'>Uncertainty regarding segmentation, need diplomatist's input.</span>
+								</span>
+							</label>
+							<input id='img-flag-questions' type='checkbox' name='img-flag' value='questions' class='flagchck'>
+							<label for="img-flag-textcomplete">Text-complete
+								<span class='help'>
+									&#x1fbc4;
+									<span class='helptext'>1-page, 1-tenor, complete.</span>
+								</span>
+							</label>
+							<input id='img-flag-textcomplete' type='checkbox' name='img-flag' value='textcomplete' class='flagchck'>
+					</li>
+				</dl>
+				</form>
+			</div>
+			<div id="export-box">
+				<button id="preview-on"> Export preview</button>
+				<button id="preview-off"> Export preview off</button>
+				<button id="export-button"> Export</button>
+			</div>
+			<div id="charter-table">
+				<div class="table-header">
+					<div class="table-header-cell">Idx</div>
+					<div class="table-header-cell">Image</div> 
+					<div class="table-header-cell">GT.</div> 
+					<div class="table-header-cell">Pred.</div> 
+				</div>
+				{% for ch_img in charter_images %}
+						
+					{% if loop.index==1 %} <div class="table-row row-of-interest"> {% else %} <div class="table-row"> {% endif %}
+						<div class="table-cell">
+							{{ch_img.number}}.
+						</div>
+						<div class="table-cell">
+							{% if ch_img.id != charter_img_id %}
+							<a href="/{{ch_img.archive}}/{{ch_img.id}}">{{ch_img.id}}</a>
+							{% else %}
+							{{ch_img.id}}
+							{% endif %}
+						</div>
+						<div class="table-cell">
+							{% if ch_img.hasGTData %} 
+								<input class="tablechck" type="checkbox" id="check_gtdata_{{ch_img.id}}" name="check_gtdata" value="false">
+							{% endif %}
+						</div>
+						<div class="table-cell">
+							{% if ch_img.hasPredData %} 
+								<input class="tablechck" type="checkbox" id="check_preddata_{{ch_img.id}}" name="check_preddata" value="false">
+							{% endif %}
+						</div>
+					</div>
+				{% endfor %}
+
+			</div>
+		</div>
+	</div>
+
+      	<script type="text/javascript">
+		<!-- read from line_annotation.js -->
+
+		var guiTool = null
+		const charter_images = {{ charter_images | tojson }};
+		const cnv = document.getElementById("myCanvas");
+		const img_file = charter_images[0].filename; 
+		const archive_id = {{ archive_id | tojson }};
+		const img_id = {{ charter_img_id | tojson  }};
+		const img_url = `/img/${charter_images[0].archive}/${img_id}`;
+
+		cnv.display_size = {{display_size}};
+
+	     	function exportData(archive_id, ch_img_id){
+			const segdata =  guiTool.exportMask();
+			if (Object.keys(segdata).length === 0){ console.log("exportData() - abort: empty segmentation data!"); return };
+			const url = `/segdata/${archive_id}/${ch_img_id}`;
+			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( segdata ) })
+			.then( resp => { console.log(resp.json()) } )
+		}
+
+		function importData( archive_id, ch_img_id, dataType ){
+			const url = `/segdata/${archive_id}/${ch_img_id}?` + new URLSearchParams({segtype: dataType}).toString()
+			console.log(url)
+			return fetch(url, { method: "GET" })
+			.then( resp => resp.json())
+			.then( data => guiTool.importMask( data, dataType ) )
+		}
+
+		function writeFlags( flagData, archive_id, ch_img_id ){
+			const url = `/flags/${archive_id}/${ch_img_id}`;
+			fetch(url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( flagData )})
+			.then( resp => {console.log(resp.json())} )
+		}
+
+		function readFlags( archive_id, ch_img_id ){
+			const url = `/flags/${archive_id}/${ch_img_id}`
+			return fetch(url, { method: "GET" }) .then( resp => resp.json() ) 
+		}
+
+		function readAppConfig(){
+			return fetch('/appconfig', {method: "GET" }).then( resp => resp.json())
+		}
+
+		function writeAppConfig( configData ){
+			fetch("/appconfig", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify( configData )})
+			.then( resp => {console.log(resp.json())})
+		}
+
+
+		(function controlBoxInit(){
+			const gt_data_checks = document.getElementsByName("check_gtdata")
+			const pred_data_checks = document.getElementsByName("check_preddata")
+			const flag_box_checks = document.getElementsByName("img-flag");
+			const flag_box_form = document.getElementById('flag-form');
+
+			for (const elt of gt_data_checks){
+				if (elt.id === `check_gtdata_${img_id}`){
+					elt.checked=false;
+					elt.onchange = () => { 
+						if (elt.checked){
+							guiTool.eraseMask();
+							importData( archive_id, img_id, 'gt' ) ;
+							check_preddata_elt = document.getElementById(`check_preddata_${img_id}`);
+							if (check_preddata_elt !== null){ check_preddata_elt.checked=false;}
+						} else { guiTool.eraseMask() ; }
+					}
+				} else { elt.disabled = true; }
+			}
+			for (const elt of pred_data_checks){
+				if (elt.id === `check_preddata_${img_id}`){
+					elt.checked=false;
+					elt.onchange = () => { 
+						console.log(`check_preddata_${img_id}.onchange()`)
+						if (elt.checked){
+							guiTool.eraseMask();
+							importData( archive_id, img_id, 'pred' ) ;
+							check_gtdata_elt = document.getElementById(`check_gtdata_${img_id}`);
+							if (check_gtdata_elt !== null){ check_gtdata_elt.checked=false; }
+							gt_data_status = false;
+						} else { guiTool.eraseMask() ; }
+					}
+				} else { elt.disabled = true; }
+			}
+
+			
+			readFlags( archive_id, img_id )
+			.then( flags => {
+				for (const elt of flag_box_checks){
+					elt.checked = flags[elt.value];
+					elt.onchange = () => {
+						var flagData = {};
+						for (const elt of flag_box_checks){
+			if (elt.checked){ flagData[elt.value]=true } else { flagData[elt.value]=false }
+						}
+						writeFlags( flagData, archive_id, img_id ); 		
+					}
+				}
+			});
+
+			
+			for (const elt of document.getElementById("settings-form").querySelectorAll("input")){
+				elt.onchange = function(){
+					var setting = {};
+					if (this.type === 'number'){
+						setting[elt.name]=parseInt(this.value);
+						if (elt.name==='alpha'){ setting['alpha']=parseFloat(this.value); }
+					} else if (this.type === 'checkbox'){
+						setting[elt.name]=this.checked;
+						if (elt.name==='overlapHandling') { 
+							document.getElementById("overlap-scope").disabled = !this.checked
+							document.getElementById("overlap-buffer").disabled = !this.checked
+						}
+					} else if (this.type === 'radio'){
+						if (this.name==='data-type-radio'){
+							if (this.checked){
+								if (this.id === 'radio-gt-data'){
+									setting['dataType']='gt';
+								} else if (this.id === 'radio-pred-data'){
+									setting['dataType']='pred';
+								} else {
+									setting['dataType']='none'
+								}
+							}
+						} 
+					} 
+					// store server-side
+					writeAppConfig( setting )
+					// tell the canvas tool
+					guiTool.applySettings( setting )
+				}
+			}
+
+			document.getElementById("preview-on").onclick=function(){
+				guiTool.previewMaskOn( true );
+				this.style.display = "none";
+				document.getElementById("preview-off").style.display="block"
+			}
+			document.getElementById("preview-off").onclick=function(){
+				guiTool.previewMaskOn( false );
+				this.style.display = "none";
+				document.getElementById("preview-on").style.display="block"
+			}
+			
+			document.getElementById("canvas-box").onclick = () => {
+				document.getElementById("preview-off").style.display='none';
+				document.getElementById("preview-on").style.display="block";
+			}
+				
+			document.getElementById("export-button").onclick=function(){
+				exportData(archive_id, img_id);
+				document.getElementById("preview-on").style.display="none";
+				document.getElementById("preview-off").style.display="block";
+			}
+			
+		})()
+
+		paper.install(window);
+
+		window.onload=() => { 
+			guiTool = annotateLines(); // in line_annotation.js
+
+			for (const numberInput of document.querySelectorAll("#settings-box input[type='number']")){
+				console.log(numberInput)
+				numberInput.value=guiTool.getSetting(numberInput.name);
+			}
+
+			// reading app config from server
+			readAppConfig().then( conf => {
+				console.log("readAppConfig()")
+				console.log(conf)
+				guiTool.applySettings( conf )
+				for (const elt of document.getElementById('settings-form').querySelectorAll("input")){
+					if (elt.type === 'checkbox'){ elt.checked=conf[elt.name]; }
+					else if (elt.type === 'number'){
+						elt.value=conf[elt.name];
+						<!--if (elt.name==='overlapScope' || elt.name==='overlapBuffer'){ elt.disabled = !conf['overlapHandling'] }-->
+					}
+				}
+				document.querySelector('#radio-' + conf['dataType'] + '-data').checked=true;
+				if (conf['dataType'] !== 'none'){
+					guiTool.eraseMask();
+					importData( archive_id, img_id, conf['dataType'] ) 
+					var checkDataElt = document.getElementById(`check_${conf['dataType']}data_${img_id}`)
+					if (checkDataElt!==null){ checkDataElt.checked=true }
+				}
+			})
+		}
+
+		
+	</script>
+
+</body>
+
+</html>
