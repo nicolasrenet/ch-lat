@@ -16,12 +16,12 @@
 }
 
 #preview-on {
-	flex: 1 1 100px;
+	flex: 1 1 60px;
 }
 
 #preview-off {
 	display: none;
-	flex: 1 1 100px;
+	flex: 1 1 60px;
 }
 #export-button {
 	flex: 3 1;
@@ -68,7 +68,7 @@ dl {
 }
 
 .config-label {
-	width: 250px;
+	width: 120px;
 }
 
 .right-positioned-label {
@@ -86,14 +86,16 @@ dl {
 
 #app-wide-properties {
 	width: 600px;
+	font-size:8pt;
 }
 
 #property-box {
 	width: 600px;
+	font-size: 8pt;
 }
 
 .box > * {
-	padding: 10px;
+	padding: 5px;
 }
 
 #charter-table {
@@ -111,6 +113,7 @@ dl {
 
 .table-row {
 	display: table-row;
+	font-size: 10pt;
 }
 
 .table-row > * {
@@ -125,9 +128,8 @@ dl {
 
 .table-header-cell{
 	display: table-cell;
-	/*text-align: center;*/
 	border-bottom: 1px solid;
-	padding-left: 20px;
+	padding-left: 10px;
 	padding-right: 20px;
 }
 
@@ -136,11 +138,6 @@ dl {
 	display: table-cell;
 	padding: 8px;
 }
-
-.table-cell * {
-	font-size: 10pt;
-}
-	/*text-align: center;*/
 
 
 .width-50 {
