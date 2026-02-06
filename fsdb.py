@@ -59,15 +59,15 @@ class Fsdb:
         if suffix is None:
             suffix = self.config['charter_img_suffix']
         if self.config['crop']:
-            file_paths=list(Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, suffix)))
+            file_paths=Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, suffix))
         # flat folder (archive_id ignored)
         elif self.config['flat']:
-            file_paths=list(Path(self.config['fsdb_root']).glob('{}.{}'.format(charter_img_id, suffix)))
+            file_paths=Path(self.config['fsdb_root']).glob('{}.{}'.format(charter_img_id, suffix))
         else:
-            file_paths=list(Path(self.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, suffix)))
+            file_paths=Path(self.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, suffix))
         if not file_paths:
             return None
-        return file_paths
+        return list(sorted(file_paths))
 
     def write_img_metadata(self, data:dict, archive_id:str, charter_img_id:str, suffix=None):
         if suffix is None or suffix==self.config['charter_img_suffix']:
@@ -198,11 +198,11 @@ class Fsdb:
         print(self.config['charter_img_suffix'])
         #print(list(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix']))))
         if self.config['crop']:
-            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix'])) ]
+            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix']))) ]
         elif self.config['flat']:
-            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix'])) ]
+            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix']))) ]
         else:
-            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, self.config['charter_img_suffix'])) ]
+            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, self.config['charter_img_suffix']))) ]
 
         for number, ch_img in enumerate(charter_images, start=1):
             filepath_stem = lemmatize( Path(ch_img['filename']), suffix=self.config['charter_img_suffix'] )
