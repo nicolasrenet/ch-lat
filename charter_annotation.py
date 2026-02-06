@@ -22,7 +22,6 @@ from fsdb import Fsdb, lemmatize
 app = Flask(__name__)
 
 
-
 # SETTINGS
 app.config.update(
     scaling_factor= .7,
@@ -33,7 +32,10 @@ app.config.update(
     pregt_htr_suffix='htr.pregt.json',
     pred_seg_suffix='lines.pred.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
+    json_validate=True,
+    schema_path='static/lines_schema.json',
     crop=False,
+    flat=False,
     polygon_attribute='coords',
     gui_tool_smoothing=True,
     gui_tool_dataType='gt',
@@ -43,6 +45,7 @@ app.config.update(
     gui_tool_overlapBuffer=2,
     gui_tool_overlapScope=3,
 )
+
 
 app.config.from_prefixed_env()
 
@@ -118,7 +121,7 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
     with Image.open( charter_img_filename, 'r') as img:
         display_size = [int(d*get_scaling_factor(img.size[0])) for d in img.size]
         return render_template(
-                'charters.html', 
+                'charters.html' if not app.config['flat'] else 'charters_flat.html', 
                 archives=archives,
                 archive_id=archive_id,
                 charter_images=charter_images, 

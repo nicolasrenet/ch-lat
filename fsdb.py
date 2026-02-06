@@ -4,9 +4,12 @@ import json
 import itertools
 import base64
 from datetime import datetime
-from PIL import Image, ImagePath
 import sys 
 import io
+
+# third-party
+import jsonschema
+from PIL import Image, ImagePath
 
 
 def lemmatize( p:Path, suffix='', replacement=''):
@@ -27,10 +30,13 @@ class Fsdb:
         img_suff, lines_gt_suff, lines_pred_suff, htr_pregt_suff, htr_gt_suff = [ self.config[k] for k in ('charter_img_suffix', 
                                     'gt_seg_suffix', 'pred_seg_suffix', 
                                     'pregt_htr_suffix', 'gt_htr_suffix') ]
-        all_charters = list(Path(self.config['fsdb_root']).glob('*/*/*/CH.cei.xml'))
+        all_charters = list(Path(self.config['fsdb_root']).glob('*/*/*/CH.cei.xml')) if not self.config['flat'] else list(Path(self.config['fsdb_root']).glob('*.{}'.format(img_suff)))
         
         if self.config['crop']:
             charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.seals.crops/*.{}'.format(img_suff)))
+        # flat folder (archive_id ignored)
+        elif self.config['flat']:
+            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*.{}'.format(img_suff)))
         else:
             charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.{}'.format(img_suff)))
 
@@ -85,7 +91,9 @@ class Fsdb:
             return {}
 
         infile, returnValue = None, {}
+        print(f"self.search( {archive_id}, {charter_img_id}, suffix={suffix})")
         data_path = self.search( archive_id, charter_img_id, suffix=suffix)
+        print(f"data_path={data_path}")
         if data_path is None:
             return {}
         try:
@@ -116,8 +124,6 @@ class Fsdb:
         """
         Write segmentation data into a JSON file.
 
-        TODO: deal with multi-region files.
-
         Args:
             archive_id (str): archive name
             charter_img_id (str): charter atom id
@@ -140,9 +146,13 @@ class Fsdb:
             "text_direction": "horizontal-lr",
             #"regions": [ { 'id': 'r0', 'coords': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
         })
-        page_header={ 'metadata': { 'created': str(datetime.now()), 'creator': 'ch-lat:{}'.format(Path(__file__).name), 'comments': '' }}
-        page_header.update( page_data )
-        return self.write_img_metadata( page_header, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
+        page_update={ 'metadata': { 'created': str(datetime.now()), 'creator': 'ch-lat:{}'.format(Path(__file__).name), 'comments': '' }}
+        page_update.update( page_data )
+        # validate here (! exception on failure)
+        if self.config['json_validate']:
+            with open( self.config['schema_path'], 'r') as schema_if: 
+                jsonschema.validate( instance=page_update, schema=json.load( schema_if ))
+        return self.write_img_metadata( page_update, archive_id, charter_img_id, suffix=self.config['gt_seg_suffix'])
 
 
     def read_segmentation_file(self, archive_id:str, charter_img_id: str, suffix: str ) -> dict:
@@ -180,10 +190,17 @@ class Fsdb:
                 as value. 
         """
         if not archive_id:
-            archive_id = sorted([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() and p.name != '.git'])[0]
+            if self.config['flat']:
+                archive_id='stand-alone'
+            else:
+                archive_id = sorted([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() and p.name != '.git'])[0]
         charter_images = []
+        print(self.config['charter_img_suffix'])
+        #print(list(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix']))))
         if self.config['crop']:
             charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix'])) ]
+        elif self.config['flat']:
+            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix'])) ]
         else:
             charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in Path(self.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, self.config['charter_img_suffix'])) ]
 

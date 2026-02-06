@@ -10,6 +10,7 @@
 }
 
 #export-box {
+	width: 600px;
 	display: flex;
 	border-bottom: 1px solid;
 }
@@ -35,6 +36,7 @@
 }
 
 #settings-box {
+	width: 350px;
 	border: 1px solid;
 	flex: 1 1;
 }
@@ -57,7 +59,7 @@ dl {
 }
 
 #settings-form input[type='number'] {
-	width: 50px;
+	width: 40px;
 }
 
 .flex-row {
@@ -82,11 +84,20 @@ dl {
 	flex: 1 1 auto;
 }
 
+#app-wide-properties {
+	width: 600px;
+}
+
+#property-box {
+	width: 600px;
+}
+
 .box > * {
 	padding: 10px;
 }
 
 #charter-table {
+	width: 600px;
 	padding-top: 20px;
 	/*table-layout: fixed;*/
 	display: table;
@@ -124,6 +135,10 @@ dl {
 	/*flex: 1 1;*/
 	display: table-cell;
 	padding: 8px;
+}
+
+.table-cell * {
+	font-size: 10pt;
 }
 	/*text-align: center;*/
 
