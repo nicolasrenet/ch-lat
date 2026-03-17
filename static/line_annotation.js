@@ -465,7 +465,11 @@ function annotateLines(){
 			}
 		} else if (Key.isDown('d') || Key.isDown('delete')){
 			if (currentPath !== null){
-				if (currentSegmentIndex > -1){
+				// delete box = region
+				if (isRectangle( currentPath )){ 
+					deleteBox( currentPath );
+				// delete a segment in a path
+				} else if (currentSegmentIndex > -1){
 					currentPath.removeSegment( currentSegmentIndex );
 					currentPath = null;
 					currentSegmentIndex = -1;
