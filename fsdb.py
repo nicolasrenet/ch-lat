@@ -294,14 +294,18 @@ class Fsdb:
         """
         # read htr/segmentation file
         page_htr_dict = self.read_img_metadata('*', charter_img_id, self.config['pregt_htr_suffix'])
+        page_htr_dict["metadata"]["created"] = str(datetime.now())
+        page_htr_dict["metadata"]["comment"] += " + reviewed and exported in Ch-Lat."
+        print(page_htr_dict)
         new_lines = [] 
-        for idx, line in enumerate( page_htr_dict['lines']):
-            if line_transcriptions[idx]=='--<discard>--':
-                continue
-            new_lines.append( page_htr_dict['lines'][idx] )
-            if line_transcriptions[idx] is not None:
-                new_lines[-1]['text']=line_transcriptions[idx]
-        page_htr_dict['lines']=new_lines 
+        for region in page_htr_dict['regions']:
+            for idx, line in enumerate( region['lines']):
+                if line_transcriptions[idx]=='--<discard>--':
+                    continue
+                new_lines.append( region['lines'][idx] )
+                if line_transcriptions[idx] is not None:
+                    new_lines[-1]['text']=line_transcriptions[idx]
+            region['lines']=new_lines 
         return self.write_img_metadata( page_htr_dict, '*', charter_img_id, suffix=self.config['gt_htr_suffix'])
 
 
