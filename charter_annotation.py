@@ -24,13 +24,13 @@ app = Flask(__name__)
 
 # SETTINGS
 app.config.update(
-    scaling_factor= .7,
+    scaling_factor= .7, # unused
     max_width=1200,
     charter_img_suffix='img.jpg',
-    gt_seg_suffix='lines.gt.json',
-    gt_htr_suffix='htr.gt.json',
-    pregt_htr_suffix='htr.pregt.json',
     pred_seg_suffix='lines.pred.json',
+    gt_seg_suffix='lines.gt.json',
+    pregt_htr_suffix='htr.pregt.json',
+    gt_htr_suffix='htr.gt.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
     json_validate=True,
     schema_path='static/lines_schema.json',

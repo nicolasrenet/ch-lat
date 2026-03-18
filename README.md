@@ -3,14 +3,42 @@
 ## Charter line annotation tool
 
 
-A JS+Flask GUI for annotating charter lines, that runs on top of a FSDB-like tree. 
+A JS+Flask GUI for annotating charters, either for line segmentation or HTR ground-truthing.
 
 ### Startup
 
+#### Option 1. On top of an FSDB deep tree
 ```bash
-FLASK_crop=1 flask --app charter_annotation run
+FLASK_fsdb_root='/home/nicolas/fsdb' flask --app charter_annotation run -p 5001
 ```
-See `charter_annotation.py` for setting the root of the FSDB tree.
+
+By default, the entire charter image is used, with the regions read from the initial line segmentation file (or an image-wide region if no such file is provided). In order to restrict the scope to existing `OldText` crops, use the `FLASK_crop=1` at startup. At export time, the resulting annotation file is a crop-wide file.
+
+#### Option 2. Read and write from a flat directory
+
+No FSDB compliance needed: just ensure that filenames use a consistent prefix/suffix pattern.
+
+```bash
+FLASK_flat=1 FLASK_fsdb_root='/home/nicolas/fsdb' flask --app charter_annotation run -p 5001
+```
+
+### Default suffixes
+
+
+| Data | Workflow | Flask option | Prefix |
+|:-----|:---------|:-------------|:-------|
+| Line segmentation predictions | line annotation input | `FLASK_pred_seg_suffix` | `lines.pred.json`|
+| Line segmentation data GT | line annotation input/output | `FLASK_gt_seg_suffix` | `lines.gt.json`|
+| HTR predictions | HTR annotation input | `FLASK_pregt_htr_suffix` | `htr.pregt.json`|
+| HTR ground-truth | HTR annotation input/output | `FLASK_gt_htr_suffix` | `htr.gt.json` |
+
+### Other options
+
+
+See `charter_annotation.py` for the following flags:
+
++ `FLASK_json_validate`: JSON validation
++ `FLASK_schema_path`: JSON schema (default: `static/lines_schema.json`)
 
 ### Create or correct a line segmentation
 
