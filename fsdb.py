@@ -276,7 +276,7 @@ class Fsdb:
                     max_width = bbox_width
                 imgByteArr = io.BytesIO()
                 page_img.crop( textline_bbox ).save( imgByteArr, format='PNG')
-                line_tuples.append( [tl['id'], tl['text'], base64.b64encode(imgByteArr.getvalue()).decode(), bbox_width ])
+                line_tuples.append( [tl['id'], tl['text'] if 'text' in tl else '', base64.b64encode(imgByteArr.getvalue()).decode(), bbox_width ])
 
             return (line_tuples, max_width) #json.dumps(line_tuples)
         except (IOError) as e:
