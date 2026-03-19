@@ -40,7 +40,7 @@ See `charter_annotation.py` for the following flags:
 + `FLASK_json_validate`: JSON validation
 + `FLASK_schema_path`: JSON schema (default: `static/lines_schema.json`)
 
-### 1.4 Annotation mode
+### 1.4 Annotation modes
 
 #### Segmentation GT: Create or correct a line segmentation
 

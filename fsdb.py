@@ -6,10 +6,11 @@ import base64
 from datetime import datetime
 import sys 
 import io
+import numpy as np
 
 # third-party
 import jsonschema
-from PIL import Image, ImagePath
+from PIL import Image, ImagePath, ImageDraw
 
 
 def lemmatize( p:Path, suffix='', replacement=''):
@@ -243,7 +244,7 @@ class Fsdb:
             return None
 
 
-    def read_lines(self, charter_img_id:str, data_type='pregt', polygon_key='coords'):
+    def read_lines(self, charter_img_id:str, data_type='pregt', polygon_key='coords',  polygon_mask=True):
         """ Read line items. 
         Output:
             tuple[list[list],int}]: a list of line descriptors, as well as the maximum
@@ -263,19 +264,27 @@ class Fsdb:
             page_dict = json.load( open(charter_htr_path, 'r') )
             line_tuples = []
             max_width = 0
-            # YET TO BE TESTED
             lines = itertools.chain.from_iterable( [ reg['lines'] for reg in page_dict['regions'] if 'lines' in reg ] )
-            #if reg in page_dict['regions']:
-            #    if 'lines' in reg:
-            #        lines.extend( reg['lines'] )
             for tl in lines:
                 polygon_coordinates = [ tuple(pair) for pair in tl[polygon_key]]
+                polygon_array = np.array( tl[polygon_key] )
+                polygon_min = np.min( polygon_array, axis=0 )
+                assert polygon_min.shape==(2,)
+                polygon_transposed = polygon_array - polygon_min
+                print(polygon_transposed)
                 textline_bbox = ImagePath.Path( polygon_coordinates ).getbbox()
                 bbox_width = textline_bbox[2]-textline_bbox[0]
                 if bbox_width > max_width: 
                     max_width = bbox_width
+                page_img_crop = page_img.crop( textline_bbox )
+                #----- polygon mask
+                if polygon_mask:
+                    gray_box = Image.new( page_img_crop.mode, page_img_crop.size, 0)
+                    polygon_mask = Image.new( 'L', page_img_crop.size, 150 )
+                    ImageDraw.Draw( polygon_mask ).polygon( [ tuple(pair) for pair in polygon_transposed.tolist()], fill=255)
+                    page_img_crop=Image.composite(page_img_crop, gray_box, polygon_mask)
                 imgByteArr = io.BytesIO()
-                page_img.crop( textline_bbox ).save( imgByteArr, format='PNG')
+                page_img_crop.save( imgByteArr, format='PNG')
                 line_tuples.append( [tl['id'], tl['text'] if 'text' in tl else '', base64.b64encode(imgByteArr.getvalue()).decode(), bbox_width ])
 
             return (line_tuples, max_width) #json.dumps(line_tuples)
