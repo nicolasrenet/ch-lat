@@ -271,7 +271,6 @@ class Fsdb:
                 polygon_min = np.min( polygon_array, axis=0 )
                 assert polygon_min.shape==(2,)
                 polygon_transposed = polygon_array - polygon_min
-                print(polygon_transposed)
                 textline_bbox = ImagePath.Path( polygon_coordinates ).getbbox()
                 bbox_width = textline_bbox[2]-textline_bbox[0]
                 if bbox_width > max_width: 
