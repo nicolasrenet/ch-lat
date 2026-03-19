@@ -1,11 +1,11 @@
 # GT Alignment toolchain
 
-## Charter line annotation tool
+## 1. Charter line annotation tool
 
 
 A JS+Flask GUI for annotating charters, either for line segmentation or HTR ground-truthing.
 
-### Startup
+### 1.1 Startup
 
 #### Option 1. On top of an FSDB deep tree
 ```bash
@@ -22,7 +22,7 @@ No FSDB compliance needed: just ensure that filenames use a consistent prefix/su
 FLASK_flat=1 FLASK_fsdb_root='/home/nicolas/fsdb' flask --app charter_annotation run -p 5001
 ```
 
-### Default suffixes
+### 1.2 Default suffixes
 
 
 | Data | Workflow | Flask option | Prefix |
@@ -32,7 +32,7 @@ FLASK_flat=1 FLASK_fsdb_root='/home/nicolas/fsdb' flask --app charter_annotation
 | HTR predictions | HTR annotation input | `FLASK_pregt_htr_suffix` | `htr.pregt.json`|
 | HTR ground-truth | HTR annotation input/output | `FLASK_gt_htr_suffix` | `htr.gt.json` |
 
-### Other options
+### 1.3 Other options
 
 
 See `charter_annotation.py` for the following flags:
@@ -40,7 +40,9 @@ See `charter_annotation.py` for the following flags:
 + `FLASK_json_validate`: JSON validation
 + `FLASK_schema_path`: JSON schema (default: `static/lines_schema.json`)
 
-### Create or correct a line segmentation
+### 1.4 Annotation mode
+
+#### Segmentation GT: Create or correct a line segmentation
 
 ```
 http://localhost:5000/segmentation
@@ -48,8 +50,10 @@ http://localhost:5000/segmentation
 ```
 ![](doc/segmentation_screenshot.png)
 
-### Correct a line-based transcription
+Limitations: regions can be read and modified or deleted, but they cannot be created from scratch.
+They are typically read from an existing segmentation prototype.
 
+#### HTR ground-truth: review/correct a line-based transcription
 
 ```
 http://localhost:5000
@@ -58,7 +62,7 @@ http://localhost:5000
 ![](doc/alignment_screenshot.png)
 
 
-## Alignment script
+## 2. Alignment script
 
 A hack that uses a passable HTR in order to align existing full-paragraph GT transcriptions with an existing segmentation.
 
@@ -103,7 +107,7 @@ done ) | xargs ~/graz/htr/hw_gt_alignment/gt_alignment.py -model_path $PYTHONPAT
 
 Resulting `*.htr.gt.json` file can be reviewed and corrected with the line transcription viewer above.
 
-## Running in Docker
+## 3. Running in Docker
 
 Build the container:
 
