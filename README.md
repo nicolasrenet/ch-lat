@@ -56,7 +56,7 @@ They are typically read from an existing segmentation prototype.
 #### HTR ground-truth: review/correct a line-based transcription
 
 ```
-http://localhost:5000
+http://localhost:5000/alignment
 ```
 
 ![](doc/alignment_screenshot.png)
