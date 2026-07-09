@@ -49,6 +49,10 @@ app.config.update(
 
 app.config.from_prefixed_env()
 
+# Ensure that flat system tree option has priority
+if app.config['flat']:
+    app.config['crop']=0
+
 print(app.config)
 
 

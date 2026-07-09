@@ -28,22 +28,22 @@ class Fsdb:
     def stats(self, ):
         """ A few stats about this database."""
         
-        img_suff, lines_gt_suff, lines_pred_suff, htr_pregt_suff, htr_gt_suff = [ self.config[k] for k in ('charter_img_suffix', 
+        img_sfx, lines_gt_sfx, lines_pred_sfx, htr_pregt_sfx, htr_gt_sfx = [ self.config[k] for k in ('charter_img_suffix', 
                                     'gt_seg_suffix', 'pred_seg_suffix', 
                                     'pregt_htr_suffix', 'gt_htr_suffix') ]
-        all_charters = list(Path(self.config['fsdb_root']).glob('*/*/*/CH.cei.xml')) if not self.config['flat'] else list(Path(self.config['fsdb_root']).glob('*.{}'.format(img_suff)))
+        all_charters = list(Path(self.config['fsdb_root']).glob('*/*/*/CH.cei.xml')) if not self.config['flat'] else list(Path(self.config['fsdb_root']).glob('*.{}'.format(img_sfx)))
         
-        if self.config['crop']:
-            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.seals.crops/*.{}'.format(img_suff)))
         # flat folder (archive_id ignored)
-        elif self.config['flat']:
-            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*.{}'.format(img_suff)))
+        if self.config['flat']:
+            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*.{}'.format(img_sfx)))
+        elif self.config['crop']:
+            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.seals.crops/*.{}'.format(img_sfx)))
         else:
-            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.{}'.format(img_suff)))
+            charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.{}'.format(img_sfx)))
 
         current_state = [ 
-                ( Path(lemmatize(p, suffix=img_suff, replacement=lines_pred_suff )).exists(), Path(lemmatize(p, suffix=img_suff, replacement=lines_gt_suff )).exists(),
-                  Path(lemmatize(p, suffix=img_suff, replacement=htr_pregt_suff )).exists(), Path(lemmatize(p, suffix=img_suff, replacement=htr_gt_suff )).exists()) for p in charter_img_paths ]
+                ( Path(lemmatize(p, suffix=img_sfx, replacement=lines_pred_sfx )).exists(), Path(lemmatize(p, suffix=img_sfx, replacement=lines_gt_sfx )).exists(),
+                  Path(lemmatize(p, suffix=img_sfx, replacement=htr_pregt_sfx )).exists(), Path(lemmatize(p, suffix=img_sfx, replacement=htr_gt_sfx )).exists()) for p in charter_img_paths ]
         report = { "total_charters": len(all_charters), "total_images": len(current_state), 
                 "lines_pred_count": len(list(itertools.filterfalse(lambda t: not t[0], current_state))), "lines_gt_count": len(list(itertools.filterfalse(lambda t: not t[1], current_state))),
                 "htr_pregt_count": len(list(itertools.filterfalse(lambda t: not t[2], current_state))), "htr_gt_count": len(list(itertools.filterfalse(lambda t: not t[3], current_state)))
@@ -59,11 +59,11 @@ class Fsdb:
     def search(self,  archive_id:str='*', charter_img_id:str='*', suffix:str=None) -> list[Path]:
         if suffix is None:
             suffix = self.config['charter_img_suffix']
-        if self.config['crop']:
+        if self.config['flat']:
+            file_paths=Path(self.config['fsdb_root']).glob('{}.{}'.format(charter_img_id, suffix))
+        elif self.config['crop']:
             file_paths=Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, suffix))
         # flat folder (archive_id ignored)
-        elif self.config['flat']:
-            file_paths=Path(self.config['fsdb_root']).glob('{}.{}'.format(charter_img_id, suffix))
         else:
             file_paths=Path(self.config['fsdb_root']).glob('{}/*/*/{}.{}'.format(archive_id, charter_img_id, suffix))
         if not file_paths:
@@ -92,10 +92,10 @@ class Fsdb:
             return {}
 
         infile, returnValue = None, {}
-        print(f"self.search( {archive_id}, {charter_img_id}, suffix={suffix})")
+        #print(f"self.search( {archive_id}, {charter_img_id}, suffix={suffix})")
         data_path = self.search( archive_id, charter_img_id, suffix=suffix)
-        print(f"data_path={data_path}")
-        if data_path is None:
+        #print(f"data_path={data_path}")
+        if not data_path:
             return {}
         try:
             infile = open(data_path[0], 'r') 
@@ -196,12 +196,14 @@ class Fsdb:
             else:
                 archive_id = sorted([ p.name for p in Path( self.config['fsdb_root']).glob('*') if p.is_dir() and p.name != '.git'])[0]
         charter_images = []
-        print(self.config['charter_img_suffix'])
         #print(list(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix']))))
-        if self.config['crop']:
-            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix']))) ]
-        elif self.config['flat']:
+        # Flat file system, crop-like by default
+        if self.config['flat']:
             charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix']))) ]
+        # FSDB file system, crops only
+        elif self.config['crop']:
+            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix']))) ]
+        # FSFB file system, full-page
         else:
             charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('{}/*/*/*.{}'.format( archive_id, self.config['charter_img_suffix']))) ]
 
