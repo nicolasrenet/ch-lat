@@ -305,7 +305,7 @@ class Fsdb:
         # read htr/segmentation file
         page_htr_dict = self.read_img_metadata('*', charter_img_id, self.config['pregt_htr_suffix'])
         page_htr_dict["metadata"]["created"] = str(datetime.now())
-        page_htr_dict["metadata"]["comment"] += " + reviewed and exported in Ch-Lat."
+        page_htr_dict["metadata"]["comments"] += " + reviewed and exported in Ch-Lat."
         print(page_htr_dict)
         new_lines = [] 
         for region in page_htr_dict['regions']:
