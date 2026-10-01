@@ -10,10 +10,19 @@
 }
 
 #export-box {
-	width: 600px;
+	width: 350px;
 	display: flex;
+	flex-direction: row;
+	/*align-items: center;
+	justify-content: space-around;*/
 	border-bottom: 1px solid;
 }
+
+.export-button {
+	flex: 1;
+}
+
+
 
 #preview-on {
 	flex: 1 1 60px;
@@ -99,7 +108,7 @@ dl {
 }
 
 #charter-table {
-	width: 600px;
+	width: 350px;
 	padding-top: 20px;
 	/*table-layout: fixed;*/
 	display: table;
@@ -216,3 +225,18 @@ label {
 .hidden-transcription{
 	display: none;
 }
+
+.highlight {
+	background-color: #ff8800;
+	margin-left: .5rem;
+	margin-right: .5rem;
+}
+
+
+.highlight-ok {
+	background-color: #00aa00;
+	margin-left: .5rem;
+	margin-right: .5rem;
+}
+
+

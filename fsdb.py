@@ -247,7 +247,7 @@ class Fsdb:
 
 
     def read_lines(self, charter_img_id:str, data_type='pregt', polygon_key='coords',  polygon_mask=True):
-        """ Read line items. 
+        """ Read line items, and return line crops with their transcriptions.
         Output:
             tuple[list[list],int}]: a list of line descriptors, as well as the maximum
                 width of a line (character length).
@@ -268,12 +268,20 @@ class Fsdb:
             max_width = 0
             lines = itertools.chain.from_iterable( [ reg['lines'] for reg in page_dict['regions'] if 'lines' in reg ] )
             for tl in lines:
+                baseline_coordinates = [ tuple(pair) for pair in tl['baseline'] ]
+                baseline_array = np.array( tl['baseline'])
+                baseline_min, baseline_max = np.min( baseline_array, axis=0), np.max( baseline_array, axis=0)
+                assert baseline_min.shape == (2,)
+               
                 polygon_coordinates = [ tuple(pair) for pair in tl[polygon_key]]
                 polygon_array = np.array( tl[polygon_key] )
-                polygon_min = np.min( polygon_array, axis=0 )
+                polygon_min, polygon_max = np.min( polygon_array, axis=0 ), np.max( polygon_array, axis=0 )
                 assert polygon_min.shape==(2,)
-                polygon_transposed = polygon_array - polygon_min
-                textline_bbox = ImagePath.Path( polygon_coordinates ).getbbox()
+
+                # extend the boundaries to the baseline's or polygon's bbox dimensions, whichever is the larger
+                offset_xy, extent_xy = np.minimum(baseline_min, polygon_min), np.maximum(baseline_max, polygon_max)
+                polygon_transposed = polygon_array - offset_xy # for mask 
+                textline_bbox = ( *offset_xy, *extent_xy )
                 bbox_width = textline_bbox[2]-textline_bbox[0]
                 if bbox_width > max_width: 
                     max_width = bbox_width

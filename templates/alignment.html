@@ -25,7 +25,8 @@
 
 			</div>
 			<div id="export-box">
-				<button id="export-button"> Export</button>
+					<button id="check-button" class='export-button'>Check</button>
+					<button id="export-button" class='export-button'> Export</button>
 			</div>
 			<div id="charter-table">
 				<div class="table-row">
@@ -62,12 +63,12 @@
 				
 	window.onload=() => {
 
-				
 			var charter_img_id = {{ charter_img_id | tojson }};
 			var charter_ids = {{ charter_ids | tojson }};
 
-			function importData( img_id, dataType ){
-				const url = `/lines/${img_id}?` + new URLSearchParams({dataType: dataType}).toString()
+			// HTML is generated upstream by template rendering in charter_annotation.py
+			function importData( img_id, dataType, edit ){
+				const url = `/lines/${img_id}?` + new URLSearchParams({dataType: dataType, edit: edit}).toString()
                          	return fetch(url, { method: "GET" })
 	                       	.then( resp => resp.text() )
 				.then( data => { document.getElementById('lines-box').innerHTML = data; } )
@@ -75,14 +76,32 @@
 
 			// by default, import GT data, if it exists
 			if (charter_ids.find( (ch) => ch.id === charter_img_id ).hasGTData){
-				importData( charter_img_id, 'gt');
+				importData( charter_img_id, 'gt', 0);
 				let elt = document.getElementById(`check_gtdata_${charter_img_id}`);
 				console.log(elt);
 				elt.checked=true;
 			} else {
-				importData( charter_img_id, 'pregt');
+				importData( charter_img_id, 'pregt', 1);
 			}
 
+			function highlightTranscription( inputStr, offsets){
+				let last=0;
+				let complete='';
+				for (let offIdx=0;  offIdx<offsets.length; offIdx++){
+					complete += inputStr.slice(last,offsets[offIdx][0]) + '<span class="highlight">' + inputStr.slice(offsets[offIdx][0],offsets[offIdx][1]) + '</span>'; 
+					last=offsets[offIdx][1];
+				}
+				return complete;
+			}
+
+			/*
+			var readOnlyTranscriptions = document.getElementsByClassName('read-only-transcription');
+			for(let transcriptionIdx=0; transcriptionIdx<readOnlyTanscriptions; transcription_idx++){
+				readOnlyTranscriptions[transcriptionIdx].innerHTML = highlightTranscription( 
+					readOnlyTranscriptions[transcriptionIdx].innerHTML, 
+					lines[transcriptionIdx] 
+				);
+			}*/
 
 	     		function exportData(charter_img_id){
 
@@ -91,16 +110,19 @@
 				console.log(transcriptionElts)
 				for (let tidx=0; tidx<transcriptionElts.length; tidx++){
 					transcription = transcriptionElts[tidx].querySelector(".line-input").value;
-					flag = transcriptionElts[tidx].querySelector("input[name='line-flag']");
-					console.log(flag)
+					discussFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discuss']");
+					discardFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discard']");
+					console.log(discussFlag)
+					console.log(discardFlag)
 					original = transcriptionElts[tidx].querySelector(".hidden-transcription").value;
-					if (flag.checked){
+					if (discardFlag.checked){
 						transcriptions.push( '--<discard>--' );
-					} else if ( transcription !== original ){
+					/*} else if ( transcription !== original ){
 						transcriptions.push( transcription );
 					} else {
 						transcriptions.push( null );
-					}
+					}*/
+					} else { transcriptions.push( transcription ) }
 				}
 				console.log(transcriptions)
 
@@ -127,22 +149,109 @@
 						//elt.checked=false;
 						elt.onchange = () => {
 							let dataType = 'pregt';
-							if (elt.checked){ dataType='gt'; }
-							importData(charter_img_id, dataType) 
+							if (elt.checked){ dataType='gt' }
+							importData(charter_img_id, dataType)
 						}
 					} else { elt.disabled=true; }
-
 				} 
 			
 				document.getElementById("export-button").onclick=function(){
 					exportData(charter_img_id);
 				}
-			
-			})()
 
+				// for highlighting complete/incomplete abbreviation marks
+				// (assume that matches are not overlapping)
+				const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
+				const reExpAbr = /\[[A-Za-z]+\|[^ .,;:\-|]+/gd;
+				function highlight( inputStr ){
+					let html = '';
+					let currentLeft = 0;
+					let reExpMatches = Array.from(inputStr.matchAll(reExp));
+					let reExpAbrMatches = Array.from(inputStr.matchAll(reExpAbr));
+					reExpMatches.push(-1); reExpAbrMatches.push(-1);
+					let sortedMatches = Array();
+					let t = 0; let b = 0; let indexes = Array();
+					for (let i=0; i<(reExpMatches.length+reExpAbrMatches.length-2); i++){
+						if (reExpAbrMatches[b]==-1 || reExpMatches[t].index <= reExpAbrMatches[b].index){
+							sortedMatches.push( [reExpMatches[t],0] );
+							indexes.push( reExpMatches[t].index );
+							t++;
+						} else if (reExpMatches[t]==-1 || reExpMatches[t].index > reExpAbrMatches[b].index){
+							sortedMatches.push( [reExpAbrMatches[b],1]);
+							indexes.push( reExpAbrMatches[b].index );
+							b++;
+						}
+					}
+					for (let i=0; i<indexes.length-1;i++){
+						if (indexes[i] > indexes[i+1]){ console.log("Overlapping matches: abort."); return [inputStr,false]; }
+					}
+					let complete = true
+					for (const m of sortedMatches){
+						let left = m[0].index;
+						let right = m[0].index + m[0][0].length;
+						html += inputStr.slice(currentLeft,left)
+						if (m[1] == 0){
+							html += `<span class="highlight">${inputStr.slice(left,right)}</span>`;
+							console.log(`In loop: complete=${complete} (m=${m[0]})`);
+							complete=false;
+						} else {
+							html += `<span class="highlight-ok">${inputStr.slice(left,right)}</span>`;
+						}
+						currentLeft = right;
+					}
+					if (currentLeft != inputStr.length ){ html += inputStr.slice( currentLeft, );}
+					//if (html === ''){ return [inputStr, true]; }
+					return [html, complete];
+				}
+
+				// client-side only action
+				// 0. Current input values copied into read-only-transcription hidden field
+				// 1. All lines shown as non-editable (read-only)
+				// 2. Incomplete patterns (=[abc) highlighted
+				// 3  Button 'edit' near each line
+				const checkButton = document.getElementById("check-button") 
+				checkButton.onclick=function(){
+					if (checkButton.innerText === 'Edit'){ checkButton.innerText = 'Check'; } else {checkButton.innerText='Edit'}
+					for(const line_elt of document.getElementsByClassName('line-transcription')){
+						const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
+						const transcription_line_highlights_elt = line_elt.getElementsByClassName('read-only-transcription')[0];
+						//console.log(`Input value=${transcription_line_input_elt.value}`);
+						const highlighted_transcription = highlight( transcription_line_input_elt.value );
+						transcription_line_highlights_elt.innerHTML = highlighted_transcription[0];
+						let complete = highlighted_transcription[1];
+						console.log(complete)
+						//console.log( transcription_line_highlights_elt.innerHTML );
+						//console.log(`Highlight text=${transcription_line_highlights_elt.innerText}`);
+						// show input field
+						console.log(`complete=${complete}`);
+						if (transcription_line_input_elt.style.display==='none' && ! complete){
+							transcription_line_input_elt.removeAttribute('disabled');
+							transcription_line_input_elt.style.display='flex';
+							transcription_line_highlights_elt.style.display='none';
+							checkButton.name='Check';
+						// show highlights, read-only
+						} else if (complete) {
+							transcription_line_input_elt.disabled='true';
+							transcription_line_input_elt.style.display='none';
+							transcription_line_highlights_elt.style.display='flex';
+							//checkButton.name='Edit';
+							console.log(`line_elt's id=${line_elt.getAttribute('id').slice(5,)}`);
+							const editButton = document.getElementById(`edit-button-${line_elt.getAttribute('id').slice(5,)}`);
+							editButton.removeAttribute('disabled');
+							editButton.onclick=function(){
+								const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
+								const transcription_line_highlights_elt = line_elt.getElementsByClassName('read-only-transcription')[0];
+								transcription_line_input_elt.removeAttribute('disabled');
+								transcription_line_input_elt.style.display='flex';
+								transcription_line_highlights_elt.style.display='none';
+								this.disabled='disabled';
+							};
+						}
+					}
+				}
+			})()
 		}
 	</script>
 
 </body>
-
 </html>
