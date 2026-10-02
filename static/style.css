@@ -194,7 +194,7 @@ label {
 	flex-direction: column;
 }
 */
-.line{
+.line {
 	flex: 1 1 auto
 }
 
@@ -222,10 +222,6 @@ label {
 	display: flex;
 }
 
-.hidden-transcription{
-	display: none;
-}
-
 .highlight {
 	background-color: #ff8800;
 	margin-left: .5rem;
@@ -239,4 +235,6 @@ label {
 	margin-right: .5rem;
 }
 
-
+.line-controls {
+	margin-left: .5rem;
+}

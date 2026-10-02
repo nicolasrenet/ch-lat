@@ -84,25 +84,6 @@
 				importData( charter_img_id, 'pregt', 1);
 			}
 
-			function highlightTranscription( inputStr, offsets){
-				let last=0;
-				let complete='';
-				for (let offIdx=0;  offIdx<offsets.length; offIdx++){
-					complete += inputStr.slice(last,offsets[offIdx][0]) + '<span class="highlight">' + inputStr.slice(offsets[offIdx][0],offsets[offIdx][1]) + '</span>'; 
-					last=offsets[offIdx][1];
-				}
-				return complete;
-			}
-
-			/*
-			var readOnlyTranscriptions = document.getElementsByClassName('read-only-transcription');
-			for(let transcriptionIdx=0; transcriptionIdx<readOnlyTanscriptions; transcription_idx++){
-				readOnlyTranscriptions[transcriptionIdx].innerHTML = highlightTranscription( 
-					readOnlyTranscriptions[transcriptionIdx].innerHTML, 
-					lines[transcriptionIdx] 
-				);
-			}*/
-
 	     		function exportData(charter_img_id){
 
 				let transcriptions = []
@@ -191,11 +172,11 @@
 						let right = m[0].index + m[0][0].length;
 						html += inputStr.slice(currentLeft,left)
 						if (m[1] == 0){
-							html += `<span class="highlight">${inputStr.slice(left,right)}</span>`;
+							html += `<mark class="highlight">${inputStr.slice(left,right)}</mark>`;
 							console.log(`In loop: complete=${complete} (m=${m[0]})`);
 							complete=false;
 						} else {
-							html += `<span class="highlight-ok">${inputStr.slice(left,right)}</span>`;
+							html += `<mark class="highlight-ok">${inputStr.slice(left,right)}</mark>`;
 						}
 						currentLeft = right;
 					}
@@ -205,7 +186,7 @@
 				}
 
 				// client-side only action
-				// 0. Current input values copied into read-only-transcription hidden field
+				// 0. Current input values copied into checked-transcription hidden field
 				// 1. All lines shown as non-editable (read-only)
 				// 2. Incomplete patterns (=[abc) highlighted
 				// 3  Button 'edit' near each line
@@ -214,7 +195,7 @@
 					if (checkButton.innerText === 'Edit'){ checkButton.innerText = 'Check'; } else {checkButton.innerText='Edit'}
 					for(const line_elt of document.getElementsByClassName('line-transcription')){
 						const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
-						const transcription_line_highlights_elt = line_elt.getElementsByClassName('read-only-transcription')[0];
+						const transcription_line_highlights_elt = line_elt.getElementsByClassName('checked-transcription')[0];
 						//console.log(`Input value=${transcription_line_input_elt.value}`);
 						const highlighted_transcription = highlight( transcription_line_input_elt.value );
 						transcription_line_highlights_elt.innerHTML = highlighted_transcription[0];
@@ -240,7 +221,7 @@
 							editButton.removeAttribute('disabled');
 							editButton.onclick=function(){
 								const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
-								const transcription_line_highlights_elt = line_elt.getElementsByClassName('read-only-transcription')[0];
+								const transcription_line_highlights_elt = line_elt.getElementsByClassName('checked-transcription')[0];
 								transcription_line_input_elt.removeAttribute('disabled');
 								transcription_line_input_elt.style.display='flex';
 								transcription_line_highlights_elt.style.display='none';

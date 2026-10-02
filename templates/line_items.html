@@ -6,21 +6,11 @@
 				<img class="line-img" width="{{line_tuple[4]}}" src="data:img/png;base64, {{line_tuple[2]}}" alt="Charter {{charter_img_id}}: line {{line_tuple[0]}}"/>
 				<div class="line-transcription" id="line-{{line_tuple[0]}}">
 					<!-- to check for changes at export time -->
-					<input class="hidden-transcription" disabled value='{{line_tuple[1]}}'> 
+					<input class="hidden-transcription" style='display: none;' disabled value='{{line_tuple[1]}}'> 
 					<span class="medfontsize">{{line_tuple[0]}}. </span>
-					<span class="read-only-transcription" style="display:none; white-space:condense">
-					{% for segment in line_tuple[5] %}
-						{% if segment['highlight'] %}
-							{% if loop.index0 > 0 and line_tuple[5][loop.index0-1]['highlight'] %}
-								<span class='highlight'> {{ segment['text'] }}</span>
-							{% else %}
-						     		<span class='highlight' style="margin-left: .5rem"> {{ segment['text'] }}</span>
-							{% endif %}
-						{% else %}
-							{{ segment['text'] }}
-						{% endif %}
-					{% endfor %}
-					</span>
+					<div class="checked-transcription" style="display:none;">
+						{{line_tuple[1]}}
+					</div>
 					{% if text_size == 'xsmall' %}
 							<input class="line-input line-input-xsmall" type="text" value="{{line_tuple[1]}}">
 					{% elif text_size == 'small' %}
@@ -28,10 +18,11 @@
 					{% else %}
 						<input class="line-input line-input-medium" type="text" value="{{line_tuple[1]}}">
 					{% endif %}
-					<div>
-					<input type="button" id="edit-button-{{line_tuple[0]}}" name="line-edit" value="✍" disabled>
-					<input type="checkbox" id="line-flag-discard-{{line_tuple[0]}}" name="line-flag-discard" value="discard">
-					<input type="checkbox" id="line-flag-issue-{{line_tuple[0]}}" name="line-flag-issue" value="issue">
+					<div class='line-controls'>
+						<input type="button" id="edit-button-{{line_tuple[0]}}" name="line-edit" value="✍" disabled>
+						<input type="checkbox" id="line-flag-discard-{{line_tuple[0]}}" name="line-flag-discard" value="discard">
+						<input type="checkbox" id="line-flag-issue-{{line_tuple[0]}}" name="line-flag-issue" value="issue">
+					</div>
 				</div>
 			</div>
 			{% endfor %}

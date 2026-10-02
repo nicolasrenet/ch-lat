@@ -49,12 +49,15 @@ app.config.update(
 
 app.config.from_prefixed_env()
 
+
 # Ensure that flat system tree option has priority
 if app.config['flat']:
     app.config['crop']=0
 
 print(app.config)
-
+# display configuration tips:
+# - suggested image and annotation suffixes, based on what is found in the fsdb tree
+#print(config_tips())
 
 fsdb = Fsdb( app.config )
 
@@ -235,24 +238,7 @@ def get_line_items( charter_img_id:str):
     if text_avg_length > 180:
         text_size='xsmall' if text_avg_length > 210 else 'small'
 
-    #print([ l[1] for l in line_data ])
-    highlight_spans = [[ m.span() for m in re.finditer(r'\[[^ .,;:\-]+', l[1]) ] for l in line_data ]
-    # construct a segmented version of each line, where a Boolean attribute identifies 
-    # which substring should be highlighted
-    highlight_segments = []
-    for l_idx,l in enumerate(line_data):
-        if not highlight_spans[l_idx]:
-            highlight_segments.append([{"text": l[1], "highlight": False}] )
-            continue
-        hll, current_left  = '', 0
-        segments = []
-        for left,right in highlight_spans[l_idx]:
-            line_text = line_data[l_idx][1]
-            segments.extend( [ {"text": line_text[current_left:left], "highlight": False}, { "text": line_text[left:right], "highlight": True} ])
-            current_left = right
-        highlight_segments.append( segments )
-
-    line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width, highlight_segments[i] ] for i,ldt in enumerate(line_data) ]
+    line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for i,ldt in enumerate(line_data) ]
     #print([ (l[-1],len(l)) for l in line_data] )
 
     
