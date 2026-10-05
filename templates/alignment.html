@@ -60,18 +60,116 @@
 
       	<script type="text/javascript">
 		
+		let cursorPosition = { node: null, offset: 0 }
 				
 	window.onload=() => {
 
 			var charter_img_id = {{ charter_img_id | tojson }};
 			var charter_ids = {{ charter_ids | tojson }};
 
+			// for highlighting complete/incomplete abbreviation marks
+			// (assume that matches are not overlapping)
+			const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
+			const reExpAbr = /\[[A-Za-z]+\|[^ .,;:\-|]+/gd;
+			function highlight( inputStr ){
+						console.log(`highlight(${inputStr})`);
+				let html = '';
+				let currentLeft = 0;
+				let reExpMatches = Array.from(inputStr.matchAll(reExp));
+				let reExpAbrMatches = Array.from(inputStr.matchAll(reExpAbr));
+				reExpMatches.push(-1); reExpAbrMatches.push(-1);
+				let sortedMatches = Array();
+				let t = 0; let b = 0; let indexes = Array();
+				for (let i=0; i<(reExpMatches.length+reExpAbrMatches.length-2); i++){
+					if (reExpAbrMatches[b]==-1 || reExpMatches[t].index <= reExpAbrMatches[b].index){
+						sortedMatches.push( [reExpMatches[t],0] );
+						indexes.push( reExpMatches[t].index );
+						t++;
+					} else if (reExpMatches[t]==-1 || reExpMatches[t].index > reExpAbrMatches[b].index){
+						sortedMatches.push( [reExpAbrMatches[b],1]);
+						indexes.push( reExpAbrMatches[b].index );
+						b++;
+					}
+				}
+				for (let i=0; i<indexes.length-1;i++){
+					if (indexes[i] > indexes[i+1]){ console.log("Overlapping matches: abort."); return [inputStr,false]; }
+				}
+				let complete = true
+				console.log(sortedMatches)
+				for (const m of sortedMatches){
+					let left = m[0].index;
+					let right = m[0].index + m[0][0].length;
+					html += inputStr.slice(currentLeft,left)
+					if (m[1] == 0){
+						html += `<mark class="highlight">${inputStr.slice(left,right)}</mark>`;
+						console.log(`In loop: complete=${complete} (m=${m[0]})`);
+						complete=false;
+					} else {
+								console.log("In loop: incomplete.");
+						html += `<mark class="highlight-ok">${inputStr.slice(left,right)}</mark>`;
+					}
+					currentLeft = right;
+				}
+				if (currentLeft != inputStr.length ){ html += inputStr.slice( currentLeft, );}
+				//if (html === ''){ return [inputStr, true]; }
+				return [html, complete];
+			}
+
+
+function storeCursorPosition() {
+  if (window.getSelection) {
+    selection = window.getSelection();
+			  console.log(selection);
+    if (selection.rangeCount > 0) {
+      let range = selection.getRangeAt(0);
+      cursorPosition.node = range.startContainer;
+      cursorPosition.offset = range.startOffset;
+    }
+    console.log(cursorPosition)
+  }
+}
+
+function restoreCursorPosition() {
+  let range = document.createRange();
+			console.log(cursorPosition)
+  range.setStart(cursorPosition.node, cursorPosition.offset);
+			console.log(range);
+  //range.collapse(true);
+			console.log(range);
+  let selection = window.getSelection();
+			console.log(selection);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
 			// HTML is generated upstream by template rendering in charter_annotation.py
 			function importData( img_id, dataType, edit ){
 				const url = `/lines/${img_id}?` + new URLSearchParams({dataType: dataType, edit: edit}).toString()
                          	return fetch(url, { method: "GET" })
 	                       	.then( resp => resp.text() )
 				.then( data => { document.getElementById('lines-box').innerHTML = data; } )
+				.then( () => { 
+					console.log(document.getElementsByClassName('line-transcription').length); 
+					for (const line_elt of document.getElementsByClassName('line-transcription')){
+						const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
+						console.log( transcription_line_input_elt );
+						transcription_line_input_elt.innerHTML = highlight( transcription_line_input_elt.innerText )[0];
+						console.log(transcription_line_input_elt.innerHTML);
+						transcription_line_input_elt.focusin = (evt) => {
+									storeCursorPosition()
+								}
+						transcription_line_input_elt.oninput = (evt) => {
+									console.log(`${evt.data}`)
+									console.log(`${evt.detail}`)
+							const highlighted = highlight( transcription_line_input_elt.innerText )
+							storeCursorPosition();
+							transcription_line_input_elt.innerHTML = highlighted[0];
+							restoreCursorPosition();
+							//transcription_line_input_elt.focus()
+
+							let completeFlag = highlighted[1];
+						}
+					}
+				})
 			}
 
 			// by default, import GT data, if it exists
@@ -84,13 +182,14 @@
 				importData( charter_img_id, 'pregt', 1);
 			}
 
+
 	     		function exportData(charter_img_id){
 
 				let transcriptions = []
 				let transcriptionElts = document.querySelectorAll(".line-transcription")
 				console.log(transcriptionElts)
 				for (let tidx=0; tidx<transcriptionElts.length; tidx++){
-					transcription = transcriptionElts[tidx].querySelector(".line-input").value;
+					transcription = transcriptionElts[tidx].querySelector(".line-input").innerText;
 					discussFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discuss']");
 					discardFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discard']");
 					console.log(discussFlag)
@@ -105,7 +204,6 @@
 					}*/
 					} else { transcriptions.push( transcription ) }
 				}
-				console.log(transcriptions)
 
 				if (transcriptions.length === 0){ console.log("exportData() - abort: empty transcription data!"); return }
 				const url = `/lines/${charter_img_id}`;
@@ -140,50 +238,6 @@
 					exportData(charter_img_id);
 				}
 
-				// for highlighting complete/incomplete abbreviation marks
-				// (assume that matches are not overlapping)
-				const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
-				const reExpAbr = /\[[A-Za-z]+\|[^ .,;:\-|]+/gd;
-				function highlight( inputStr ){
-					let html = '';
-					let currentLeft = 0;
-					let reExpMatches = Array.from(inputStr.matchAll(reExp));
-					let reExpAbrMatches = Array.from(inputStr.matchAll(reExpAbr));
-					reExpMatches.push(-1); reExpAbrMatches.push(-1);
-					let sortedMatches = Array();
-					let t = 0; let b = 0; let indexes = Array();
-					for (let i=0; i<(reExpMatches.length+reExpAbrMatches.length-2); i++){
-						if (reExpAbrMatches[b]==-1 || reExpMatches[t].index <= reExpAbrMatches[b].index){
-							sortedMatches.push( [reExpMatches[t],0] );
-							indexes.push( reExpMatches[t].index );
-							t++;
-						} else if (reExpMatches[t]==-1 || reExpMatches[t].index > reExpAbrMatches[b].index){
-							sortedMatches.push( [reExpAbrMatches[b],1]);
-							indexes.push( reExpAbrMatches[b].index );
-							b++;
-						}
-					}
-					for (let i=0; i<indexes.length-1;i++){
-						if (indexes[i] > indexes[i+1]){ console.log("Overlapping matches: abort."); return [inputStr,false]; }
-					}
-					let complete = true
-					for (const m of sortedMatches){
-						let left = m[0].index;
-						let right = m[0].index + m[0][0].length;
-						html += inputStr.slice(currentLeft,left)
-						if (m[1] == 0){
-							html += `<mark class="highlight">${inputStr.slice(left,right)}</mark>`;
-							console.log(`In loop: complete=${complete} (m=${m[0]})`);
-							complete=false;
-						} else {
-							html += `<mark class="highlight-ok">${inputStr.slice(left,right)}</mark>`;
-						}
-						currentLeft = right;
-					}
-					if (currentLeft != inputStr.length ){ html += inputStr.slice( currentLeft, );}
-					//if (html === ''){ return [inputStr, true]; }
-					return [html, complete];
-				}
 
 				// client-side only action
 				// 0. Current input values copied into checked-transcription hidden field
@@ -191,40 +245,20 @@
 				// 2. Incomplete patterns (=[abc) highlighted
 				// 3  Button 'edit' near each line
 				const checkButton = document.getElementById("check-button") 
+				function check_complete( inputStr ){
+					return highlight( inputStr )[1];
+				}
 				checkButton.onclick=function(){
-					if (checkButton.innerText === 'Edit'){ checkButton.innerText = 'Check'; } else {checkButton.innerText='Edit'}
 					for(const line_elt of document.getElementsByClassName('line-transcription')){
 						const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
-						const transcription_line_highlights_elt = line_elt.getElementsByClassName('checked-transcription')[0];
-						//console.log(`Input value=${transcription_line_input_elt.value}`);
-						const highlighted_transcription = highlight( transcription_line_input_elt.value );
-						transcription_line_highlights_elt.innerHTML = highlighted_transcription[0];
-						let complete = highlighted_transcription[1];
-						console.log(complete)
-						//console.log( transcription_line_highlights_elt.innerHTML );
-						//console.log(`Highlight text=${transcription_line_highlights_elt.innerText}`);
-						// show input field
-						console.log(`complete=${complete}`);
-						if (transcription_line_input_elt.style.display==='none' && ! complete){
-							transcription_line_input_elt.removeAttribute('disabled');
-							transcription_line_input_elt.style.display='flex';
-							transcription_line_highlights_elt.style.display='none';
-							checkButton.name='Check';
-						// show highlights, read-only
-						} else if (complete) {
-							transcription_line_input_elt.disabled='true';
-							transcription_line_input_elt.style.display='none';
-							transcription_line_highlights_elt.style.display='flex';
-							//checkButton.name='Edit';
-							console.log(`line_elt's id=${line_elt.getAttribute('id').slice(5,)}`);
+						let complete = check_complete(transcription_line_input_elt.innerText);
+						console.log("complete="+complete);
+						if (complete) {
+							transcription_line_input_elt.setAttribute('contenteditable', false );
 							const editButton = document.getElementById(`edit-button-${line_elt.getAttribute('id').slice(5,)}`);
 							editButton.removeAttribute('disabled');
 							editButton.onclick=function(){
-								const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
-								const transcription_line_highlights_elt = line_elt.getElementsByClassName('checked-transcription')[0];
-								transcription_line_input_elt.removeAttribute('disabled');
-								transcription_line_input_elt.style.display='flex';
-								transcription_line_highlights_elt.style.display='none';
+								transcription_line_input_elt.setAttribute('contenteditable', true);
 								this.disabled='disabled';
 							};
 						}

@@ -12,11 +12,11 @@
 						{{line_tuple[1]}}
 					</div>
 					{% if text_size == 'xsmall' %}
-							<input class="line-input line-input-xsmall" type="text" value="{{line_tuple[1]}}">
+						<div class="line-input line-input-xsmall" contenteditable="true">{{line_tuple[1]}}</div>
 					{% elif text_size == 'small' %}
-						<input class="line-input line-input-small" type="text" value="{{line_tuple[1]}}">
+						<div class="line-input line-input-small" contenteditable="true">{{line_tuple[1]}}</div>
 					{% else %}
-						<input class="line-input line-input-medium" type="text" value="{{line_tuple[1]}}">
+						<div class="line-input line-input-medium" contenteditable="true">{{line_tuple[1]}}</div>
 					{% endif %}
 					<div class='line-controls'>
 						<input type="button" id="edit-button-{{line_tuple[0]}}" name="line-edit" value="✍" disabled>
