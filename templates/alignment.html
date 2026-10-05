@@ -143,7 +143,7 @@
 				// for highlighting complete/incomplete abbreviation marks
 				// (assume that matches are not overlapping)
 				const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
-				const reExpAbr = /\[[A-Za-z]+\|[^ .,;:\-|]+/gd;
+				const reExpAbr = /\[[A-Za-z$]+\|[^ .,;:\-|]+/gd;
 				function highlight( inputStr ){
 					let html = '';
 					let currentLeft = 0;
