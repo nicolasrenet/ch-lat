@@ -60,19 +60,20 @@
 
       	<script type="text/javascript">
 		
-		let cursorPosition = { node: null, offset: 0 }
 				
 	window.onload=() => {
 
 			var charter_img_id = {{ charter_img_id | tojson }};
 			var charter_ids = {{ charter_ids | tojson }};
 
-			// for highlighting complete/incomplete abbreviation marks
-			// (assume that matches are not overlapping)
-			const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
-			const reExpAbr = /\[[A-Za-z$]+\|[^ .,;:\-|]+/gd;
+			/* 
+			 * Highlighting of complete/incomplete abbreviation marks
+			 * (assume that matches are not overlapping)
+			 */
 			function highlight( inputStr ){
 				//console.log(`highlight(${inputStr})`);
+				const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
+				const reExpAbr = /\[[A-Za-z$_]+\|[^ .,;:\-|]+/gd;
 				let html = '';
 				let currentLeft = 0;
 				let reExpMatches = Array.from(inputStr.matchAll(reExp));
@@ -111,36 +112,84 @@
 					currentLeft = right;
 				}
 				if (currentLeft != inputStr.length ){ html += inputStr.slice( currentLeft, );}
-				//if (html === ''){ return [inputStr, true]; }
 				return [html, complete];
 			}
 
+			/*
+			 * Store cursor position in innerText wr/ entire line transcription 
+			 */
+			function getCursorPosition() {
+				let cursorPosition = { node: null, offset: 0, parentNode: null, parentOffset: 0 }
+				if (window.getSelection) {
+					selection = window.getSelection();
+					if (selection.rangeCount > 0) {
+						let range = selection.getRangeAt(0);
+					      	cursorPosition.node = range.startContainer;
+						cursorPosition.parentNode = range.commonAncestorContainer.parentNode;
+						if (cursorPosition.parentNode.nodeName === 'MARK'){
+							cursorPosition.parentNode = cursorPosition.parentNode.parentNode;
+						}
+						// computing offset wr/ parent node's text
+						let currentSibling = cursorPosition.parentNode.firstChild;
+						let parentOffset = 0;
+						while (currentSibling !== null){
+							let thisText = ''
+							if (currentSibling.nodeType === Node.TEXT_NODE){
+								if (currentSibling === cursorPosition.node){
+									break;
+								}
+								thisText=currentSibling.wholeText;
+							} else if (currentSibling.nodeType === Node.ELEMENT_NODE){
+								if (currentSibling.firstChild === cursorPosition.node){
+									break;
+								}
+								thisText=currentSibling.innerText;
+							}
+							parentOffset += thisText.length
+							currentSibling = currentSibling.nextSibling;
+						}
+					      	cursorPosition.offset = range.startOffset;
+						cursorPosition.parentOffset = parentOffset + cursorPosition.offset ;
+					}
+			  	}
+				return cursorPosition;
+			}
 
-function storeCursorPosition() {
-  if (window.getSelection) {
-    selection = window.getSelection();
-			  console.log(selection);
-    if (selection.rangeCount > 0) {
-      let range = selection.getRangeAt(0);
-      cursorPosition.node = range.startContainer;
-      cursorPosition.offset = range.startOffset;
-    }
-    console.log(cursorPosition)
-  }
-}
+			/*
+			 * Restore cursor position from previous (=before innnerHTML replacement) position.
+			 * Retrieve relevant node and index from the transcription-wide text offset.
+			 */
+			function restoreCursorPosition( cursorPosition ) {
+				let currentSibling = cursorPosition.parentNode.firstChild;
+				let thisOffset = 0;
+				while( currentSibling !== null ){
+					let thisText = null;
+					if (currentSibling.nodeType === Node.TEXT_NODE){
+						if ( thisOffset + currentSibling.wholeText.length >= cursorPosition.parentOffset )
+							break;
+						thisOffset += currentSibling.wholeText.length;
+					} else if ( currentSibling.nodeType === Node.ELEMENT_NODE){
+						if (thisOffset + currentSibling.innerText.length >= cursorPosition.parentOffset )
+							break;
+						thisOffset += currentSibling.innerText.length;
+					}
+					currentSibling = currentSibling.nextSibling ;
+				}
+				if ( currentSibling.nodeType === Node.TEXT_NODE){
+					cursorPosition.node = currentSibling;
+				} else if (currentSibling.nodeType === Node.ELEMENT_NODE){
+					cursorPosition.node = currentSibling.firstChild;
+				}
+				cursorPosition.offset = cursorPosition.parentOffset-thisOffset;
 
-function restoreCursorPosition() {
-  let range = document.createRange();
-			console.log(cursorPosition)
-  range.setStart(cursorPosition.node, cursorPosition.offset);
-			console.log(range);
-  //range.collapse(true);
-			console.log(range);
-  let selection = window.getSelection();
-			console.log(selection);
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
+				let range = document.createRange();
+			  	range.setStart( cursorPosition.node, cursorPosition.offset);
+			  	range.collapse(true);
+			  	let selection = window.getSelection();
+			  	selection.removeAllRanges();
+			  	selection.addRange(range);
+			}
+
 			// HTML is generated upstream by template rendering in charter_annotation.py
 			function importData( img_id, dataType, edit ){
 				const url = `/lines/${img_id}?` + new URLSearchParams({dataType: dataType, edit: edit}).toString()
@@ -148,27 +197,26 @@ function restoreCursorPosition() {
 	                       	.then( resp => resp.text() )
 				.then( data => { document.getElementById('lines-box').innerHTML = data; } )
 				.then( () => { 
-					console.log(document.getElementsByClassName('line-transcription').length); 
 					for (const line_elt of document.getElementsByClassName('line-transcription')){
-						const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
-						console.log( transcription_line_input_elt );
-						transcription_line_input_elt.innerHTML = highlight( transcription_line_input_elt.innerText )[0];
-						console.log(transcription_line_input_elt.innerHTML);
-						/*
-						transcription_line_input_elt.focusin = (evt) => {
-									storeCursorPosition()
-								}
-						/*transcription_line_input_elt.oninput = (evt) => {
-									console.log(`${evt.data}`)
-									console.log(`${evt.detail}`)
-							const highlighted = highlight( transcription_line_input_elt.innerText )
-							storeCursorPosition();
-							transcription_line_input_elt.innerHTML = highlighted[0];
-							restoreCursorPosition();
-							//transcription_line_input_elt.focus()
-
+						const transcriptionLineInputElt = line_elt.getElementsByClassName('line-input')[0];
+						transcriptionLineInputElt.innerHTML = highlight( transcriptionLineInputElt.innerText )[0];
+						console.log(transcriptionLineInputElt.innerHTML);
+						transcriptionLineInputElt.oninput = (evt) => {
+							const highlighted = highlight( transcriptionLineInputElt.innerText )
+							let currentPosition = getCursorPosition();
+							transcriptionLineInputElt.innerHTML = highlighted[0];
+							restoreCursorPosition( currentPosition );
 							let completeFlag = highlighted[1];
-						}*/
+							if (completeFlag){
+								;
+								/*
+								console.log(completeFlag);
+								transcriptionLineInputElt.setAttribute('contenteditable', false );
+								let lineId = transcriptionLineInputElt.parentNode.getAttribute('id').slice(5,);
+								document.getElementById(`edit-button-${lineId}`).removeAttribute('disabled');
+								*/
+							}
+						}
 					}
 				})
 			}
@@ -252,16 +300,15 @@ function restoreCursorPosition() {
 				}
 				checkButton.onclick=function(){
 					for(const line_elt of document.getElementsByClassName('line-transcription')){
-						const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
-						let highlighted = highlight(transcription_line_input_elt.innerText);
-						console.log("complete="+highlighted[1]);
+						const transcriptionLineInputElt = line_elt.getElementsByClassName('line-input')[0];
+						let highlighted = highlight(transcriptionLineInputElt.innerText);
 						if (highlighted[1]) {
-							transcription_line_input_elt.setAttribute('contenteditable', false );
-							transcription_line_input_elt.innerHTML = highlighted[0];
+							transcriptionLineInputElt.setAttribute('contenteditable', false );
+							transcriptionLineInputElt.innerHTML = highlighted[0];
 							const editButton = document.getElementById(`edit-button-${line_elt.getAttribute('id').slice(5,)}`);
 							editButton.removeAttribute('disabled');
 							editButton.onclick=function(){
-								transcription_line_input_elt.setAttribute('contenteditable', true);
+								transcriptionLineInputElt.setAttribute('contenteditable', true);
 								this.disabled='disabled';
 							};
 						}
