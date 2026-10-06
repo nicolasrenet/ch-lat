@@ -72,7 +72,7 @@
 			const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
 			const reExpAbr = /\[[A-Za-z$]+\|[^ .,;:\-|]+/gd;
 			function highlight( inputStr ){
-						console.log(`highlight(${inputStr})`);
+				//console.log(`highlight(${inputStr})`);
 				let html = '';
 				let currentLeft = 0;
 				let reExpMatches = Array.from(inputStr.matchAll(reExp));
@@ -102,10 +102,10 @@
 					html += inputStr.slice(currentLeft,left)
 					if (m[1] == 0){
 						html += `<mark class="highlight">${inputStr.slice(left,right)}</mark>`;
-						console.log(`In loop: complete=${complete} (m=${m[0]})`);
+						//console.log(`In loop: complete=${complete} (m=${m[0]})`);
 						complete=false;
 					} else {
-								console.log("In loop: incomplete.");
+						//		console.log("In loop: incomplete.");
 						html += `<mark class="highlight-ok">${inputStr.slice(left,right)}</mark>`;
 					}
 					currentLeft = right;
@@ -191,10 +191,11 @@ function restoreCursorPosition() {
 				console.log(transcriptionElts)
 				for (let tidx=0; tidx<transcriptionElts.length; tidx++){
 					transcription = transcriptionElts[tidx].querySelector(".line-input").innerText;
+					console.log(`export=${transcription}`)
 					discussFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discuss']");
 					discardFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discard']");
-					console.log(discussFlag)
-					console.log(discardFlag)
+					//console.log(discussFlag)
+					//console.log(discardFlag)
 					original = transcriptionElts[tidx].querySelector(".hidden-transcription").value;
 					if (discardFlag.checked){
 						transcriptions.push( '--<discard>--' );
@@ -233,7 +234,7 @@ function restoreCursorPosition() {
 							importData(charter_img_id, dataType)
 						}
 					} else { elt.disabled=true; }
-				} 
+				}
 			
 				document.getElementById("export-button").onclick=function(){
 					exportData(charter_img_id);
@@ -252,10 +253,11 @@ function restoreCursorPosition() {
 				checkButton.onclick=function(){
 					for(const line_elt of document.getElementsByClassName('line-transcription')){
 						const transcription_line_input_elt = line_elt.getElementsByClassName('line-input')[0];
-						let complete = check_complete(transcription_line_input_elt.innerText);
-						console.log("complete="+complete);
-						if (complete) {
+						let highlighted = highlight(transcription_line_input_elt.innerText);
+						console.log("complete="+highlighted[1]);
+						if (highlighted[1]) {
 							transcription_line_input_elt.setAttribute('contenteditable', false );
+							transcription_line_input_elt.innerHTML = highlighted[0];
 							const editButton = document.getElementById(`edit-button-${line_elt.getAttribute('id').slice(5,)}`);
 							editButton.removeAttribute('disabled');
 							editButton.onclick=function(){

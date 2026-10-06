@@ -322,6 +322,8 @@ class Fsdb:
                     continue
                 new_lines.append( region['lines'][idx] )
                 if line_transcriptions[idx] is not None:
+                    print( line_transcriptions[idx])
+                    #print([ f'{ord(c)}' for c in line_transcriptions[idx] ])
                     new_lines[-1]['text']=line_transcriptions[idx]
             region['lines']=new_lines 
         return self.write_img_metadata( page_htr_dict, '*', charter_img_id, suffix=self.config['gt_htr_suffix'])

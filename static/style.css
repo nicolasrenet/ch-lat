@@ -203,6 +203,10 @@ label {
 	font-size: 18pt;
 }
 
+.line-input {
+	white-space: break-spaces;
+}
+
 .line-input-medium {
 	width: 100%;
 	font-size: 14pt;
@@ -224,15 +228,17 @@ label {
 
 .highlight {
 	background-color: #ff8800;
-	margin-left: .5rem;
+/*margin-left: .5rem;
 	margin-right: .5rem;
+	*/
 }
 
 
 .highlight-ok {
 	background-color: #00aa00;
-	margin-left: .5rem;
-	margin-right: .5rem;
+/*	margin-left: .5rem;
+	//margin-right: .5rem;
+	*/
 }
 
 .line-controls {
