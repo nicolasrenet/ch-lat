@@ -72,16 +72,21 @@
 			 */
 			function highlight( inputStr ){
 				//console.log(`highlight(${inputStr})`);
-				const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd;
+				// eg. [abc| def, [abc.
+				const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd; 
+				// eg. [ab_c|def
 				const reExpAbr = /\[[A-Za-z$_]+\|[^ .,;:\-|]+/gd;
+				// eg. def%g]
+				const reAbr = /(?=[.,:;]|^)\|[^ .,;:\-|]+/gd;
 				let html = '';
 				let currentLeft = 0;
 				let reExpMatches = Array.from(inputStr.matchAll(reExp));
 				let reExpAbrMatches = Array.from(inputStr.matchAll(reExpAbr));
-				reExpMatches.push(-1); reExpAbrMatches.push(-1);
+				let reAbrMatches = Array.from(inputStr.matchAll(reAbr));
+				reExpMatches.push(-1); reExpAbrMatches.push(-1); reAbr.push(-1);
 				let sortedMatches = Array();
-				let t = 0; let b = 0; let indexes = Array();
-				for (let i=0; i<(reExpMatches.length+reExpAbrMatches.length-2); i++){
+				let t = 0; let b = 0; let d = 0; let indexes = Array();
+				for (let i=0; i<( reExpMatches.length + reExpAbrMatches.length + reAbrMatches.length - 2); i++){
 					if (reExpAbrMatches[b]==-1 || reExpMatches[t].index <= reExpAbrMatches[b].index){
 						sortedMatches.push( [reExpMatches[t],0] );
 						indexes.push( reExpMatches[t].index );
@@ -118,7 +123,7 @@
 			/*
 			 * Store cursor position in innerText wr/ entire line transcription 
 			 */
-			function getCursorPosition() {
+			function getCursorPosition( hasChanged ) {
 				let cursorPosition = { node: null, offset: 0, parentNode: null, parentOffset: 0 }
 				if (window.getSelection) {
 					selection = window.getSelection();
@@ -148,8 +153,8 @@
 							parentOffset += thisText.length
 							currentSibling = currentSibling.nextSibling;
 						}
-					      	cursorPosition.offset = range.startOffset;
-						cursorPosition.parentOffset = parentOffset + cursorPosition.offset ;
+					  	cursorPosition.offset = range.startOffset;
+						cursorPosition.parentOffset = parentOffset + cursorPosition.offset + hasChanged;
 					}
 			  	}
 				return cursorPosition;
@@ -190,6 +195,11 @@
 			  	selection.addRange(range);
 			}
 
+			function completeAbbr( inputStr ){
+				const partialRe = /(?<=(^| ))([^[| ]+\|(\w|\%)+)/g;
+				return inputStr.replaceAll( partialRe, (g)=>{return '['+g} );
+			}
+
 			// HTML is generated upstream by template rendering in charter_annotation.py
 			function importData( img_id, dataType, edit ){
 				const url = `/lines/${img_id}?` + new URLSearchParams({dataType: dataType, edit: edit}).toString()
@@ -201,9 +211,12 @@
 						const transcriptionLineInputElt = line_elt.getElementsByClassName('line-input')[0];
 						transcriptionLineInputElt.innerHTML = highlight( transcriptionLineInputElt.innerText )[0];
 						console.log(transcriptionLineInputElt.innerHTML);
+						// in-line highlighting
 						transcriptionLineInputElt.oninput = (evt) => {
-							const highlighted = highlight( transcriptionLineInputElt.innerText )
-							let currentPosition = getCursorPosition();
+
+							completedStr = completeAbbr( transcriptionLineInputElt.innerText );
+							const highlighted = highlight( completedStr );
+							let currentPosition = getCursorPosition( completedStr.length > transcriptionLineInputElt.innerText.length );
 							transcriptionLineInputElt.innerHTML = highlighted[0];
 							restoreCursorPosition( currentPosition );
 							let completeFlag = highlighted[1];
