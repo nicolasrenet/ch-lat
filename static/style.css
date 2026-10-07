@@ -241,6 +241,10 @@ label {
 	*/
 }
 
+.highlight-secondary {
+	background-color: #00006;
+}
+
 .line-controls {
 	margin-left: .5rem;
 }
