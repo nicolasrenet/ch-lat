@@ -226,22 +226,16 @@ label {
 	display: flex;
 }
 
-.highlight {
+.highlight-read {
 	background-color: #ff8800;
-/*margin-left: .5rem;
-	margin-right: .5rem;
-	*/
 }
 
 
-.highlight-ok {
+.highlight-readseen {
 	background-color: #00aa00;
-/*	margin-left: .5rem;
-	//margin-right: .5rem;
-	*/
 }
 
-.highlight-secondary {
+.highlight-seen {
 	background-color: #00006;
 }
 

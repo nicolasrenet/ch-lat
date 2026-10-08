@@ -66,6 +66,8 @@
 			var charter_img_id = {{ charter_img_id | tojson }};
 			var charter_ids = {{ charter_ids | tojson }};
 
+			const AbbreviationMark = { READ: 0, SEEN: 1, READSEEN: 2 }
+
 			/* 
 			 * Highlighting of complete/incomplete abbreviation marks
 			 * (assume that matches are not overlapping)
@@ -73,57 +75,39 @@
 			function highlight( inputStr ){
 				//console.log(`highlight(${inputStr})`);
 				// eg. [abc| def, [abc.
-				const reExp = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd; 
-				// eg. [ab_c|def
-				const reExpAbr = /\[[A-Za-z$]+\|[^ .,;:\-_|]+/gd;
+				const reRead = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd; 
 				// eg. def%g]
-				const reAbr = /(?<=(^|\s))\|?[a-zA-Z]+\]/gd;
+				const reSeen = /(?<=(^|\s))\|?[a-zA-Z]+\]/gd;
+				// eg. [ab_c|def
+				const reReadSeen = /\[[A-Za-z$]+\|[^ .,;:\-_|]+/gd;
+				let reReadMatches = Array.from(inputStr.matchAll(reRead));
+				let reSeenMatches = Array.from(inputStr.matchAll(reSeen));
+				let reReadSeenMatches = Array.from(inputStr.matchAll(reReadSeen));
+				// Zipping each array of match objects with their corresponding flag
+				let flaggedReadMatches = Array.from( Iterator.zip( [ reReadMatches, reReadMatches.map( (elt)=> AbbreviationMark.READ )]));
+				let flaggedSeenMatches = Array.from( Iterator.zip( [ reSeenMatches, reSeenMatches.map( (elt)=> AbbreviationMark.SEEN )]));
+				let flaggedReadSeenMatches = Array.from( Iterator.zip( [ reReadSeenMatches, reReadSeenMatches.map( (elt)=> AbbreviationMark.READSEEN )]));
+				let sortedMatches = flaggedReadMatches.concat( flaggedSeenMatches ).concat( flaggedReadSeenMatches ).sort( (a, b) => a[0].index - b[0].index)
+
 				let html = '';
 				let currentLeft = 0;
-				let reExpMatches = Array.from(inputStr.matchAll(reExp));
-				let reExpAbrMatches = Array.from(inputStr.matchAll(reExpAbr));
-				let reAbrMatches = Array.from(inputStr.matchAll(reAbr));
-				reExpMatches.push(-1); reExpAbrMatches.push(-1); reAbrMatches.push(-1);
-				let sortedMatches = Array();
-				let t = 0; let b = 0; let d = 0; let indexes = Array();
-				for (let i=0; i<( reExpMatches.length + reExpAbrMatches.length + reAbrMatches.length - 3); i++){
-					if (reExpMatches[t] != -1 && 
-						(reExpAbrMatches[b]==-1 || reExpMatches[t].index <= reExpAbrMatches[b].index) 
-						&& (reAbrMatches[d]==-1 || reExpMatches[t].index <= reAbrMatches[d].index)){
-						sortedMatches.push( [reExpMatches[t],0] );
-						indexes.push( reExpMatches[t].index );
-						t++;
-					} else if (reExpAbrMatches[b] != -1 && 
-						(reExpMatches[t]==-1 || reExpAbrMatches[b].index <= reExpMatches[t].index)
-						&& (reAbrMatches[d]==-1 || reExpAbrMatches[b].index <= reAbrMatches[d].index)){
-						sortedMatches.push( [reExpAbrMatches[b],1]);
-						indexes.push( reExpAbrMatches[b].index );
-						b++;
-					} else if (reAbrMatches[d] != -1 && 
-						(reExpMatches[t]==-1 || reAbrMatches[d].index <= reExpMatches[t].index)
-						&& (reExpAbrMatches[b]==-1 || reAbrMatches[d].index <= reExpAbrMatches[b].index )) {
-						sortedMatches.push( [reAbrMatches[d],2]);
-						indexes.push( reAbrMatches[d].index );
-						d++;
-					}
-				}
-				for (let i=0; i<indexes.length-1;i++){
-					if (indexes[i] > indexes[i+1]){ console.log("Overlapping matches: abort."); return [inputStr,false]; }
-				}
 				let complete = true
-				console.log(sortedMatches)
 				for (const m of sortedMatches){
 					let left = m[0].index;
+					if (left < currentLeft){ 
+						console.log("Annotation patterns overlap! Abort highlighting on this line.");
+						return [html, false];
+					} 
 					let right = m[0].index + m[0][0].length;
 					html += inputStr.slice(currentLeft,left)
-					if (m[1] == 0){
-						html += `<mark class="highlight">${inputStr.slice(left,right)}</mark>`;
-						//console.log(`In loop: complete=${complete} (m=${m[0]})`);
+					if (m[1] == AbbreviationMark.READ){
+						html += `<mark class="highlight-read">${inputStr.slice(left,right)}</mark>`;
 						complete=false;
-					} else if ( m[1]==1 ) {
-						html += `<mark class="highlight-ok">${inputStr.slice(left,right)}</mark>`;
-					} else if ( m[1]==2 ){
-						html += `<mark class="highlight-secondary">${inputStr.slice(left,right)}</mark>`;
+					} else if ( m[1] == AbbreviationMark.SEEN) {
+						html += `<mark class="highlight-seen">${inputStr.slice(left,right)}</mark>`;
+						complete=false;
+					} else if ( m[1] == AbbreviationMark.READSEEN ){
+						html += `<mark class="highlight-readseen">${inputStr.slice(left,right)}</mark>`;
 					}
 					currentLeft = right;
 				}
