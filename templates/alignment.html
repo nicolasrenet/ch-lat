@@ -176,11 +176,13 @@
 					}
 					currentSibling = currentSibling.nextSibling ;
 				}
-				if ( currentSibling.nodeType === Node.TEXT_NODE){
-					cursorPosition.node = currentSibling;
-				} else if (currentSibling.nodeType === Node.ELEMENT_NODE){
-					cursorPosition.node = currentSibling.firstChild;
-				}
+				if (currentSibling){
+					if ( currentSibling.nodeType === Node.TEXT_NODE){
+						cursorPosition.node = currentSibling;
+					} else if (currentSibling.nodeType === Node.ELEMENT_NODE){
+						cursorPosition.node = currentSibling.firstChild;
+					
+				}}
 				cursorPosition.offset = cursorPosition.parentOffset-thisOffset;
 
 				let range = document.createRange();
