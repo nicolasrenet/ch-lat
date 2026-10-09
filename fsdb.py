@@ -314,17 +314,19 @@ class Fsdb:
         page_htr_dict = self.read_img_metadata('*', charter_img_id, self.config['pregt_htr_suffix'])
         page_htr_dict["metadata"]["created"] = str(datetime.now())
         page_htr_dict["metadata"]["comments"] += " + reviewed and exported in Ch-Lat."
-        print(page_htr_dict)
-        new_lines = [] 
         for region in page_htr_dict['regions']:
+            new_lines = [] 
             for idx, line in enumerate( region['lines']):
-                if line_transcriptions[idx]=='--<discard>--':
-                    continue
+                line_transcription = None
+                if line_transcriptions:
+                    line_transcription = line_transcriptions.pop(0)
+                    if line_transcription == '--<discard>--':
+                        continue
                 new_lines.append( region['lines'][idx] )
-                if line_transcriptions[idx] is not None:
-                    print( line_transcriptions[idx])
+                if line_transcription:
+                    print(f"W: {line_transcription}")
                     #print([ f'{ord(c)}' for c in line_transcriptions[idx] ])
-                    new_lines[-1]['text']=line_transcriptions[idx]
+                    new_lines[-1]['text']=line_transcription
             region['lines']=new_lines 
         return self.write_img_metadata( page_htr_dict, '*', charter_img_id, suffix=self.config['gt_htr_suffix'])
 

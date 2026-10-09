@@ -249,13 +249,13 @@
 				let transcriptionElts = document.querySelectorAll(".line-transcription")
 				console.log(transcriptionElts)
 				for (let tidx=0; tidx<transcriptionElts.length; tidx++){
-					transcription = transcriptionElts[tidx].querySelector(".line-input").innerText;
+					let transcription = transcriptionElts[tidx].querySelector(".line-input").innerText;
 					console.log(`export=${transcription}`)
 					discussFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discuss']");
 					discardFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discard']");
 					//console.log(discussFlag)
 					//console.log(discardFlag)
-					original = transcriptionElts[tidx].querySelector(".hidden-transcription").value;
+					let original = transcriptionElts[tidx].querySelector(".hidden-transcription").value;
 					if (discardFlag.checked){
 						transcriptions.push( '--<discard>--' );
 					/*} else if ( transcription !== original ){
