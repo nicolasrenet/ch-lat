@@ -108,18 +108,12 @@ class Fsdb:
         return returnValue;
 
 
-    def write_flags(self,  flag_data:dict, archive_id:str, charter_img_id:str):
-        return self.write_img_metadata( flag_data, archive_id, charter_img_id, suffix='flags.json')
+    # Generic routines to write auxiliary data
+    def write_flags(self, flag_data:dict, archive_id:str, charter_img_id:str, suffix:str):
+        return self.write_img_metadata( flag_data, archive_id, charter_img_id, suffix=suffix)#'flags.json')
 
-    def update_flags(self, updates:dict, archive_id:str, charter_img_id:str):
-        flag_data = self.read_img_metadata( archive_id, charter_img_id, suffix='flags.json')
-        flag_data.update( updates )
-        print(f"fsdb_update_flags({updates}) -> {flag_data}")
-        return self.write_img_metadata( flag_data, archive_id, charter_img_id, suffix='flags.json')
-
-
-    def read_flags(self,  archive_id:str, charter_img_id:str):
-        return self.read_img_metadata( archive_id, charter_img_id, suffix='flags.json')
+    def read_flags(self,  archive_id:str, charter_img_id:str, suffix:str):
+        return self.read_img_metadata( archive_id, charter_img_id, suffix=suffix)#'flags.json')
 
     def write_segmentation_file(self,  page_data: dict, archive_id:str, charter_img_id: str)->dict:
         """
@@ -253,9 +247,11 @@ class Fsdb:
                 width of a line (character length).
         """
 
-        suffix = self.config['gt_htr_suffix'] if data_type=='gt' else self.config['pregt_htr_suffix']
+        htr_suffix = self.config['gt_htr_suffix'] if data_type=='gt' else self.config['pregt_htr_suffix']
         charter_img_path = self.search( '*', charter_img_id )
-        charter_htr_path = self.search( '*', charter_img_id, suffix=suffix)
+        charter_htr_path = self.search( '*', charter_img_id, suffix=htr_suffix)
+        issues_path = self.search('*', charter_img_id, suffix=self.config['issues_htr_suffix'])
+
         if charter_img_path is None or charter_htr_path is None:
             return ([], -1)
         else:
@@ -264,9 +260,12 @@ class Fsdb:
         try:
             page_img = Image.open( charter_img_path, 'r')
             page_dict = json.load( open(charter_htr_path, 'r') )
+            issues = json.load( open(issues_path[0], 'r')) if issues_path else []
             line_tuples = []
             max_width = 0
             lines = itertools.chain.from_iterable( [ reg['lines'] for reg in page_dict['regions'] if 'lines' in reg ] )
+            have_issue = { issue['line_id']:True for issue in issues }
+            
             for tl in lines:
                 baseline_coordinates = [ tuple(pair) for pair in tl['baseline'] ]
                 baseline_array = np.array( tl['baseline'])
@@ -294,7 +293,12 @@ class Fsdb:
                     page_img_crop=Image.composite(page_img_crop, gray_box, polygon_mask)
                 imgByteArr = io.BytesIO()
                 page_img_crop.save( imgByteArr, format='PNG')
-                line_tuples.append( [tl['id'], tl['text'] if 'text' in tl else '', base64.b64encode(imgByteArr.getvalue()).decode(), bbox_width ])
+                line_tuples.append( [
+                    tl['id'], 
+                    tl['text'] if 'text' in tl else '', 
+                    base64.b64encode(imgByteArr.getvalue()).decode(), 
+                    bbox_width,  
+                    tl['id'] in have_issue])
 
             return (line_tuples, max_width) #json.dumps(line_tuples)
         except (IOError) as e:
@@ -314,20 +318,24 @@ class Fsdb:
         page_htr_dict = self.read_img_metadata('*', charter_img_id, self.config['pregt_htr_suffix'])
         page_htr_dict["metadata"]["created"] = str(datetime.now())
         page_htr_dict["metadata"]["comments"] += " + reviewed and exported in Ch-Lat."
+        issues = []
         for region in page_htr_dict['regions']:
             new_lines = [] 
             for idx, line in enumerate( region['lines']):
                 line_transcription = None
                 if line_transcriptions:
-                    line_transcription = line_transcriptions.pop(0)
+                    line_dictionary = line_transcriptions.pop(0)
+                    line_id, line_transcription, has_issue = [ line_dictionary[k] for k in ("id", "text", "issue") ]
                     if line_transcription == '--<discard>--':
                         continue
-                new_lines.append( region['lines'][idx] )
-                if line_transcription:
-                    print(f"W: {line_transcription}")
-                    #print([ f'{ord(c)}' for c in line_transcriptions[idx] ])
+                    new_lines.append( region['lines'][idx] )
+                    print(f"W: {line_transcription}, ${has_issue}")
                     new_lines[-1]['text']=line_transcription
+                    if has_issue:
+                        issues.append( {"line_id": line_id, "desc": '-'}  )
             region['lines']=new_lines 
+            if issues:
+                self.write_img_metadata( issues, '*', charter_img_id, suffix=self.config['issues_htr_suffix'])
         return self.write_img_metadata( page_htr_dict, '*', charter_img_id, suffix=self.config['gt_htr_suffix'])
 
 

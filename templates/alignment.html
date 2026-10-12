@@ -77,7 +77,7 @@
 				// eg. [abc| def, [abc.
 				const reRead = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd; 
 				// eg. def%g]
-				const reSeen = /(?<=(^|\s))\|?[a-zA-Z]+\]/gd;
+				const reSeen = /(?<=(^|\s))\|?[a-zA-Z$%]+\]/gd;
 				// eg. [ab_c|def
 				const reReadSeen = /\[[A-Za-z$]+\|[^ .,;:\-_|]+/gd;
 				let reReadMatches = Array.from(inputStr.matchAll(reRead));
@@ -243,27 +243,25 @@
 			}
 
 
+			/* Export transcriptions as a list of objects of the form { "id": ..., "text": ..., "issue": 0/1 }*/
 	     		function exportData(charter_img_id){
 
 				let transcriptions = []
 				let transcriptionElts = document.querySelectorAll(".line-transcription")
 				console.log(transcriptionElts)
 				for (let tidx=0; tidx<transcriptionElts.length; tidx++){
-					let transcription = transcriptionElts[tidx].querySelector(".line-input").innerText;
-					console.log(`export=${transcription}`)
-					discussFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discuss']");
-					discardFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discard']");
-					//console.log(discussFlag)
-					//console.log(discardFlag)
-					let original = transcriptionElts[tidx].querySelector(".hidden-transcription").value;
+					let lineId = transcriptionElts[tidx].getAttribute('id').replace("line-")
+					let discardFlag = transcriptionElts[tidx].querySelector("input[name='line-flag-discard']");
 					if (discardFlag.checked){
-						transcriptions.push( '--<discard>--' );
-					/*} else if ( transcription !== original ){
-						transcriptions.push( transcription );
+						transcriptions.push( { "text": '--<discard>--', "issue": false } );
 					} else {
-						transcriptions.push( null );
-					}*/
-					} else { transcriptions.push( transcription ) }
+						transcriptions.push( {
+							"id": transcriptionElts[tidx].getAttribute('id').replace('line-', ''),
+							"text": transcriptionElts[tidx].querySelector(".line-input").innerText,
+							"issue": transcriptionElts[tidx].querySelector("input[name='line-flag-issue']").checked
+						});
+						console.log(transcriptions[transcriptions.length-1]);
+					};
 				}
 
 				if (transcriptions.length === 0){ console.log("exportData() - abort: empty transcription data!"); return }

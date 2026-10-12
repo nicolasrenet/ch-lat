@@ -31,6 +31,7 @@ app.config.update(
     gt_seg_suffix='lines.gt.json',
     pregt_htr_suffix='htr.pregt.json',
     gt_htr_suffix='htr.gt.json',
+    issues_htr_suffix='htr.issues.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
     json_validate=True,
     schema_path='static/lines_schema.json',
@@ -170,11 +171,11 @@ def get_segmentation_gt( archive_id:str, charter_img_id:str):
 
 
 @app.post('/flags/<archive_id>/<charter_img_id>')
-def write_flags( archive_id:str, charter_img_id:str ):
+def write_segmentation_flags( archive_id:str, charter_img_id:str ):
     """Export segmentation flags to disk.
     """
     flag_data = request.get_json()
-    ok = fsdb.write_flags( flag_data, archive_id, charter_img_id )
+    ok = fsdb.write_flags( flag_data, archive_id, charter_img_id, suffix=app.config['flags_seg_suffix'])
     resp = make_response( ok )
     return resp
 
@@ -182,7 +183,7 @@ def write_flags( archive_id:str, charter_img_id:str ):
 def get_flags( archive_id:str, charter_img_id:str):
     """ Import segmentation flags
     """
-    flag_data = fsdb.read_flags( archive_id, charter_img_id )
+    flag_data = fsdb.read_flags( archive_id, charter_img_id, suffix=app.config['flags_seg_suffix'] )
     # note: since data read from json file, no need to jsonify
     return make_response( flag_data )
 
@@ -238,9 +239,8 @@ def get_line_items( charter_img_id:str):
     if text_avg_length > 180:
         text_size='xsmall' if text_avg_length > 210 else 'small'
 
-    line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for i,ldt in enumerate(line_data) ]
-    #print([ (l[-1],len(l)) for l in line_data] )
-
+    # ! adding an extra field (pixel width) to the line tuple.
+    line_data = [ ldt + [ ldt[3] * app.config['max_width']/line_max_width ] for ldt in line_data ]
     
     # where highlighting should happen
     return render_template(
