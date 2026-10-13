@@ -33,6 +33,7 @@ app.config.update(
     gt_htr_suffix='htr.gt.json',
     issues_htr_suffix='htr.issues.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
+    default_feature='alignment',
     json_validate=True,
     schema_path='static/lines_schema.json',
     crop=False,
@@ -70,6 +71,10 @@ def resource_not_found(e):
     return jsonify(error=str(e)), 404
 
 
+@app.route('/')
+def default_choice():
+    return redirect(f"/{app.config['default_feature']}")
+
 
 @app.route('/segmentation')
 def charters_choice():
@@ -82,9 +87,14 @@ def charters_choice():
     charter_img_id = charter_images[0]['id']
     return redirect(f'/{archive_id}/{charter_img_id}')
 
-@app.route('/')
-def align_choice():
-    return redirect(f'/segmentation')
+@app.route('/alignment')
+def all_lines():
+    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'])
+    if not charter_htr_gts:
+        abort(404, description="Failed to retrieve charters ids.")
+    ch_id = lemmatize( charter_htr_gts[0].name, suffix=app.config['pregt_htr_suffix'] )
+    return redirect(f'/alignment/{ch_id}')
+
 
 
 @app.get('/archive')
@@ -186,18 +196,6 @@ def get_flags( archive_id:str, charter_img_id:str):
     flag_data = fsdb.read_flags( archive_id, charter_img_id, suffix=app.config['flags_seg_suffix'] )
     # note: since data read from json file, no need to jsonify
     return make_response( flag_data )
-
-
-@app.get('/alignment')
-def all_lines():
-    # retrieve all existing charter ids (for browsing)
-    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'])
-    if not charter_htr_gts:
-        abort(404, description="Failed to retrieve charters ids.")
-    ch_id = lemmatize( charter_htr_gts[0].name, suffix=app.config['pregt_htr_suffix'] )
-    return redirect(f'/alignment/{ch_id}')
-
-
 
 
 @app.get('/alignment/<charter_img_id>')
