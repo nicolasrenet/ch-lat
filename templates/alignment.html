@@ -75,7 +75,7 @@
 			function highlight( inputStr ){
 				//console.log(`highlight(${inputStr})`);
 				// eg. [abc| def, [abc.
-				const reRead = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|$)/gd; 
+				const reRead = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|-?$)/gd; 
 				// eg. def%g]
 				const reSeen = /(?<=(^|\s))\|?[a-zA-Z$%]+\]/gd;
 				// eg. [ab_c|def
