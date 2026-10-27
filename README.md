@@ -61,6 +61,10 @@ http://localhost:5000/alignment
 
 ![](doc/alignment_screenshot.png)
 
+DiDip-style transcription annotations of the kind `[<what you read>|what you see]` (including their more concise syntactic variations eg. `<what you read>|<what you see>`, `[<what you read>`...) are automatically highlighted:
+
+![](doc/double_transcription.png)
+
 
 ## 2. Alignment script
 
