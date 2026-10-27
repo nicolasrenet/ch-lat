@@ -69,7 +69,7 @@ DiDip-style transcription annotations of the kind `[<what you read>|what you see
 ## 2. Auxiliary scripts
 
 
-### Long and short-form transcriptions from a single file: `compile_transcription.py`
+### 2.1 Long and short-form transcriptions from a single file: `compile_transcription.py`
 
 **Input**: a single annotation file (JSON or PageXML) that stores both the expanded and abbreviated form of the transcription. Eg.
 
@@ -125,7 +125,7 @@ Generate only the short-form transcription:
 ./split_corpus.py --abbreviate 4574a41d2f834e6b2e807f96d82cddb3.htr.gt.json
 ```
 
-### Alignment script: `gt_alignemnt.py`
+### 2.2 Aligning full-paragraph transcriptions with segmentation: `gt_alignemnt.py`
 
 A hack that uses a passable HTR in order to align existing full-paragraph GT transcriptions with an existing segmentation.
 
