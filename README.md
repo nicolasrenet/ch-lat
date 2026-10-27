@@ -66,11 +66,70 @@ DiDip-style transcription annotations of the kind `[<what you read>|what you see
 ![](doc/double_transcription.png)
 
 
-## 2. Alignment script
+## 2. Auxiliary scripts
+
+
+### Long and short-form transcriptions from a single file: `compile_transcription.py`
+
+**Input**: a single annotation file (JSON or PageXML) that stores both the expanded and abbreviated form of the transcription. Eg.
+
+```
+"[et|% Rogatis In [Cuius|Cui Rei [testimonio|testio%m plenius [presentes|p%ntes [litteras|lra%s [dedimus|dedim% [nostro|n%ro [pendenti|pend%nti"
+```
+
+**Output**: 
+
++ `*.exp.json`: expanded form: `"et Rogatis In Cuius Rei testimonio plenius presentes litteras dedimus nostro pendenti"`
++ `*.abr.json`: abbreviated form: `"% Rogatis In Cui Rei testio%m plenius p%ntes lra%s dedim% n%ro pend%nti"`
+
+Although it is better practice to use DiDip-flavored JSON or PageXML as input formats, the script can be used with any file that has a consistent pattern for a line transcription.
+
+#### Syntax
+
+```bash
+Usage: compile_transcription.py [-h] [--abbreviate] [--expand] [--expanded_suffix EXPANDED_SUFFIX] [--abbreviated_suffix ABBREVIATED_SUFFIX]
+                       [--line_pattern LINE_PATTERN] [--input_format INPUT_FORMAT] [--verbosity {0,1,2}]
+                       input_file
+
+positional arguments:
+  input_file
+
+options:
+  -h, --help            show this help message and exit
+  --abbreviate          By default, the script generate both flavours of outputs; with this option, the abbreviated files are created, but their
+                        expanded counterpart is not, unless the '--expand' option is used. (default: False)
+  --expand              By default, the script generate both flavours of outputs; with this option, the expanded files are created, but their
+                        abbreviated counterpart is not, unless the '--abbreviate' option is used. (default: False)
+  --expanded_suffix EXPANDED_SUFFIX
+                        Suffix to be added to the expanded transcription before the '.json' suffix. (default: .exp)
+  --abbreviated_suffix ABBREVIATED_SUFFIX
+                        Suffix to be added to the abbreviated transcription before the '.json' suffix. (default: .abr)
+  --line_pattern LINE_PATTERN
+                        A custom line pattern to isolate relevant part of the transcription line. (default: (^\s*"text":\s+")([^"]+)(".*)$)
+  --input_format INPUT_FORMAT
+                        File input format. (default: json)
+  --verbosity {0,1,2}   Verbosity: 0=ERROR, 1=INFO, 2=DEBUG (default: 1)
+```
+
+#### Example
+
+Generate both expanded and abbreviated forms:
+
+```bash
+./split_corpus.py 4574a41d2f834e6b2e807f96d82cddb3.htr.gt.json
+```
+
+Generate only the short-form transcription:
+
+```bash
+./split_corpus.py --abbreviate 4574a41d2f834e6b2e807f96d82cddb3.htr.gt.json
+```
+
+### Alignment script: `gt_alignemnt.py`
 
 A hack that uses a passable HTR in order to align existing full-paragraph GT transcriptions with an existing segmentation.
 
-### Syntax 
+#### Syntax 
 
 ```bash
 python3 gt_alignment.py [options]
@@ -92,7 +151,7 @@ where the options are as follows:
 -v=<class 'int'> Set verbosity level. Default 1 . Passed 1
 ```
 
-### Examples
+#### Examples
 
 Aligning GT for explicit image files:
 
