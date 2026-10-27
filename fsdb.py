@@ -141,7 +141,7 @@ class Fsdb:
             "text_direction": "horizontal-lr",
             #"regions": [ { 'id': 'r0', 'coords': [[0,0],[width-1,0],[width-1,height-1],[0,height-1]] } ],
         })
-        page_update={ 'metadata': { 'created': str(datetime.now()), 'creator': 'ch-lat:{}'.format(Path(__file__).name), 'comments': '' }}
+        page_update={ 'metadata': { 'created': str(datetime.now().isoformat("T", "seconds")), 'creator': 'ch-lat:{}'.format(Path(__file__).name), 'comments': '' }}
         page_update.update( page_data )
         # validate here (! exception on failure)
         if self.config['json_validate']:
@@ -316,7 +316,7 @@ class Fsdb:
         """
         # read htr/segmentation file
         page_htr_dict = self.read_img_metadata('*', charter_img_id, self.config['pregt_htr_suffix'])
-        page_htr_dict["metadata"]["created"] = str(datetime.now())
+        page_htr_dict["metadata"]["created"] = str(datetime.now().isoformat("T", "seconds"))
         page_htr_dict["metadata"]["comments"] += " + reviewed and exported in Ch-Lat."
         issues = []
         for region in page_htr_dict['regions']:
