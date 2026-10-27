@@ -185,7 +185,7 @@ if __name__ == "__main__":
         for idx, line in enumerate( gt_segmented ):
             dataset.pagedict['lines'][idx]['text']=line
         with open( htr_gt_filepath, 'w') as htr_outfile:
-            json.dump( dataset.pagedict, htr_outfile, indent=4)
+            json.dump( dataset.pagedict, htr_outfile, indent=2)
         
 
     sys.exit()

@@ -75,11 +75,11 @@
 			function highlight( inputStr ){
 				//console.log(`highlight(${inputStr})`);
 				// eg. [abc| def, [abc.
-				const reRead = /\[[^ .,;:\-|]+\|?(?=[ .,:;]|-?$)/gd; 
+				const reRead = /\[[^ ,;:\-|]+\|?(?=[ ,:;]|-?$)/gd; 
 				// eg. def%g]
 				const reSeen = /(?<=(^|\s))\|?[a-zA-Z$%]+\]/gd;
 				// eg. [ab_c|def
-				const reReadSeen = /\[[A-Za-z$_]+\|[^ .,;:\-|]+/gd;
+				const reReadSeen = /\[[A-Za-z$_]+\|[^ ,;:\-|]+/gd;
 				let reReadMatches = Array.from(inputStr.matchAll(reRead));
 				let reSeenMatches = Array.from(inputStr.matchAll(reSeen));
 				let reReadSeenMatches = Array.from(inputStr.matchAll(reReadSeen));
