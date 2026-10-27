@@ -107,11 +107,11 @@ if __name__ == '__main__':
 
     line_transcription_pattern = re.compile( args.line_pattern ) if not args.input_format=='xml' else re.compile( r'(^\s*<Unicode>)([^<]+)(<Unicode.*)$' )
 
-    expanded_file_name = re.sub(r'\.([a-z]+)$', r'{}.\1'.format( args.expanded_suffix ), args.input_file )
-    abbreviated_file_name = re.sub(r'\.([a-z]+)$', r'{}.\1'.format( args.abbreviated_suffix ), args.input_file )
+    expanded_file_name = re.sub(r'\.[a-z]+\.([a-z]+)$', r'{}.\1'.format( args.expanded_suffix ), args.input_file )
+    abbreviated_file_name = re.sub(r'\.[a-z]+\.([a-z]+)$', r'{}.\1'.format( args.abbreviated_suffix ), args.input_file )
     
     # just for logging purpose
-    combined_name =  re.sub(r'\.([a-z]+)$', r'.{{{},{}}}.\1'.format( args.expanded_suffix[1:], args.abbreviated_suffix[1:] ), args.input_file )
+    combined_name =  re.sub(r'\.[a-z]+\.([a-z]+)$', r'.{{{},{}}}.\1'.format( args.expanded_suffix[1:], args.abbreviated_suffix[1:] ), args.input_file )
     output_file_logstr = ''
     if not (args.abbreviate or args.expand) or (args.abbreviate and args.expand):
         output_file_logstr = combined_name
