@@ -4,16 +4,15 @@
 # 10/2026
 
 """
-From a single transcription file where each abbreviated form is encoded as [<what I read>|<what I see>] 
+From a single transcription file where each abbreviated form is encoded as `[<what you read>|<what you see>]`
 (eg. '[communitam|%munita%]'), generate 2 files, with expanded and abbreviated transcriptions, respectively. 
 
 + It enforces the assumption that annotations have been made at word-level: 
   any space (seen or added by the transcriber) is considered a separator, or,
-  alternatively: no <what you read>|<what you see pair> should contain a space.
+  alternatively: no `<what you read>|<what you see>` pair should contain a space.
 + Spaces are normalized.
 + Transcriber-added space markers ('_') become ordinary white spaces in both output files.
-+ All possible, unambiguous syntactic combinations of short and long versions of 
-  <what you read>/<what you read> annotations are dealt with:
++ All possible, unambiguous syntactic variations of annotations are handled:
   - [abc|cde], [abc|cde, abc|cde, abc|cde] →  'abc', 'cde'
   - [abc, [abc|, [abc|], abc| → 'abc', ''
   - cde], |cde], [|cde], |cde → '', 'cde'
