@@ -80,7 +80,7 @@ class Fsdb:
         returnValue, outputfile = {}, None
         try:
             outputfile = open(output_filename, 'w')
-            print( json.dumps(data, indent=4), file=outputfile)
+            print( json.dumps(data, indent=2), file=outputfile)
             outputfile.close()
             returnValue = {'filename': output_filename, 'size': Path(output_filename).stat().st_size }
         except (IOError) as e:
