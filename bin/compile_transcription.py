@@ -94,6 +94,8 @@ if __name__ == '__main__':
     parser.add_argument("--abbreviated_suffix", help="Suffix to be added to the abbreviated transcription before the '.json' suffix.", default=".abr")
     parser.add_argument("--line_pattern", help="A custom line pattern to isolate relevant part of the transcription line.", default=r'(^\s*"text":\s+")([^"]+)(".*)$')
     parser.add_argument("--input_format", help="File input format.", default="json")
+    parser.add_argument("--standard_output", action='store_true', help="Use standard output only.") 
+    parser.add_argument("--parallel", action='store_true', help="Generate a line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the standard output, instead of two separate files (mostly for text processing purpose).")
     parser.add_argument("--verbosity", choices=[0,1,2], help="Verbosity: 0=ERROR, 1=INFO, 2=DEBUG", type=int, default=1)
 
     args=parser.parse_args()
@@ -118,7 +120,7 @@ if __name__ == '__main__':
         output_file_logstr = expanded_file_name
     else:
         output_file_logstr = abbreviated_file_name
-    logger.info(f"{args.input_file} → {output_file_logstr}")
+    logger.info(f"{args.input_file} →  {output_file_logstr if not args.standard_output else '-'}")
 
     with open( args.input_file ) as if_both:
         text_line_count = 0
@@ -135,21 +137,33 @@ if __name__ == '__main__':
                 except ValueError as e:
                     logger.error(f"{e}: {args.input_file}:{text_line_count}")
                     continue
-                expanded_lines.append( before + expanded_content + after + '\n') 
-                abbreviated_lines.append( before + abbreviated_content + after + '\n')
-            else:
+                if args.parallel:
+                    print(f"{expanded_content}\t{abbreviated_content}")
+                else:
+                    expanded_lines.append( before + expanded_content + after + '\n')
+                    abbreviated_lines.append( before + abbreviated_content + after + '\n')
+            elif not args.parallel:
                 expanded_lines.append( line )
                 abbreviated_lines.append( line )
 
-        if args.expand or not (args.abbreviate or args.expand):
-            with open(expanded_file_name, 'w') as of_exp:
-                for l in expanded_lines:
-                    of_exp.write( l )
+        if not args.parallel:
+            if args.expand or not (args.abbreviate or args.expand):
+                if args.standard_output:
+                    for l in expanded_lines:
+                        print(l, end='')
+                else:
+                    with open(expanded_file_name, 'w') as of_exp:
+                        for l in expanded_lines:
+                            of_exp.write( l )
 
-        if args.abbreviate or not (args.abbreviate or args.expand):
-            with open( abbreviated_file_name, 'w') as of_abr:
-                for l in abbreviated_lines:
-                    of_abr.write( l )
+            if args.abbreviate or not (args.abbreviate or args.expand):
+                if args.standard_output:
+                    for l in abbreviated_lines:
+                        print(l, end='')
+                else:
+                    with open( abbreviated_file_name, 'w') as of_abr:
+                        for l in abbreviated_lines:
+                            of_abr.write( l )
 
 ## Tests
                 
