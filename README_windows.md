@@ -17,9 +17,9 @@ Requirements:
 
 + `ch-lat.tar.gz` (the container image, no need to untar)
 + `dev` (the environment variable definitions, to be used by the container when running)
-+ `samples.zip` 
++ `samples.zip` (a couple dozens of samples, for testing purpose)
 
-2. In the *Windows Powershell (PS)*, load the container image:
+2. Launch the *Windows Powershell (PS)* in a terminal and load the container image:
 
 ```bash
 cd C:\Users\nicolas\transcription_review
@@ -32,12 +32,12 @@ docker image load --input ch-lat.tar.gz
 Expand-Archive samples.zip -DestinationPath .
 ```
 
-This creates a `.\samples` subfolder with images (`*.img.jpg`), first-stage transcriptions (`*.htr.pregt.json`), second-stage transcriptiosn (`*.htr.gt.json`).
+This creates a `.\samples` subfolder with images (`*.img.jpg`), first-stage (`*.htr.pregt.json`) and second-stage (`*.htr.gt.json`) transcriptions.
 
-2. Run the image:
+2. Start the application:
 
 ```bash
-docker run -v C:/users/nicolas/transcription_review/samples:/fsdb_root --rm -it -p 5001:5001 --name ch-lat --env-file ./env ch-lat
+docker run -v C:/Users/nicolas/transcription_review/samples:/fsdb_root --rm -it -p 5001:5001 --name ch-lat --env-file ./env ch-lat
 ```
 
 The `env` file sets the environment variables read by the Docker-contained Flask server, as shown below:
@@ -49,10 +49,10 @@ FLASK_fsdb_root=/fsdb_root
 ```
 
 The value of `FLASK_fsdb_root` is used by the Flask annotation app to find the location of the files to be annotated (images and metadata). The `-v` parameter passed to `docker run`
-maps the actual location on the host (your) machine (eg. `/home/nicolas/transcription_review/samples`) to the virtual location in the Docker container (`/fsdb_root`).
-The `env` is not meant to be modified; in order with an alternate location for the work files, run docker with the folder mapping of your choice, eg. `-v /tmp/myLocation:/fsdb_root`.
+maps the actual location on the host (ie. your machine) to the virtual location in the Docker container (`/fsdb_root`).
+The `env` file is not meant to be modified; to pass an alternate location for the work files, simply run docker with a different mapping, eg. `-v /tmp/myLocation:/fsdb_root`.
 
-3. In the browser:
+3. Finally, in the browser:
 
 ```
 http://localhost:5001/alignment
@@ -103,6 +103,6 @@ In the container's (Linux) shell, type:
 ls /fsdb_root
 ```
 
-and check that the expected files are visible. If they're not, verify the mapping (`-v` option for `docker run`).
+and check that the expected files are visible. If they're not, verify the actual (host) location and then the mapping (`-v` option for `docker run`).
 
 

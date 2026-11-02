@@ -178,7 +178,7 @@ Build the container:
 sudo docker image rm ch-lat;  sudo docker build --network host --tag ch-lat .
 ```
 
-3.1 Run in Linux:
+3.1 Running in Linux:
 
 ```bash
 sudo docker run -v /home/stella/data/transcriptions_and_images:/fsdb_root --rm -it -p 5001:5001 --env-file ./env --network host ch-lat
@@ -193,10 +193,10 @@ FLASK_fsdb_root=/fsdb_root
 ```
 
 The value of `FLASK_fsdb_root` is used by the Flask annotation app to find the location of the files to be annotated (images and metadata). The `-v` parameter
-maps the actual location on the host (your) machine (eg. `/home/stella/data/transcriptions_and_images`) to the virtual location in the Docker container (`/fsdb_root`).
-The `env` is not meant to be modified; to pass an alternate actual location, run docker with the folder mapping of your choice, eg. `-v /tmp/myLocation:/fsdb_root`.
+maps the actual location on the host (eg. `/home/stella/data/transcriptions_and_images`) to the virtual location in the Docker container (`/fsdb_root`).
+The `env` is not meant to be modified; to pass an alternate actual location, simply run docker with a different mapping, eg. `-v /tmp/myLocation:/fsdb_root`.
 
 3.2 Run in Windows:
 
-Look the detailed [README_windows.md](README_windows.md).
+Look at the detailed [README_windows.md](README_windows.md).
 
