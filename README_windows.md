@@ -62,7 +62,7 @@ http://localhost:5001/alignment
 
 Check the following in this order:
 
-1. Has the image been loaded correctly?
+### 1. Has the image been loaded correctly?
 
 ```ps
 docker image ls
@@ -75,7 +75,7 @@ IMAGE                ID             DISK USAGE   CONTENT SIZE   EXTRA
 ch-lat:latest        8a06ff3bfe90        339MB         80.7MB
 ```
 
-2. Server unreachable or timeout: is the container running?
+### 2. Server unreachable or timeout: is the container running?
 
 ```
 docker container ls
@@ -89,7 +89,7 @@ c3816ed6ddba   ch-lat    "python3 -m flask --…"   19 seconds ago   Up 18 secon
 ```
 
 
-3. Error `"404 Not Found: Failed to retrieve charters ids."`: are the work files exposed to the container in the set location (`/fsdb_root`)?
+### 3. Error `"404 Not Found: Failed to retrieve charters ids."`: are the work files exposed to the container in the set location (`/fsdb_root`)?
 
 Log on the container:
 
