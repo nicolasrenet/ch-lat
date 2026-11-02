@@ -1,0 +1,4 @@
+#FLASK_crop=1
+FLASK_flat=1
+FLASK_max_width=1200
+FLASK_fsdb_root=/fsdb_root
