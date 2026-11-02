@@ -89,7 +89,7 @@ c3816ed6ddba   ch-lat    "python3 -m flask --…"   19 seconds ago   Up 18 secon
 ```
 
 
-### 3. Error `404 Not Found - Failed to retrieve charters ids.`): are the work files exposed to the container in the set location?
+### 3. Error `404 Not Found - Failed to retrieve charters ids.`: are the work files exposed to the container in the set location?
 
 Log on the container:
 
