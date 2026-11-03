@@ -213,5 +213,5 @@ For most use cases, modifying the `env.sh` file is not needed.
 
 3.2 Run in Windows:
 
-Look at the detailed installation steps in [Windows README.md](dist/README.md).
+Look at the detailed installation steps in the [Windows README.md](dist/README.md).
 
