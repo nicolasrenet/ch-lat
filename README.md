@@ -186,10 +186,11 @@ sudo docker build --file Dockerfile --network host --tag ch-lat ..
 sudo docker image save ch-lat | gzip > ch-lat.tar.gz
 ```
 
-3.1 Running in Linux:
+3.1 Load and run in Linux:
 
 ```bash
 cd dist
+sudo docker image load --input ch-lat.tar.gz
 sudo docker run -v ./samples:/fsdb_root --rm -it -p 5001:5001 \
         --env-file ./env.sh --network host ch-lat
 ```
@@ -198,7 +199,7 @@ where
 
 + The `-v` parameter maps the work folder location on the host (eg. `./samples`) to the virtual location in the Docker container (`/fsdb_root`).
 To work with a different tree, simply run docker with a different mapping, eg. `-v /tmp/myLocation:/fsdb_root`. 
-lways use explicit directory paths for the mapping values. Eg. neither `samples:/fsdb_root` nor `./samples:fsdb_root` will work as expected; `./samples:/fsdb_root` will.
+Always use explicit directory paths for the mapping values. Eg. neither `samples:/fsdb_root` nor `./samples:fsdb_root` will work as expected; `./samples:/fsdb_root` will.
 
 + option `--env-file` points to the file which configures the environment variables read by Docker-contained Flask server: 
 
@@ -212,5 +213,5 @@ For most use cases, modifying the `env.sh` file is not needed.
 
 3.2 Run in Windows:
 
-Look at the detailed [Windows README.md](dist/README.md).
+Look at the detailed installation steps in [Windows README.md](dist/README.md).
 
