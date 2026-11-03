@@ -207,5 +207,5 @@ For most use cases, modifying the `env.sh` file is not needed.
 
 3.2 Run in Windows:
 
-Look at the detailed [README_windows.md](README_windows.md).
+Look at the detailed [README_windows.md](dist/README.md).
 
