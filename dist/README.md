@@ -69,7 +69,7 @@ For most use cases, modifying the `env.sh` file is not needed.
 http://localhost:5001/alignment
 ```
 
-## Debugging
+## Troubleshooting
 
 Check the following in this order:
 
