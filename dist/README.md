@@ -16,7 +16,7 @@ General idea: Ch-Lat is a Docker-containerized Linux application that runs in a 
 Requirements:
 
 + [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install): the virtual machine to support a running Docker container
-+ [Docker desktop](https://desktop.docker.com/win/main/amd64): the Windows application that manages containers - we use its CLI.
++ [Docker desktop](https://desktop.docker.com/win/main/amd64): the Windows application that manages containers - we use its CLI: to be installed in *user space*.
 
 1. In a folder of your choice (say, `C:\Users\nicolas\transcription_review`), download the following 3 files:
 
