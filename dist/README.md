@@ -2,6 +2,8 @@
 
 ## FYI only: how the container image was built (on Linux):
 
+On GitHub: [https://github.com/nicolasrenet/ch-lat](https://github.com/nicolasrenet/ch-lat)
+
 ```bash
 cd dist
 sudo docker image rm ch-lat
