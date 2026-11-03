@@ -11,15 +11,17 @@ sudo docker image save ch-lat | gzip > ch-lat.tar.gz
 
 ## Run on your Windows system
 
+General idea: Ch-Lat is a Docker-containerized Linux application that runs in a Linux virtual machine hosted by your Windows system.
+
 Requirements:
 
-+ [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install)
-+ [Docker desktop](https://desktop.docker.com/win/main/amd64)
++ [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install): the virtual machine to support a running Docker container
++ [Docker desktop](https://desktop.docker.com/win/main/amd64): the Windows application that manages containers - we use its CLI.
 
 1. In a folder of your choice (say, `C:\Users\nicolas\transcription_review`), download the following 3 files:
 
 + `ch-lat.tar.gz` (the container image, no need to untar)
-+ `dev` (the environment variable definitions, to be used by the container when running)
++ `dev.sh` (the environment variable definitions, to be used by the container when running)
 + `samples.zip` (a couple dozens of samples, for testing purpose)
 
 2. Launch the *Windows Powershell (PS)* in a terminal and load the container image:
@@ -57,7 +59,7 @@ FLASK_max_width=1200
 FLASK_fsdb_root=/fsdb_root # mounting point of the host machine's work tree in the container
 ```
 
-The current configuration assumes that you are working with a flat folder of images and their corresponding metadata files (`.htr.pregt.json`, `*.htr.gt.json`). You may change it to work with an FSDB-compliant tree. The value of `FLASK_fsdb_root` is used by the Flask annotation app to find the container's mounting point for the work folder. 
+The current configuration assumes that you are working with a flat folder of images, their unrevised annotations (`.htr.pregt.json`, mandatory) and the corrected annotations  (`*.htr.gt.json`, optional). You may change it to work with an FSDB-compliant tree. The value of `FLASK_fsdb_root` is used by the Flask annotation app to find the container's mounting point for the work folder. 
 For most use cases, modifying the `env.sh` file is not needed.
 
 
