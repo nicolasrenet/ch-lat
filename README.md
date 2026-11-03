@@ -70,7 +70,7 @@ The color-coding makes it easier to spot the partial annotation and to complete 
 + expanded forms in **orange**: eg.  $\color{orange}{\[ecclesia}$
 + abbreviated forms in **yellow**: eg. <mark>ecc%a</mark>
   
-+ complete forms in **green**: eg. $\color{green}{\[ecclesia|ecc%a\]}$
++ complete forms in **green**: eg. $\color{green}{\[ecclesia|ecc\%a\]}$
   ```
 
 
