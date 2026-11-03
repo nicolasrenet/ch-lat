@@ -71,10 +71,8 @@ The color-coding makes it easier to spot the partial annotation and to complete 
   ```diff
   ! [ecclesia
   ```
-+ abbreviated forms in **yellow**: eg.
-  ```diff
-  - ecc%a]
-  ```
++ abbreviated forms in **yellow**: eg. <mark>ecc%a</mark>
+  
 + complete forms in **green**: eg. 
   ```diff
   + [ecclesia|ecc%a]
