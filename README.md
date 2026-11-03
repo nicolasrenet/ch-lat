@@ -175,26 +175,35 @@ Resulting `*.htr.gt.json` file can be reviewed and corrected with the line trans
 Build the container:
 
 ```bash
-sudo docker image rm ch-lat;  sudo docker build --network host --tag ch-lat .
+cd dist
+sudo docker image rm ch-lat
+sudo docker build --file Dockerfile --network host --tag ch-lat ..
+sudo docker image save ch-lat | gzip > ch-lat.tar.gz
 ```
 
 3.1 Running in Linux:
 
 ```bash
-sudo docker run -v /home/stella/data/transcriptions_and_images:/fsdb_root --rm -it -p 5001:5001 --env-file ./env --network host ch-lat
+cd dist
+sudo docker run -v ./samples:/fsdb_root --rm -it -p 5001:5001 \
+        --env-file ./env.sh --network host ch-lat
 ```
 
-where the `env` file (which configures the environment variables read by Docker-contained Flask server) is as below:
+where 
+
++ The `-v` parameter maps the work folder location on the host (eg. `./samples`) to the virtual location in the Docker container (`/fsdb_root`).
+To work with a different tree, simply run docker with a different mapping, eg. `-v /tmp/myLocation:/fsdb_root`. 
+lways use explicit directory paths for the mapping values. Eg. neither `samples:/fsdb_root` nor `./samples:fsdb_root` will work as expected; `./samples:/fsdb_root` will.
+
++ option `--env-file` points to the file which configures the environment variables read by Docker-contained Flask server: 
 
 ```bash
-FLASK_flat=1
+FLASK_flat=1 # Ch-Lat operates on a flat folder of images and metadata pairs
 FLASK_max_width=1200
-FLASK_fsdb_root=/fsdb_root
+FLASK_fsdb_root=/fsdb_root # mounting point of the host machine's work tree in the container
 ```
-
-The value of `FLASK_fsdb_root` is used by the Flask annotation app to find the location of the files to be annotated (images and metadata). The `-v` parameter
-maps the actual location on the host (eg. `/home/stella/data/transcriptions_and_images`) to the virtual location in the Docker container (`/fsdb_root`).
-The `env` is not meant to be modified; to pass an alternate actual location, simply run docker with a different mapping, eg. `-v /tmp/myLocation:/fsdb_root`.
+The current configuration assumes that you are working with a flat folder of images and their corresponding metadata files (`.htr.pregt.json`, `*.htr.gt.json`). You may change it to work with an FSDB-compliant tree. The value of `FLASK_fsdb_root` is used by the Flask annotation app to find the container's mounting point for the work folder. 
+For most use cases, modifying the `env.sh` file is not needed.
 
 3.2 Run in Windows:
 

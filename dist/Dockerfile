@@ -4,10 +4,10 @@ FROM python:3.10-slim
 
 WORKDIR /alignment-flask
 
-COPY templates static charter_annotation.py fsdb.py /alignment-flask
-COPY templates/ /alignment-flask/templates
-COPY static/ /alignment-flask/static
-COPY requirements.txt /alignment-flask
+COPY ../templates ../static ../charter_annotation.py ../fsdb.py /alignment-flask
+COPY ../templates/ /alignment-flask/templates
+COPY ../static/ /alignment-flask/static
+COPY ../requirements.txt /alignment-flask
 
 RUN pip3 install --upgrade pip && pip install --no-cache-dir -r /alignment-flask/requirements.txt
 RUN ls -l /alignment-flask
