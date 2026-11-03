@@ -287,7 +287,10 @@
 						//elt.checked=false;
 						elt.onchange = () => {
 							let dataType = 'pregt';
-							if (elt.checked){ dataType='gt' }
+							if (elt.checked){
+								dataType='gt';
+								document.getElementById('export-button').removeAttribute('disabled');
+							} else { document.getElementById('export-button').disabled='disabled' }
 							importData(charter_img_id, dataType)
 						}
 					} else { elt.disabled=true; }
