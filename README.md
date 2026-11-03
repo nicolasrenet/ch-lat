@@ -65,7 +65,7 @@ DiDip-style transcription annotations of the kind `[<what you read>|what you see
 
 ![](doc/double_transcription.png)
 
-The color-coding makes it easier to spot the partial annotation and to complete them:
+The color-coding makes it easier to spot the partial annotations and to complete them:
 
 + expanded forms in **orange**: eg.  **$\bf\color{orange}{\[ecclesia}$**
 + abbreviated forms in **yellow**: eg. **$\bf\color{yellow}{ecc\\%a]}$**
