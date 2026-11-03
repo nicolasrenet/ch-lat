@@ -67,9 +67,9 @@ DiDip-style transcription annotations of the kind `[<what you read>|what you see
 
 The color-coding makes it easier to spot the partial annotation and to complete them:
 
-+ expanded forms in **orange**: eg. $${\color{orange}[ecclesia}$$
-+ abbreviated forms in **yellow**: eg. $${\color{yellow}ecc%a]}$$
-+ complete forms in **green**: eg. $${\color{green}[ecclesia|ecc%a]}$$
++ expanded forms in **orange**: eg. $${\color{orange}`[ecclesia`}$$
++ abbreviated forms in **yellow**: eg. $${\color{yellow}`ecc%a]`}$$
++ complete forms in **green**: eg. $${\color{green}`[ecclesia|ecc%a]`}$$
 
 
 ## 2. Auxiliary scripts
