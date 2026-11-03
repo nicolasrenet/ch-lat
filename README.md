@@ -67,10 +67,7 @@ DiDip-style transcription annotations of the kind `[<what you read>|what you see
 
 The color-coding makes it easier to spot the partial annotation and to complete them:
 
-+ expanded forms in **orange**: eg. 
-  ```diff
-  ! [ecclesia
-  ```
++ expanded forms in **orange**: eg.  $\colorbox{orange}{\[ecclesia}$
 + abbreviated forms in **yellow**: eg. <mark>ecc%a</mark>
   
 + complete forms in **green**: eg. 
