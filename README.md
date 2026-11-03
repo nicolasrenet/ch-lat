@@ -87,27 +87,32 @@ Although it is better practice to use DiDip-flavored JSON or PageXML as input fo
 #### Syntax
 
 ```bash
-Usage: compile_transcription.py [-h] [--abbreviate] [--expand] [--expanded_suffix EXPANDED_SUFFIX] [--abbreviated_suffix ABBREVIATED_SUFFIX]
-                       [--line_pattern LINE_PATTERN] [--input_format INPUT_FORMAT] [--verbosity {0,1,2}]
-                       input_file
+Usage: compile_transcription.py [-h] [--abbreviate] [--expand] [--expanded_suffix EXPANDED_SUFFIX]
+                                [--abbreviated_suffix ABBREVIATED_SUFFIX] [--line_pattern LINE_PATTERN] [--input_format INPUT_FORMAT]
+                                [--standard_output] [--parallel] [--verbosity {0,1,2}]
+                                input_file
 
 positional arguments:
   input_file
 
 options:
   -h, --help            show this help message and exit
-  --abbreviate          By default, the script generate both flavours of outputs; with this option, the abbreviated files are created, but their
-                        expanded counterpart is not, unless the '--expand' option is used. (default: False)
-  --expand              By default, the script generate both flavours of outputs; with this option, the expanded files are created, but their
-                        abbreviated counterpart is not, unless the '--abbreviate' option is used. (default: False)
+  --abbreviate          By default, the script generate both flavours of outputs; with this option, the abbreviated files are created,
+                        but their expanded counterpart is not, unless the '--expand' option is used. (default: False)
+  --expand              By default, the script generate both flavours of outputs; with this option, the expanded files are created,
+                        but their abbreviated counterpart is not, unless the '--abbreviate' option is used. (default: False)
   --expanded_suffix EXPANDED_SUFFIX
                         Suffix to be added to the expanded transcription before the '.json' suffix. (default: .exp)
   --abbreviated_suffix ABBREVIATED_SUFFIX
                         Suffix to be added to the abbreviated transcription before the '.json' suffix. (default: .abr)
   --line_pattern LINE_PATTERN
-                        A custom line pattern to isolate relevant part of the transcription line. (default: (^\s*"text":\s+")([^"]+)(".*)$)
+                        A custom line pattern to isolate relevant part of the transcription line. (default:
+                        (^\s*"text":\s+")([^"]+)(".*)$)
   --input_format INPUT_FORMAT
                         File input format. (default: json)
+  --standard_output     Use standard output only. (default: False)
+  --parallel            Generate a line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the
+                        standard output, instead of two separate files (mostly for text processing purpose). (default: False)
   --verbosity {0,1,2}   Verbosity: 0=ERROR, 1=INFO, 2=DEBUG (default: 1)
 ```
 
