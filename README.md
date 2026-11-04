@@ -69,7 +69,7 @@ The color-coding makes it easier to spot the partial annotations and to complete
 
 + expanded forms in **orange**: eg.  **$\bf\color{orange}{[ecclesia}$**, **$\bf\color{orange}{ecclesia|}$**, **$\bf\color{orange}{[ecclesia|}$**
 + abbreviated forms in **yellow**: eg. **$\bf\color{yellow}{|ecc\\%a}$**, **$\bf\color{yellow}{|ecc\\%a]}$**, **$\bf\color{yellow}{ecc\\%a]}$**
-+ complete forms in **green**: eg. **$\bf\color{green}{[ecclesia|ecc\\%a]}$**, **$\bf\color{green}{[ecclesia|ecc\\%a}$**
++ complete forms in **green**: eg. **$\bf\color{green}{[ecclesia|ecc\\%a]}$**, **$\bf\color{green}{ecclesia|ecc\\%a}$**, **$\bf\color{green}{[ecclesia|ecc\\%a}$**
 
 
 ## 2. Auxiliary scripts
