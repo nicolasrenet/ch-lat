@@ -65,6 +65,12 @@ DiDip-style transcription annotations of the kind `[<what you read>|what you see
 
 ![](doc/double_transcription.png)
 
+The color-coding makes it easier to spot the partial annotations and to complete them:
+
++ expanded forms in **orange**: eg.  **$\bf\color{orange}{[ecclesia}$**, **$\bf\color{orange}{ecclesia|}$**, **$\bf\color{orange}{[ecclesia|}$**
++ abbreviated forms in **yellow**: eg. **$\bf\color{yellow}{|ecc\\%a}$**, **$\bf\color{yellow}{|ecc\\%a]}$**, **$\bf\color{yellow}{ecc\\%a]}$**
++ complete forms in **green**: eg. **$\bf\color{green}{[ecclesia|ecc\\%a]}$**, **$\bf\color{green}{ecclesia|ecc\\%a}$**, **$\bf\color{green}{[ecclesia|ecc\\%a}$**
+
 
 ## 2. Auxiliary scripts
 
@@ -87,27 +93,32 @@ Although it is better practice to use DiDip-flavored JSON or PageXML as input fo
 #### Syntax
 
 ```bash
-Usage: compile_transcription.py [-h] [--abbreviate] [--expand] [--expanded_suffix EXPANDED_SUFFIX] [--abbreviated_suffix ABBREVIATED_SUFFIX]
-                       [--line_pattern LINE_PATTERN] [--input_format INPUT_FORMAT] [--verbosity {0,1,2}]
-                       input_file
+Usage: compile_transcription.py [-h] [--abbreviate] [--expand] [--expanded_suffix EXPANDED_SUFFIX]
+                                [--abbreviated_suffix ABBREVIATED_SUFFIX] [--line_pattern LINE_PATTERN] [--input_format INPUT_FORMAT]
+                                [--standard_output] [--parallel] [--verbosity {0,1,2}]
+                                input_file
 
 positional arguments:
   input_file
 
 options:
   -h, --help            show this help message and exit
-  --abbreviate          By default, the script generate both flavours of outputs; with this option, the abbreviated files are created, but their
-                        expanded counterpart is not, unless the '--expand' option is used. (default: False)
-  --expand              By default, the script generate both flavours of outputs; with this option, the expanded files are created, but their
-                        abbreviated counterpart is not, unless the '--abbreviate' option is used. (default: False)
+  --abbreviate          By default, the script generate both flavours of outputs; with this option, the abbreviated files are created,
+                        but their expanded counterpart is not, unless the '--expand' option is used. (default: False)
+  --expand              By default, the script generate both flavours of outputs; with this option, the expanded files are created,
+                        but their abbreviated counterpart is not, unless the '--abbreviate' option is used. (default: False)
   --expanded_suffix EXPANDED_SUFFIX
                         Suffix to be added to the expanded transcription before the '.json' suffix. (default: .exp)
   --abbreviated_suffix ABBREVIATED_SUFFIX
                         Suffix to be added to the abbreviated transcription before the '.json' suffix. (default: .abr)
   --line_pattern LINE_PATTERN
-                        A custom line pattern to isolate relevant part of the transcription line. (default: (^\s*"text":\s+")([^"]+)(".*)$)
+                        A custom line pattern to isolate relevant part of the transcription line. (default:
+                        (^\s*"text":\s+")([^"]+)(".*)$)
   --input_format INPUT_FORMAT
                         File input format. (default: json)
+  --standard_output     Use standard output only. (default: False)
+  --parallel            Generate a line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the
+                        standard output, instead of two separate files (mostly for text processing purpose). (default: False)
   --verbosity {0,1,2}   Verbosity: 0=ERROR, 1=INFO, 2=DEBUG (default: 1)
 ```
 
@@ -125,7 +136,7 @@ Generate only the short-form transcription:
 ./split_corpus.py --abbreviate 4574a41d2f834e6b2e807f96d82cddb3.htr.gt.json
 ```
 
-### 2.2 Aligning full-paragraph transcriptions with segmentation: `gt_alignemnt.py`
+### 2.2 Aligning full-paragraph transcriptions with segmentation: `gt_alignment.py`
 
 A hack that uses a passable HTR in order to align existing full-paragraph GT transcriptions with an existing segmentation.
 
@@ -181,10 +192,11 @@ sudo docker build --file Dockerfile --network host --tag ch-lat ..
 sudo docker image save ch-lat | gzip > ch-lat.tar.gz
 ```
 
-3.1 Running in Linux:
+3.1 Load and run in Linux:
 
 ```bash
 cd dist
+sudo docker image load --input ch-lat.tar.gz
 sudo docker run -v ./samples:/fsdb_root --rm -it -p 5001:5001 \
         --env-file ./env.sh --network host ch-lat
 ```
@@ -193,7 +205,7 @@ where
 
 + The `-v` parameter maps the work folder location on the host (eg. `./samples`) to the virtual location in the Docker container (`/fsdb_root`).
 To work with a different tree, simply run docker with a different mapping, eg. `-v /tmp/myLocation:/fsdb_root`. 
-lways use explicit directory paths for the mapping values. Eg. neither `samples:/fsdb_root` nor `./samples:fsdb_root` will work as expected; `./samples:/fsdb_root` will.
+Always use explicit directory paths for the mapping values. Eg. neither `samples:/fsdb_root` nor `./samples:fsdb_root` will work as expected; `./samples:/fsdb_root` will.
 
 + option `--env-file` points to the file which configures the environment variables read by Docker-contained Flask server: 
 
@@ -207,5 +219,5 @@ For most use cases, modifying the `env.sh` file is not needed.
 
 3.2 Run in Windows:
 
-Look at the detailed [README_windows.md](README_windows.md).
+Look at the detailed installation steps in the [Windows README.md](dist/README.md).
 
