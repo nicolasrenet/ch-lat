@@ -74,13 +74,15 @@ The color-coding makes it easier to spot the partial annotations and to complete
 Notes on annotation, derived from the [transcription guidelines](https://github.com/anguelos/ddp_transcription/blob/main/transcription_guideline.pdf)
 
 + Annotation is done at word level: spaces and punctuation (`;`,`.`,`,`,`_`) are considered separators.
-+ Any style of annotation goes (prefix, postfix, ...), depending on the annotator's preference (no need for within-file consistency, since the [associated compiler](#compile_transcriptions) handles all kinds of patterns). 
++ Any style of annotation goes (prefix, postfix, ...), depending on the annotator's preference (no need for within-file consistency, since the [associated compiler](#extracting-long-and-short-form-transcriptions-from-a-single-file) handles all kinds of patterns). 
 
 
 ## 2. Auxiliary scripts
 
 
-### 2.1 Long and short-form transcriptions from a single file: `compile_transcription.py`
+### 2.1 Extracting long and short-form transcriptions from a single file
+
+**Script**: `compile_transcription.py`
 
 **Input**: a single annotation file (JSON or PageXML) that stores both the expanded and abbreviated form of the transcription. Eg.
 
