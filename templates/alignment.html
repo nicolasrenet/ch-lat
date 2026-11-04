@@ -75,11 +75,11 @@
 			function highlight( inputStr ){
 				//console.log(`highlight(${inputStr})`);
 				// eg. [abc| def, [abc.
-				const reRead = /\[[^ ,;:\-|]+\|?(?=[ ,:;]|-?$)/gd; 
+				const reRead = /(\[[^ ,;:\-|]+\|?|\[?[^ ,;:\-|]+\|)(?=([ ,:;\-]|$))/gd; 
 				// eg. def%g]
 				const reSeen = /(?<=(^|\s))\|?[a-zA-Z$%]+\]/gd;
 				// eg. [ab_c|def
-				const reReadSeen = /\[[A-Za-z$_]+\|[^ ,;:\-|]+/gd;
+				const reReadSeen = /\[?[A-Za-z$_]+\|[^ ,;:\-|\]]+\]?/gd;
 				let reReadMatches = Array.from(inputStr.matchAll(reRead));
 				let reSeenMatches = Array.from(inputStr.matchAll(reSeen));
 				let reReadSeenMatches = Array.from(inputStr.matchAll(reReadSeen));
@@ -193,9 +193,20 @@
 			  	selection.addRange(range);
 			}
 
+			/*
+			 * Rewrite any complete annotation that is concise form (ie. abc|def, abc|def]) into [abc|def]
+			 * (not used: fragile and leads to UI ergonomics surprises - parsing of consise forms can be done 
+			 *  reliably by the compiler)
+			 */
 			function completeAbbr( inputStr ){
-				const partialRe = /(?<=(^| ))([^[| ]+\|(\w|\%)+)/g;
-				return inputStr.replaceAll( partialRe, (g)=>{return '['+g} );
+				const partialReNoLeftBracket = /(?<=(^| ))([^[| ]+\|[%A-Za-z]+)/g;
+				const partialReNoRightBracket = /(?<=(^| ))(\[[^| ]+\|[%A-Za-z]+)(?=([-;,. ]|$))/g;
+				let inputStrComplete = inputStr.replaceAll( partialReNoLeftBracket, (g)=>{return '[' + g } );
+				//console.log("After inserting left bracket:" + inputStrComplete)
+				//return inputStr.replaceAll( partialReNoLeftBracket, (g)=>{return '[' + g } );
+				inputStrComplete = inputStrComplete.replaceAll( partialReNoRightBracket, (g)=>{return g + ']' } );
+				//console.log("After inserting right bracket:" + inputStrComplete)
+				return inputStrComplete
 			}
 
 			// HTML is generated upstream by template rendering in charter_annotation.py
@@ -212,9 +223,11 @@
 						// in-line highlighting
 						transcriptionLineInputElt.oninput = (evt) => {
 
-							completedStr = completeAbbr( transcriptionLineInputElt.innerText );
-							const highlighted = highlight( completedStr );
-							let currentPosition = getCursorPosition( completedStr.length > transcriptionLineInputElt.innerText.length );
+							//completedStr = completeAbbr( transcriptionLineInputElt.innerText );
+							//const highlighted = highlight( completedStr );
+							//let currentPosition = getCursorPosition( completedStr.length - transcriptionLineInputElt.innerText.length );
+							const highlighted = highlight( transcriptionLineInputElt.innerText );
+							let currentPosition = getCursorPosition( 0 )
 							transcriptionLineInputElt.innerHTML = highlighted[0];
 							restoreCursorPosition( currentPosition );
 							let completeFlag = highlighted[1];
