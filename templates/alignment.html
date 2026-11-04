@@ -75,18 +75,21 @@
 			function highlight( inputStr ){
 				//console.log(`highlight(${inputStr})`);
 				// eg. [abc| def, [abc.
-				const reRead = /(\[[^ ,;:\-|]+\|?|\[?[^ ,;:\-|]+\|)(?=([ ,:;\-]|$))/gd; 
+				const reRead = /(\[[^ ,;:\-|]+\|?|\[?[^\] ,;:\-_|]+\|)(?=([ ,:;\-]|$))/gd; 
 				// eg. def%g]
-				const reSeen = /(?<=(^|\s))\|?[a-zA-Z$%]+\]/gd;
+				const reSeen = /(?<=(^|\s))(\|?[^\] ,;:\-_]+\]|\|[^\] ,;:\-_]+\]?)/gd;
 				// eg. [ab_c|def
-				const reReadSeen = /\[?[A-Za-z$_]+\|[^ ,;:\-|\]]+\]?/gd;
+				const reReadSeen = /\[?[^ ,;:\-|]+\|[^\] ,;:\-_|]+\]?/gd;
 				let reReadMatches = Array.from(inputStr.matchAll(reRead));
 				let reSeenMatches = Array.from(inputStr.matchAll(reSeen));
 				let reReadSeenMatches = Array.from(inputStr.matchAll(reReadSeen));
 				// Zipping each array of match objects with their corresponding flag
 				let flaggedReadMatches = Array.from( Iterator.zip( [ reReadMatches, reReadMatches.map( (elt)=> AbbreviationMark.READ )]));
+				console.log("flaggedReadMatches:" + flaggedReadMatches )
 				let flaggedSeenMatches = Array.from( Iterator.zip( [ reSeenMatches, reSeenMatches.map( (elt)=> AbbreviationMark.SEEN )]));
+				console.log("flaggedSeenMatches:" + flaggedSeenMatches )
 				let flaggedReadSeenMatches = Array.from( Iterator.zip( [ reReadSeenMatches, reReadSeenMatches.map( (elt)=> AbbreviationMark.READSEEN )]));
+				console.log("flaggedReadSeenMatches:" + flaggedReadSeenMatches )
 				let sortedMatches = flaggedReadMatches.concat( flaggedSeenMatches ).concat( flaggedReadSeenMatches ).sort( (a, b) => a[0].index - b[0].index)
 
 				let html = '';
@@ -95,8 +98,8 @@
 				for (const m of sortedMatches){
 					let left = m[0].index;
 					if (left < currentLeft){ 
-						console.log("Annotation patterns overlap! Abort highlighting on this line.");
-						return [html, false];
+						console.log("Annotation patterns overlap! Skipping pattern.");
+						continue
 					} 
 					let right = m[0].index + m[0][0].length;
 					html += inputStr.slice(currentLeft,left)

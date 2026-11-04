@@ -61,21 +61,26 @@ http://localhost:5000/alignment
 
 ![](doc/alignment_screenshot.png)
 
-DiDip-style transcription annotations of the kind `[<what you read>|what you see]` (including their more concise syntactic variations eg. `<what you read>|<what you see>`, `[<what you read>`...) are automatically highlighted:
+DiDip-style transcription annotations of the kind `[<what you read>|what you see]` (including their more concise syntactic variations eg. `<what you read>|<what you see>`, `[<what you read>`...) are automatically highlighted as they are typed:
 
 ![](doc/double_transcription.png)
 
 The color-coding makes it easier to spot the partial annotations and to complete them:
 
-+ expanded forms in **orange**: eg.  **$\bf\color{orange}{[ecclesia}$**, **$\bf\color{orange}{ecclesia|}$**, **$\bf\color{orange}{[ecclesia|}$**
-+ abbreviated forms in **yellow**: eg. **$\bf\color{yellow}{|ecc\\%a}$**, **$\bf\color{yellow}{|ecc\\%a]}$**, **$\bf\color{yellow}{ecc\\%a]}$**
++ expanded forms in **orange**: eg.  **$\bf\color{orange}{[ecclesia}$** (prefix), **$\bf\color{orange}{ecclesia|}$** (postfix), **$\bf\color{orange}{[ecclesia|}$** (prefix and postfix)
++ abbreviated forms in **yellow**: eg. **$\bf\color{yellow}{|ecc\\%a}$** (prefix) , **$\bf\color{yellow}{ecc\\%a]}$** (postfix) , **$\bf\color{yellow}{|ecc\\%a]}$** (prefix and postfix)
 + complete forms in **green**: eg. **$\bf\color{green}{[ecclesia|ecc\\%a]}$**, **$\bf\color{green}{ecclesia|ecc\\%a}$**, **$\bf\color{green}{[ecclesia|ecc\\%a}$**
+
+Notes on annotation, derived from the [transcription guidelines](https://github.com/anguelos/ddp_transcription/blob/main/transcription_guideline.pdf)
+
++ Annotation is done at word level: spaces and punctuation (`;`,`.`,`,`,`_`) are considered separators.
++ Any style of annotation goes (prefix, postfix, ...), depending on the annotator's preference (no need for within-file consistency, since the [associated compiler](#compiler) handles all kinds of patterns). 
 
 
 ## 2. Auxiliary scripts
 
 
-### 2.1 Long and short-form transcriptions from a single file: `compile_transcription.py`
+### 2.1 <a href="#compiler">Long and short-form transcriptions from a single file: `compile_transcription.py`</a>
 
 **Input**: a single annotation file (JSON or PageXML) that stores both the expanded and abbreviated form of the transcription. Eg.
 
