@@ -71,9 +71,10 @@ The color-coding makes it easier to spot the partial annotations and to complete
 + abbreviated forms in **yellow**: eg. **$\bf\color{yellow}{|ecc\\%a}$** (prefix) , **$\bf\color{yellow}{ecc\\%a]}$** (postfix) , **$\bf\color{yellow}{|ecc\\%a]}$** (prefix and postfix)
 + complete forms in **green**: eg. **$\bf\color{green}{[ecclesia|ecc\\%a]}$**, **$\bf\color{green}{ecclesia|ecc\\%a}$**, **$\bf\color{green}{[ecclesia|ecc\\%a}$**
 
-Notes on annotation, derived from the [transcription guidelines](https://github.com/anguelos/ddp_transcription/blob/main/transcription_guideline.pdf)
+Notes on annotation, derived from the [transcription guidelines](https://github.com/anguelos/ddp_transcription/blob/main/transcription_guideline.pdf):
 
-+ Annotation is done at word level: spaces and punctuation (`;`,`.`,`,`,`_`) are considered separators.
++ Annotation should be done at word level: spaces and punctuation (`;`,`.`,`,`,`_`) are considered separators.
++ Byte-encoded charset assumed.
 + Any style of annotation goes (prefix, postfix, ...), depending on the annotator's preference (no need for within-file consistency, since the [associated compiler](#21-extracting-long-and-short-form-transcriptions-from-a-single-file) handles all kinds of patterns). 
 
 
@@ -97,7 +98,7 @@ Notes on annotation, derived from the [transcription guidelines](https://github.
 
 Although it is better practice to use DiDip-flavored JSON or PageXML as input formats, the script can be used with any file that has a consistent pattern for a line transcription.
 
-#### Syntax
+**Syntax:**
 
 ```bash
 Usage: compile_transcription.py [-h] [--abbreviate] [--expand] [--expanded_suffix EXPANDED_SUFFIX]
@@ -143,11 +144,14 @@ Generate only the short-form transcription:
 ./split_corpus.py --abbreviate 4574a41d2f834e6b2e807f96d82cddb3.htr.gt.json
 ```
 
-### 2.2 Aligning full-paragraph transcriptions with segmentation: `gt_alignment.py`
+### 2.2 Aligning full-paragraph transcriptions with segmentation
 
 A hack that uses a passable HTR in order to align existing full-paragraph GT transcriptions with an existing segmentation.
 
-#### Syntax 
+**Script:** `gt_alignment.py`
+
+
+**Syntax:** 
 
 ```bash
 python3 gt_alignment.py [options]
