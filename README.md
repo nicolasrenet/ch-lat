@@ -80,7 +80,7 @@ Notes on annotation, derived from the [transcription guidelines](https://github.
 ## 2. Auxiliary scripts
 
 
-### 2.1 <a id="compiler"/>Extracting long and short-form transcriptions from a single file
+### 2.1 <a id="compiler"></a>Extracting long and short-form transcriptions from a single file
 
 **Script**: `compile_transcription.py`
 
