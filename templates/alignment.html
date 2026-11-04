@@ -85,13 +85,10 @@
 				let reReadSeenMatches = Array.from(inputStr.matchAll(reReadSeen));
 				// Zipping each array of match objects with their corresponding flag
 				let flaggedReadMatches = Array.from( Iterator.zip( [ reReadMatches, reReadMatches.map( (elt)=> AbbreviationMark.READ )]));
-				console.log("flaggedReadMatches:" + flaggedReadMatches )
 				let flaggedSeenMatches = Array.from( Iterator.zip( [ reSeenMatches, reSeenMatches.map( (elt)=> AbbreviationMark.SEEN )]));
-				console.log("flaggedSeenMatches:" + flaggedSeenMatches )
 				let flaggedReadSeenMatches = Array.from( Iterator.zip( [ reReadSeenMatches, reReadSeenMatches.map( (elt)=> AbbreviationMark.READSEEN )]));
-				console.log("flaggedReadSeenMatches:" + flaggedReadSeenMatches )
 				let sortedMatches = flaggedReadMatches.concat( flaggedSeenMatches ).concat( flaggedReadSeenMatches ).sort( (a, b) => a[0].index - b[0].index)
-
+ß
 				let html = '';
 				let currentLeft = 0;
 				let complete = true
