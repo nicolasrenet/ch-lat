@@ -2,7 +2,8 @@
 
 ## FYI only: how the container image was built (on Linux):
 
-On GitHub: [https://github.com/nicolasrenet/ch-lat](https://github.com/nicolasrenet/ch-lat)
+Ch-Lat On GitHub: [https://github.com/nicolasrenet/ch-lat](https://github.com/nicolasrenet/ch-lat)
+
 
 ```bash
 cd dist
@@ -10,6 +11,8 @@ sudo docker image rm ch-lat
 sudo docker build --file Dockerfile --network host --tag ch-lat ..
 sudo docker image save ch-lat | gzip > ch-lat.tar.gz
 ```
+
+Latest Docker image on [https://cloud.uni-graz.at/s/mTBeL69KqWNZSiS](https://cloud.uni-graz.at/s/mTBeL69KqWNZSiS).
 
 ## Run on your Windows system
 
