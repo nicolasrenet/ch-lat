@@ -96,6 +96,7 @@ if __name__ == '__main__':
     parser.add_argument("--input_format", help="File input format.", default="json")
     parser.add_argument("--standard_output", action='store_true', help="Use standard output only.") 
     parser.add_argument("--parallel", action='store_true', help="Generate a line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the standard output, instead of two separate files (mostly for text processing purpose).")
+    parser.add_argument("--width", type=int, default=0, help="Only with --parallel: limit column width to <width>.") 
     parser.add_argument("--verbosity", choices=[0,1,2], help="Verbosity: 0=ERROR, 1=INFO, 2=DEBUG", type=int, default=1)
 
     args=parser.parse_args()
@@ -120,7 +121,7 @@ if __name__ == '__main__':
         output_file_logstr = expanded_file_name
     else:
         output_file_logstr = abbreviated_file_name
-    logger.info(f"{args.input_file} →  {output_file_logstr if not args.standard_output else '-'}")
+    print(f"\n\n{args.input_file} →  {output_file_logstr if not args.standard_output else '-'}")
 
     with open( args.input_file ) as if_both:
         text_line_count = 0
@@ -138,7 +139,10 @@ if __name__ == '__main__':
                     logger.error(f"{e}: {args.input_file}:{text_line_count}")
                     continue
                 if args.parallel:
-                    print(f"{expanded_content}\t{abbreviated_content}")
+                    if args.width>0:
+                        print(f"{text_line_count:2}. {expanded_content[:args.width]}...\t{abbreviated_content[:args.width]}...")
+                    else:
+                        print(f"{text_line_count:2}. {expanded_content}\t{abbreviated_content}")
                 else:
                     expanded_lines.append( before + expanded_content + after + '\n')
                     abbreviated_lines.append( before + abbreviated_content + after + '\n')
