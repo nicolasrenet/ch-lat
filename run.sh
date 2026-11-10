@@ -1,12 +1,15 @@
 #!/bin/bash
 
-USAGE="$0 [-fsdb--fsdb] [<source directory>]"
+USAGE="$0 [-fsdb | --fsdb] [-h | --help] [<source directory>]"
 
 SOURCE='/home/nicolas/tmp/data/transcriptions_johannes'
 FLAT=1
 
 if [[ $# -gt 0 ]]; then
-	if [[ "$1" == "--fsdb" || "$1" == "-fsdb" ]]; then
+	if [[ "$1" == "--help" || "$1" == "-h" ]]; then 
+		echo $USAGE
+		exit
+	elif [[ "$1" == "--fsdb" || "$1" == "-fsdb" ]]; then
 		FLAT=0
 		if [[ "$#" -gt 1 ]]; then
 			SOURCE=$2
