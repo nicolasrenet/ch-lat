@@ -79,7 +79,7 @@
 				// eg. def%g]
 				const reSeen = /(?<=(^|\s))(\|?[^\] ,;:\-_]+\]|\|[^\] ,;:\-_]+\]?)/gd;
 				// eg. [ab_c|def
-				const reReadSeen = /\[?[^ ,;:\-|]+\|[^\] ,;:\-_|]+\]?/gd;
+				const reReadSeen = /\[?[^ ,;:\-|_]+\|[^\] ,;:\-_|]+\]?/gd;
 				let reReadMatches = Array.from(inputStr.matchAll(reRead));
 				let reSeenMatches = Array.from(inputStr.matchAll(reSeen));
 				let reReadSeenMatches = Array.from(inputStr.matchAll(reReadSeen));
