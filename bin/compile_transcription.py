@@ -95,8 +95,10 @@ if __name__ == '__main__':
     parser.add_argument("--line_pattern", help="A custom line pattern to isolate relevant part of the transcription line.", default=r'(^\s*"text":\s+")([^"]+)(".*)$')
     parser.add_argument("--input_format", help="File input format.", default="json")
     parser.add_argument("--standard_output", action='store_true', help="Use standard output only.") 
-    parser.add_argument("--parallel", action='store_true', help="Generate a line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the standard output, instead of two separate files (mostly for text processing purpose).")
-    parser.add_argument("--width", type=int, default=0, help="Only with --parallel: limit column width to <width>.") 
+    parser.add_argument("--parallel", action='store_true', help="Generate a plain text, line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the standard output, instead of two separate files (mostly for text processing purpose).")
+    parser.add_argument("--plain", action='store_true', help="Generate a plain text version, with only the numbered transcription lines.")
+    parser.add_argument("--width", type=int, default=0, help="Only with --parallel and --plain: limit column width to <width>.") 
+    parser.add_argument("--stats", action='store_true', default=False, help="Display basic statistics on transcriptions (lines, words, and characters.")
     parser.add_argument("--verbosity", choices=[0,1,2], help="Verbosity: 0=ERROR, 1=INFO, 2=DEBUG", type=int, default=1)
 
     args=parser.parse_args()
@@ -111,6 +113,9 @@ if __name__ == '__main__':
 
     expanded_file_name = re.sub(r'\.[a-z]+\.([a-z]+)$', r'{}.\1'.format( args.expanded_suffix ), args.input_file )
     abbreviated_file_name = re.sub(r'\.[a-z]+\.([a-z]+)$', r'{}.\1'.format( args.abbreviated_suffix ), args.input_file )
+    if args.plain:
+        expanded_file_name = str(Path(expanded_file_name).with_suffix('.txt'))
+        abbreviated_file_name = str(Path(abbreviated_file_name).with_suffix('.txt'))
     
     # just for logging purpose
     combined_name =  re.sub(r'\.[a-z]+\.([a-z]+)$', r'.{{{},{}}}.\1'.format( args.expanded_suffix[1:], args.abbreviated_suffix[1:] ), args.input_file )
@@ -123,18 +128,24 @@ if __name__ == '__main__':
         output_file_logstr = abbreviated_file_name
     print(f"\n\n{args.input_file} →  {output_file_logstr if not args.standard_output else '-'}")
 
+    stats={"exp": {"lines": 0, "words": 0, "chars": 0}, "abr": {"lines": 0, "words": 0, "chars": 0} }
+
     with open( args.input_file ) as if_both:
         text_line_count = 0
         expanded_lines, abbreviated_lines = [], []
         for line in if_both:
-            transcription_match = line_transcription_pattern.match( line )
+            transcription_match = line_transcription_pattern.match( line ) # whatever is a transcription in the input format (PageXML or JSON)
             if transcription_match:
+                text_line_count += 1
                 before = transcription_match.group(1)
                 content = transcription_match.group(2)
                 after = transcription_match.group(3)
-                text_line_count += 1
                 try:
                     expanded_content, abbreviated_content = compile_annotations( content, {'filename': Path(args.input_file).name, 'line_no': text_line_count} )
+                    for flavour, content in (("exp", expanded_content), ("abr", abbreviated_content)):
+                        stats[flavour]['lines']+=1
+                        stats[flavour]['words']+= len(content.split(' '))
+                        stats[flavour]['chars']+= len(list(content))
                 except ValueError as e:
                     logger.error(f"{e}: {args.input_file}:{text_line_count}")
                     continue
@@ -143,10 +154,13 @@ if __name__ == '__main__':
                         print(f"{text_line_count:2}. {expanded_content[:args.width]}...\t{abbreviated_content[:args.width]}...")
                     else:
                         print(f"{text_line_count:2}. {expanded_content}\t{abbreviated_content}")
+                elif args.plain:
+                    expanded_lines.append( "{:2}. {}\n".format( text_line_count, expanded_content[:args.width] if args.width else expanded_content) )
+                    abbreviated_lines.append( "{:2}. {}\n".format( text_line_count, abbreviated_content[:args.width] if args.width else abbreviated_content) )
                 else:
                     expanded_lines.append( before + expanded_content + after + '\n')
                     abbreviated_lines.append( before + abbreviated_content + after + '\n')
-            elif not args.parallel:
+            elif not (args.parallel or args.plain):
                 expanded_lines.append( line )
                 abbreviated_lines.append( line )
 
@@ -168,7 +182,17 @@ if __name__ == '__main__':
                     with open( abbreviated_file_name, 'w') as of_abr:
                         for l in abbreviated_lines:
                             of_abr.write( l )
-
+        if args.stats:
+            print("-------------------------------------")
+            print("\t\tLines\tWords\tChars")
+            print("Expanded\t{}\t{}\t{}".format(
+                                stats['exp']['lines'],
+                                stats['exp']['words'],
+                                stats['exp']['chars']))
+            print("Abbreviated\t{}\t{}\t{}".format(
+                                stats['abr']['lines'],
+                                stats['abr']['words'],
+                                stats['abr']['chars']))
 ## Tests
                 
 @pytest.mark.parametrize("input_str, expected_left, expected_right",
