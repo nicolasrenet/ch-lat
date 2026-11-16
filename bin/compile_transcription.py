@@ -109,7 +109,7 @@ if __name__ == '__main__':
         logger.info(f'{args.input_file} does not exist. Abort.')
         sys.exit()
 
-    line_transcription_pattern = re.compile( args.line_pattern ) if not args.input_format=='xml' else re.compile( r'(^\s*<Unicode>)([^<]+)(<Unicode.*)$' )
+    line_transcription_pattern = re.compile( args.line_pattern ) if not args.input_format=='xml' else re.compile( r'(^\s*<Unicode>)([^<]+)(</Unicode.*)$' )
 
     expanded_file_name = re.sub(r'\.[a-z]+\.([a-z]+)$', r'{}.\1'.format( args.expanded_suffix ), args.input_file )
     abbreviated_file_name = re.sub(r'\.[a-z]+\.([a-z]+)$', r'{}.\1'.format( args.abbreviated_suffix ), args.input_file )
