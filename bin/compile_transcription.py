@@ -7,11 +7,12 @@
 From a single transcription file where each abbreviated form is encoded as `[<what you read>|<what you see>]`
 (eg. '[communitam|%munita%]'), generate 2 files, with expanded and abbreviated transcriptions, respectively. 
 
-+ It enforces the assumption that annotations have been made at word-level: 
-  any space (seen or added by the transcriber) is considered a separator, or,
-  alternatively: no `<what you read>|<what you see>` pair should contain a space.
++ It enforces the assumption that annotations have been made mostly at word-level, even 
+  though expansions ([<...>|) may contain transcriber-added spaces (_), that accordingly
+  should not be used as separators between two annotations.
+  Corollary: no `<what you read>|<what you see>` pair should contain a space.
 + Spaces are normalized.
-+ Transcriber-added space markers ('_') become ordinary white spaces in both output files.
++ Transcriber-added space markers ('_') can be part of expansions and are kept as such in the resulting output
 + All possible, unambiguous syntactic variations of annotations are handled:
   - [abc|cde], [abc|cde, abc|cde, abc|cde] →  'abc', 'cde'
   - [abc, [abc|, [abc|], abc| → 'abc', ''
@@ -54,7 +55,8 @@ def normalize( input_line):
     # removing parentheses (rare: ask Johannes)
     input_line = re.sub(r'[()]', '', input_line)
     # transcriber-added spaces (_) handled as regular spaces
-    return re.sub(r'[\s_]+', ' ', input_line.strip())
+    #return re.sub(r'[\s_]+', ' ', input_line.strip())
+    return re.sub(r'[\s]+', ' ', input_line.strip())
 
 
 pipe_separated_annotation_pattern = re.compile( r'\[?([^|\[\s]*)\|([^|\]\s]*)\]?-?' )
@@ -208,7 +210,7 @@ if __name__ == '__main__':
                              ("[communitam|%munita%", "communitam", "%munita%"), # [abc|def
                              ("communitam|%munita%]", "communitam", "%munita%"), # abc|def]
                              ("communitam|%munita%", "communitam", "%munita%"), # abc|def
-                             ('[et_inconvulsa|%ico%vulsa', 'et inconvulsa', '%ico%vulsa'),])
+                             ('[et_inconvulsa|%ico%vulsa', 'et_inconvulsa', '%ico%vulsa'),])
 def test_complete_patterns(input_str, expected_left, expected_right):
 
     left, right = compile_annotations( input_str )
@@ -219,7 +221,7 @@ def test_complete_patterns(input_str, expected_left, expected_right):
 
 @pytest.mark.parametrize("input_str, expected_left, expected_right",
                          [
-                             ("sigilli [nostri_[communitam|%munita%   [dedimus| quod| ape%det] Actu%]  anno |domi] Mo cco lxo ixo ", "sigilli nostri communitam dedimus quod anno Mo cco lxo ixo", "sigilli %munita% ape%det Actu% anno domi Mo cco lxo ixo"),
+                             ("sigilli [nostri_| [communitam|%munita%   [dedimus| quod| ape%det] Actu%]  anno |domi] Mo cco lxo ixo ", "sigilli nostri_ communitam dedimus quod anno Mo cco lxo ixo", "sigilli %munita% ape%det Actu% anno domi Mo cco lxo ixo"),
                              ("[communitam", "communitam", ""), # [exp
                              ("[communitam|", "communitam", ""), # [exp|
                              ("[communitam|]", "communitam", ""), # [exp|]
@@ -236,4 +238,13 @@ def test_incomplete_patterns(input_str, expected_left, expected_right):
     assert right== expected_right
 
 
+@pytest.mark.parametrize("input_str, expected_left, expected_right",
+                         [
+                             ('[mines_gnadigen_herrn|msgh%en $ die jurisdiktion auf den beide', 'mines_gnadigen_herrn $ die jurisdiktion auf den beide', 'msgh%en $ die jurisdiktion auf den beide')
+                             ])
+def test_transcriber_spaces( input_str, expected_left, expected_right):
+
+    left, right = compile_annotations( input_str )
+    assert left == expected_left
+    assert right== expected_right
 
