@@ -94,8 +94,8 @@ if __name__ == '__main__':
     parser.add_argument("--expand", action='store_true', help="By default, the script generate both flavours of outputs; with this option, the expanded files are created, but their abbreviated counterpart is not, unless the '--abbreviate' option is used.")
     parser.add_argument("--expanded_suffix", help="Suffix to be added to the expanded transcription before the '.json' suffix.", default=".exp")
     parser.add_argument("--abbreviated_suffix", help="Suffix to be added to the abbreviated transcription before the '.json' suffix.", default=".abr")
-    parser.add_argument("--line_pattern", help="A custom line pattern to isolate relevant part of the transcription line.", default=r'(^\s*"text":\s+")([^"]+)(".*)$')
-    parser.add_argument("--input_format", help="File input format.", default="xml")
+    parser.add_argument("--line_pattern", help="A custom line pattern to isolate relevant part of the transcription line.", default='')
+    parser.add_argument("--input_format", help="File input format.", default="json")
     parser.add_argument("--standard_output", action='store_true', help="Use standard output only.") 
     parser.add_argument("--parallel", action='store_true', help="Generate a plain text, line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the standard output, instead of two separate files (mostly for text processing purpose).")
     parser.add_argument("--plain", action='store_true', help="Generate a plain text version, with only the numbered transcription lines.")
@@ -112,14 +112,14 @@ if __name__ == '__main__':
         logger.info(f'{args.input_file} does not exist. Abort.')
         sys.exit()
 
-    line_transcription_pattern = re.compile( args.line_pattern ) if not args.input_format=='xml' else re.compile( r'(^\s*<Unicode>)([^<]+)(</Unicode.*)$' )
-
+    # JSON default line pattern
+    line_transcription_pattern = re.compile(r'(^\s*"text":\s+")([^"]+)(".*)$') if not args.line_pattern else re.compile( args.line_pattern )
+    if args.input_format == 'page':
+        line_transcription_pattern = re.compile( r'(^\s*<Unicode>)([^<]+)(</Unicode.*)$' )
 
     stats={"exp": {"lines": 0, "words": 0, "chars": 0}, "abr": {"lines": 0, "words": 0, "chars": 0} }
-   
 
     def filter_line( line, stats ):
-    
         transcription_match = line_transcription_pattern.match( line ) # whatever is a transcription in the input format (PageXML or JSON)
         if transcription_match:
             before = transcription_match.group(1)
@@ -213,9 +213,9 @@ if __name__ == '__main__':
                     for l in abbreviated_lines:
                         of_abr.write( l )
     else:
-        if args.standard_output:
-            for exp_line, abbr_line in zip( expanded_lines, abbreviated_lines ):
-                print(f"{exp_line}\t{abbr_line}")
+        #if args.standard_output:
+        for exp_line, abbr_line in zip( expanded_lines, abbreviated_lines ):
+            print(f"{exp_line}\t{abbr_line}")
 
     if args.stats:
         print("-------------------------------------")
