@@ -101,13 +101,10 @@ if __name__ == '__main__':
     parser.add_argument("--plain", action='store_true', help="Generate a plain text version, with only the numbered transcription lines.")
     parser.add_argument("--width", type=int, default=0, help="Only with --parallel and --plain: limit column width to <width>.") 
     parser.add_argument("--overwrite_existing", action='store_true', help="Overwrite existing files with output.")
-    parser.add_argument("--stream", action='store_true', help="Read from standard output and write on standard output; the output is one of the following: 'expand' (default), 'abbreviate', 'parallel'.")
     parser.add_argument("--stats", action='store_true', default=False, help="Display basic statistics on transcriptions (lines, words, and characters.")
     parser.add_argument("--verbosity", choices=[0,1,2], help="Verbosity: 0=ERROR, 1=INFO, 2=DEBUG", type=int, default=1)
 
     args=parser.parse_args()
-    if args.stream:
-        args.standard_output = True
 
     logging.basicConfig(level=[logging.ERROR, logging.INFO, logging.DEBUG][args.verbosity])
     
@@ -158,7 +155,7 @@ if __name__ == '__main__':
             return ()
 
     expanded_lines, abbreviated_lines = [], []
-    if args.stream:
+    if args.input_file == '-':
         for line in sys.stdin:
             compiled_pair = filter_line( line, stats )
             if compiled_pair:

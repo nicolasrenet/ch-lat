@@ -107,26 +107,29 @@ Usage: compile_transcription.py [-h] [--abbreviate] [--expand] [--expanded_suffi
                                 input_file
 
 positional arguments:
-  input_file
+  input_file		Input file; for standard input, indicate '-'.
 
 options:
   -h, --help            show this help message and exit
-  --abbreviate          By default, the script generate both flavours of outputs; with this option, the abbreviated files are created,
-                        but their expanded counterpart is not, unless the '--expand' option is used. (default: False)
-  --expand              By default, the script generate both flavours of outputs; with this option, the expanded files are created,
-                        but their abbreviated counterpart is not, unless the '--abbreviate' option is used. (default: False)
+  --abbreviate          By default, the script generate both flavours of outputs; with this option, the abbreviated files are created, but
+                        their expanded counterpart is not, unless the '--expand' option is used. (default: False)
+  --expand              By default, the script generate both flavours of outputs; with this option, the expanded files are created, but
+                        their abbreviated counterpart is not, unless the '--abbreviate' option is used. (default: False)
   --expanded_suffix EXPANDED_SUFFIX
                         Suffix to be added to the expanded transcription before the '.json' suffix. (default: .exp)
   --abbreviated_suffix ABBREVIATED_SUFFIX
                         Suffix to be added to the abbreviated transcription before the '.json' suffix. (default: .abr)
   --line_pattern LINE_PATTERN
-                        A custom line pattern to isolate relevant part of the transcription line. (default:
-                        (^\s*"text":\s+")([^"]+)(".*)$)
+                        A custom line pattern to isolate relevant part of the transcription line. (default: JSON "text" entry)
   --input_format INPUT_FORMAT
-                        File input format. (default: json)
+                        File input format. (default: xml)
   --standard_output     Use standard output only. (default: False)
-  --parallel            Generate a line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the
+  --parallel            Generate a plain text, line-by-line parallel output of expanded and abbreviated transcriptions on 2 columns on the
                         standard output, instead of two separate files (mostly for text processing purpose). (default: False)
+  --plain               Generate a plain text version, with only the numbered transcription lines. (default: False)
+  --width WIDTH         Only with --parallel and --plain: limit column width to <width>. (default: 0)
+  --overwrite_existing  Overwrite existing files with output. (default: False)
+  --stats               Display basic statistics on transcriptions (lines, words, and characters. (default: False)
   --verbosity {0,1,2}   Verbosity: 0=ERROR, 1=INFO, 2=DEBUG (default: 1)
 ```
 
