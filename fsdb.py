@@ -10,6 +10,7 @@ import numpy as np
 
 # third-party
 import jsonschema
+import segtformats as sgf
 from PIL import Image, ImagePath, ImageDraw
 
 
@@ -99,6 +100,7 @@ class Fsdb:
             return {}
         try:
             infile = open(data_path[0], 'r') 
+
             returnValue = json.load( infile );
         except (IOError, FileNotFoundError) as e:
             pass

@@ -193,6 +193,7 @@ function annotateLines(){
 	var importMask = ( pageData, type ) => {
 		
 		logState()
+		console.log(pageData)
 		if (!('regions' in pageData)){ console.log("Segmentation data empty: abort."); return }
 		paths.removeChildren();
 		regionBoxes.removeChildren();
@@ -204,9 +205,19 @@ function annotateLines(){
 			regionBoxes.addChild( regionPath );
 			for (line of region['lines']){
 				var strokeWidth = settings.strokeWidth;
-				var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
+				// dealing with inherited metadata (Transkribus...)
+				if ('centerline' in line){
+					var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
+				} else {
+					console.log("Found baseline")
+					var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
+				}
 				paths.addChild( p );
-				strokeWidth = Math.round(line['x-height']*scalingFactor);
+				if ('x-height' in line){
+					var strokeWidth = Math.round(line['x-height']*scalingFactor);
+				} else {
+					var strokeWidth = 5.0*scalingFactor;
+				}
 				currentPath = paths.children.at(-1);
 				currentPath.strokeWidth=strokeWidth;
 				if (settings.smoothing) currentPath.strokeJoin='round'

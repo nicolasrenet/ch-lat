@@ -273,7 +273,8 @@ def test_incomplete_patterns(input_str, expected_left, expected_right):
 
 @pytest.mark.parametrize("input_str, expected_left, expected_right",
                          [
-                             ('[mines_gnadigen_herrn|msgh%en $ die jurisdiktion auf den beide', 'mines_gnadigen_herrn $ die jurisdiktion auf den beide', 'msgh%en $ die jurisdiktion auf den beide')
+                             ('[mines_gnadigen_herrn|msgh%en $ die jurisdiktion auf den beide', 'mines_gnadigen_herrn $ die jurisdiktion auf den beide', 'msgh%en $ die jurisdiktion auf den beide'),
+                             ('sicut in [literis|l%ris suis [infrascriptis|infrasciptis lucidius pleniusque [declarabitur|declarabitr Diligenter [inspicerem|inspic%em ac [legerem|leg%em [ipsorumque|ip%or%_q% tenorem fideliter', 'sicut in literis suis infrascriptis lucidius pleniusque declarabitur Diligenter inspicerem ac legerem ipsorumque tenorem fideliter', 'sicut in l%ris suis infrasciptis lucidius pleniusque declarabitr Diligenter inspic%em ac leg%em ip%or%_q% tenorem fideliter'),
                              ])
 def test_transcriber_spaces( input_str, expected_left, expected_right):
 
