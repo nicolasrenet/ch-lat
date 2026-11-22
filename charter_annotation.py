@@ -31,6 +31,8 @@ app.config.update(
     gt_seg_suffix='lines.gt.json',
     pregt_htr_suffix='htr.pregt.json',
     gt_htr_suffix='htr.gt.json',
+    flags_seg_suffix='flags.json', # for storing sets of flags for segmentation labels
+    flag_suffix='', # any suffix that can be used for filtering labels (use md5-prefixed touchfiles, set suffix in launch script, read-only)
     issues_htr_suffix='htr.issues.json',
     fsdb_root='/home/nicolas/tmp/data/fsdb_work/fsdb_full_text_sample_1000',
     default_feature='alignment',
@@ -89,10 +91,11 @@ def charters_choice():
 
 @app.route('/alignment')
 def all_lines():
-    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'])
+    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'], flag_suffix=app.config['flag_suffix'])
     if not charter_htr_gts:
         abort(404, description="Failed to retrieve charters ids.")
     ch_id = lemmatize( charter_htr_gts[0].name, suffix=app.config['pregt_htr_suffix'] )
+    
     return redirect(f'/alignment/{ch_id}')
 
 
@@ -200,14 +203,16 @@ def get_flags( archive_id:str, charter_img_id:str):
 
 @app.get('/alignment/<charter_img_id>')
 def get_lines( charter_img_id:str):
-    
-    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'])
+    charter_htr_gts = fsdb.search('*', '*', suffix=app.config['pregt_htr_suffix'], flag_suffix=app.config['flag_suffix'])
     if not charter_htr_gts:
         abort(404, description="Failed to retrieve charters ids.")
     charter_ids = [ {'number': nbr, 
                      'id': lemmatize(img_id.name, suffix=app.config['pregt_htr_suffix']),
-                     'hasGTData': Path( lemmatize( img_id, suffix=app.config['pregt_htr_suffix'], replacement=app.config['gt_htr_suffix'])).exists(),
-                     } for nbr, img_id in enumerate(charter_htr_gts)]
+                     'hasGTData': Path( lemmatize( img_id, 
+                                            suffix=app.config['pregt_htr_suffix'], 
+                                            replacement=app.config['gt_htr_suffix'])).exists(),
+                     } 
+                     for nbr, img_id in enumerate(charter_htr_gts) ]
 
     item_of_interest_idx=[ ch['id'] for ch in charter_ids ].index(charter_img_id)
     charter_ids = charter_ids[item_of_interest_idx:]+charter_ids[:item_of_interest_idx] 

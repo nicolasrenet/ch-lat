@@ -10,7 +10,7 @@ import numpy as np
 
 # third-party
 import jsonschema
-import segtformats as sgf
+from segtformats import segtformats as sgf
 from PIL import Image, ImagePath, ImageDraw
 
 
@@ -57,11 +57,12 @@ class Fsdb:
         return report
 
 
-    def search(self,  archive_id:str='*', charter_img_id:str='*', suffix:str=None) -> list[Path]:
+    def search(self,  archive_id:str='*', charter_img_id:str='*', suffix:str=None, flag_suffix='') -> list[Path]:
         if suffix is None:
             suffix = self.config['charter_img_suffix']
         if self.config['flat']:
             file_paths=Path(self.config['fsdb_root']).glob('{}.{}'.format(charter_img_id, suffix))
+            file_paths = [ fp for fp in file_paths if not flag_suffix or Path( lemmatize( fp, suffix=suffix, replacement=flag_suffix)).exists()]
         elif self.config['crop']:
             file_paths=Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/{}.{}'.format(archive_id, charter_img_id, suffix))
         # flat folder (archive_id ignored)
@@ -98,15 +99,7 @@ class Fsdb:
         #print(f"data_path={data_path}")
         if not data_path:
             return {}
-        try:
-            infile = open(data_path[0], 'r') 
-
-            returnValue = json.load( infile );
-        except (IOError, FileNotFoundError) as e:
-            pass
-        finally:
-            if infile is not None:
-                infile.close();
+        returnValue, _ = sgf.anyseg_to_dict( data_path[0] )
         return returnValue;
 
 
@@ -195,7 +188,12 @@ class Fsdb:
         #print(list(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix']))))
         # Flat file system, crop-like by default
         if self.config['flat']:
-            charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix']))) ]
+            charter_images = [ { 'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 
+                                 'archive': archive_id, 
+                                 'filename': str(img), 
+                                 'gtsegfile': None } 
+                                 for img in sorted(Path(self.config['fsdb_root']).glob('*.{}'.format( self.config['charter_img_suffix'])))
+                                if not self.config['flag_suffix'] or Path(str(img).replace(self.config['charter_img_suffix'], self.config['flag_suffix'])).exists() ]
         # FSDB file system, crops only
         elif self.config['crop']:
             charter_images = [ {'id': lemmatize(img.name, suffix=self.config['charter_img_suffix']), 'archive': archive_id, 'filename': str(img), 'gtsegfile': None} for img in sorted(Path(self.config['fsdb_root']).glob('{}/*/*/*.seals.crops/*.{}'.format( archive_id, self.config['charter_img_suffix']))) ]

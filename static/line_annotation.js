@@ -209,7 +209,7 @@ function annotateLines(){
 				if ('centerline' in line){
 					var p = new Path( line['centerline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
 				} else {
-					console.log("Found baseline")
+					console.log("Warning: No centerline found →  using 'baseline' attribute.")
 					var p = new Path( line['baseline'].map( (pt) => new Point( pt ).multiply(scalingFactor)));
 				}
 				paths.addChild( p );
