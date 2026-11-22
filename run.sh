@@ -75,7 +75,7 @@ while true; do
 			shift 2
 			continue
 		;;
-		'-s','--pred-seg-suffix')
+		'-s'|'--pred-seg-suffix')
 			FLASK_pred_seg_suffix=$2
 			shift 2
 			continue
