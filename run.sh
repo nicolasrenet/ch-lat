@@ -14,7 +14,7 @@ SYNOPSIS
 OPTIONS
 	-f, --flat [ 0/1 ]
 		Work on a flat tree, not a deep, FSDB-compliant directory.
-	-h, --help 
+	-h, --help
 		Display help text and exit.
 	-i, --charter-img-suffix <suffix>
 		Suffix of charter images (i.e. part of the name that is _not_ shared with label files).
@@ -50,7 +50,7 @@ export FLASK_pred_seg_suffix='lines.pred.json'
 export FLASK_gt_seg_suffix='lines.gt.json'
 export FLASK_pregt_htr_suffix='htr.pregt.json'
 export FLASK_gt_htr_suffix='htr.gt.json'
-export FLASK_flag_suffix='flag.json'
+export FLASK_flag_suffix=''
 export FLASK_default_feature='alignment'
 export FLASK_fsdb_root='/home/nicolas/tmp/data/transcriptions_johannes'
 
@@ -71,32 +71,56 @@ while true; do
 			continue
 		;;
 		'-i'|'--charter-img-suffix')
-			FLASK_charter_img_suffix=$2
+			if [[ "${2:0:1}" == "." ]]; then
+				FLASK_charter_img_suffix=${2:1}
+			else
+				FLASK_charter_img_suffix=$2
+			fi
 			shift 2
 			continue
 		;;
 		'-s'|'--pred-seg-suffix')
-			FLASK_pred_seg_suffix=$2
+			if [[ "${2:0:1}" == "." ]]; then
+				FLASK_pred_seg_suffix=${2:1}
+			else
+				FLASK_pred_seg_suffix=$2
+			fi
 			shift 2
 			continue
 		;;
 		'-S'|'--gt-seg-suffix')
-			FLASK_gt_seg_suffix=$2
+			if [[ "${2:0:1}" == "." ]]; then
+				FLASK_gt_seg_suffix=${2:1}
+			else
+				FLASK_gt_seg_suffix=$2
+			fi
 			shift 2
 			continue
 		;;
 		'-t'|'--pregt-htr-suffix')
-			FLASK_pregt_htr_suffix=$2
+			if [[ "${2:0:1}" == "." ]]; then
+				FLASK_pregt_htr_suffix=${2:1}
+			else
+				FLASK_pregt_htr_suffix=$2
+			fi
 			shift 2
 			continue
 		;;
 		'-T'|'--gt-htr-suffix')
-			FLASK_gt_htr_suffix=$2
+			if [[ "${2:0:1}" == "." ]]; then
+				FLASK_gt_htr_suffix=${2:1}
+			else
+				FLASK_gt_htr_suffix=$2
+			fi
 			shift 2
 			continue
 		;;
 		'-g'|'--flag')
-			FLASK_flag_suffix=$2
+			if [[ "${2:0:1}" == "." ]]; then
+				FLASK_flag_suffix=${2:1}
+			else
+				FLASK_flag_suffix=$2
+			fi
 			shift 2
 			continue
 		;;
