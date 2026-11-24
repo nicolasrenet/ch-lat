@@ -150,7 +150,7 @@ def archive_charter_one_image( archive_id:str, charter_img_id:str):
                 charter_img_size=img.size,
                 charter_filename=Path(charter_img_filename).name,
                 display_size=display_size,
-                fsdb_stats=fsdb.stats(),
+                fsdb_stats=fsdb.stats( flag_suffix=app.config['flag_suffix'] ),
                 )
 
 @app.get('/img/<archive_id>/<charter_img_id>')
@@ -224,7 +224,7 @@ def get_lines( charter_img_id:str):
 
     return render_template(
             "alignment.html", 
-            fsdb_stats=fsdb.stats(),
+            fsdb_stats=fsdb.stats( flag_suffix=app.config['flag_suffix']),
             charter_img_id=charter_img_id,
             charter_ids=charter_ids,
             )

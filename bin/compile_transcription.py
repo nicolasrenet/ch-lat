@@ -26,14 +26,13 @@ From a single transcription file where each abbreviated form is encoded as `[<wh
   line) may be passed for custom formats.
 
 Input string:
-    "sigilli [nostri|n%ri_[communitam|%munita%   [dedimus| quod| ape%det] Actu%]  anno |domi] Mo cco lxo ixo "
+    "sigilli [nostri_communitam|n%ri%munita%   [dedimus| quod| ape%det] Actu%]  anno |domi] Mo cco lxo ixo "
 
 Expanded string:
-    "sigilli nostri communitam dedimus quod anno Mo cco lxo ixo"
+    "sigilli nostri_communitam dedimus quod anno Mo cco lxo ixo"
 
 Abbreviated string:
-    "sigilli n%ri %munita% ape%det Actu% anno domi Mo cco lxo ixo"
-
+    "sigilli n%ri%munita% ape%det Actu% anno domi Mo cco lxo ixo"
 
 TODO:
     - compare with pre-GT files for

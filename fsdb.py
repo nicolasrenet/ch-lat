@@ -26,12 +26,13 @@ class Fsdb:
         self.config = conf
 
 
-    def stats(self, ):
+    def stats(self, flag_suffix=''):
         """ A few stats about this database."""
         
         img_sfx, lines_gt_sfx, lines_pred_sfx, htr_pregt_sfx, htr_gt_sfx = [ self.config[k] for k in ('charter_img_suffix', 
                                     'gt_seg_suffix', 'pred_seg_suffix', 
                                     'pregt_htr_suffix', 'gt_htr_suffix') ]
+        # if flat tree, list all images; otherwise list all charters
         all_charters = list(Path(self.config['fsdb_root']).glob('*/*/*/CH.cei.xml')) if not self.config['flat'] else list(Path(self.config['fsdb_root']).glob('*.{}'.format(img_sfx)))
         
         # flat folder (archive_id ignored)
@@ -41,6 +42,9 @@ class Fsdb:
             charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.seals.crops/*.{}'.format(img_sfx)))
         else:
             charter_img_paths=list(Path(self.config['fsdb_root']).glob('*/*/*/*.{}'.format(img_sfx)))
+        if flag_suffix:
+            charter_img_paths = [ p for p in charter_img_paths if Path( lemmatize(p, suffix=img_sfx, replacement=flag_suffix)).exists() ]
+            all_charters = charter_img_paths
 
         current_state = [ 
                 ( Path(lemmatize(p, suffix=img_sfx, replacement=lines_pred_sfx )).exists(), Path(lemmatize(p, suffix=img_sfx, replacement=lines_gt_sfx )).exists(),
